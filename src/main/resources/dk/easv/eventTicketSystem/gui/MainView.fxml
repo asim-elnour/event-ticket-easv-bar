@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.StackPane?>
+
+<BorderPane fx:id="root" prefHeight="650" prefWidth="1100"
+            xmlns="http://javafx.com/javafx/24.0.1"
+            xmlns:fx="http://javafx.com/fxml/1" stylesheets="@style/style.css"
+            fx:controller="dk.easv.eventTicketSystem.gui.MainController">
+
+    <top>
+            <StackPane fx:id="topBarRoot"/>
+    </top>
+
+    <center>
+        <StackPane fx:id="contentRoot"/>
+    </center>
+
+    <bottom>
+        <Label fx:id="footerLabel" styleClass="footer-label" text="© 2026 Asim El Nour" BorderPane.alignment="CENTER"/>
+    </bottom>
+
+</BorderPane>

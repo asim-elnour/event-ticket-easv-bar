@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane styleClass="page-root"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dk.easv.eventTicketSystem.gui.eventCoordinators.EventCoordinatorsController">
+
+    <VBox styleClass="page-content" AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+          AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+
+        <HBox styleClass="section-header">
+            <Label styleClass="section-label" text="Event Coordinators"/>
+            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="showDeletedButton"
+                    text="Hide Deleted Coordinators"
+                    onAction="#onToggleShowDeletedCoordinators"/>
+        </HBox>
+
+        <TableView fx:id="usersTable" styleClass="data-view scrollable" minHeight="150" VBox.vgrow="ALWAYS">
+
+            <columns>
+                <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
+                <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
+                <TableColumn fx:id="colEvent" minWidth="180" text="Event"/>
+                <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
+            </columns>
+
+        </TableView>
+
+        <HBox styleClass="actions-row">
+            <Button text="Add Coordinator" HBox.hgrow="ALWAYS" onAction="#onAddCoordinator"/>
+            <Button fx:id="removeButton"
+                    text="Remove Coordinator"
+                    HBox.hgrow="ALWAYS"
+                    onAction="#onRemoveCoordinator"/>
+        </HBox>
+
+    </VBox>
+
+</AnchorPane>

@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            stylesheets="@../style/style.css"
+            styleClass="dialog-root"
+            fx:controller="dk.easv.eventTicketSystem.gui.adminsAndCoordinators.AdminCoordinatorDialogController">
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="AS_NEEDED"
+                    vbarPolicy="AS_NEEDED"  styleClass="scrollable">
+            <content>
+                <VBox styleClass="dialog-content" VBox.vgrow="NEVER">
+                    <HBox alignment="TOP_CENTER" fillHeight="false">
+                        <GridPane styleClass="dialog-grid" alignment="CENTER_LEFT" prefWidth="760" maxWidth="760" minWidth="560" style="-fx-vgap: 6;">
+                            <columnConstraints>
+                                <ColumnConstraints minWidth="120" prefWidth="140" hgrow="NEVER" halignment="LEFT"/>
+                                <ColumnConstraints hgrow="ALWAYS" fillWidth="true"/>
+                            </columnConstraints>
+
+                            <Label text="Username:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                            <TextField fx:id="txtUsername" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errUsername" visible="false" managed="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+                            <Label text="First Name:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                            <TextField fx:id="txtFirstName" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errFirstName" visible="false" managed="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+                            <Label text="Last Name:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                            <TextField fx:id="txtLastName" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errLastName" visible="false" managed="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+                            <Label text="Email:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                            <TextField fx:id="txtEmail" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errEmail" visible="false" managed="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+
+                            <Label text="Phone:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+                            <TextField fx:id="txtPhone" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errPhone" visible="false" managed="true" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
+
+                            <Label text="Role:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
+                            <ComboBox fx:id="cmbRole" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errRole" visible="false" managed="true" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
+
+                            <Label text="Password:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
+                            <PasswordField fx:id="txtPassword" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errPassword" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
+                        </GridPane>
+                    </HBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="dialog-actions">
+            <Button text="Cancel" onAction="#onCancel"/>
+            <Button text="Save" onAction="#onSave"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

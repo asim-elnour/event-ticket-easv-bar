@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            stylesheets="@../style/style.css"
+            styleClass="dialog-root"
+            fx:controller="dk.easv.eventTicketSystem.gui.tickets.TicketDialogController">
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scrollable">
+            <content>
+                <VBox styleClass="dialog-content" VBox.vgrow="NEVER" spacing="10">
+                    <GridPane styleClass="dialog-grid" alignment="CENTER_LEFT">
+
+                        <Label text="Customer name:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                        <VBox styleClass="dialog-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                            <TextField fx:id="txtCustomerName"/>
+                            <Label styleClass="error-label" fx:id="errCustomerName" visible="false"/>
+                        </VBox>
+
+                        <Label text="Customer email:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                        <VBox styleClass="dialog-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                            <TextField fx:id="txtCustomerEmail"/>
+                            <Label styleClass="error-label" fx:id="errCustomerEmail" visible="false"/>
+                        </VBox>
+
+                        <Label text="Ticket type:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                        <VBox styleClass="dialog-field" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                            <ComboBox fx:id="cmbTicketType" prefWidth="280"/>
+                            <Label styleClass="error-label" fx:id="errTicketCategoryId" visible="false"/>
+                        </VBox>
+
+                        <Label text="Code:" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                        <TextField fx:id="txtCode" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                    </GridPane>
+
+                    <VBox spacing="6">
+                        <HBox spacing="8">
+                            <Label text="Ticket price:" style="-fx-font-weight: bold;"/>
+                            <Label fx:id="lblBasePrice" text="0.00"/>
+                        </HBox>
+                        <HBox spacing="8">
+                            <Label text="Total price:" style="-fx-font-weight: bold;"/>
+                            <Label fx:id="lblTotalPrice" text="0.00"/>
+                        </HBox>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="dialog-actions">
+            <Button text="Cancel" onAction="#onCancel"/>
+            <Button text="Save" onAction="#onSave"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

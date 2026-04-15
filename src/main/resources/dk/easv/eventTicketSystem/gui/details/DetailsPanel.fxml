@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx/24.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dk.easv.eventTicketSystem.gui.details.DetailsPanelController"
+      styleClass="panel details-panel"
+      spacing="0"
+      minHeight="0">
+
+    <StackPane VBox.vgrow="ALWAYS" minHeight="0" styleClass="details-host">
+        <VBox fx:id="emptyCard"
+              styleClass="details-card details-card-fill details-card-empty"
+              spacing="10">
+            <Label text="Select a row to view details"
+                   styleClass="details-title"
+                   maxWidth="Infinity"
+                   alignment="CENTER"
+                   textAlignment="CENTER"/>
+            <Label text="Users, events, coordinators, and tickets will appear here."
+                   styleClass="muted-text"
+                   wrapText="true"
+                   maxWidth="Infinity"
+                   alignment="CENTER"
+                   textAlignment="CENTER"/>
+        </VBox>
+
+        <VBox fx:id="userCard"
+              styleClass="details-card details-card-fill"
+              spacing="14"
+              visible="false"
+              managed="false">
+            <Label text="User" styleClass="details-title"/>
+            <ScrollPane fx:id="userScroll"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        pannable="false"
+                        styleClass="scrollable details-card-scroll"
+                        VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox styleClass="details-content" spacing="10">
+                        <VBox styleClass="details-row">
+                            <Label text="Name" styleClass="details-label"/>
+                            <Label fx:id="userNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Username" styleClass="details-label"/>
+                            <Label fx:id="userUsernameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Email" styleClass="details-label"/>
+                            <Label fx:id="userEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Phone" styleClass="details-label"/>
+                            <Label fx:id="userPhoneValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Roles" styleClass="details-label"/>
+                            <Label fx:id="userRolesValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Status" styleClass="details-label"/>
+                            <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+
+        <VBox fx:id="eventCard"
+              styleClass="details-card details-card-fill"
+              spacing="14"
+              visible="false"
+              managed="false">
+            <Label text="Event" styleClass="details-title"/>
+            <ScrollPane fx:id="eventScroll"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        pannable="false"
+                        styleClass="scrollable details-card-scroll"
+                        VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox styleClass="details-content" spacing="10">
+                        <VBox styleClass="details-row">
+                            <Label text="Name" styleClass="details-label"/>
+                            <Label fx:id="eventNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Location" styleClass="details-label"/>
+                            <Label fx:id="eventLocationValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Start" styleClass="details-label"/>
+                            <Label fx:id="eventStartValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="End" styleClass="details-label"/>
+                            <Label fx:id="eventEndValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Guidance" styleClass="details-label"/>
+                            <Label fx:id="eventGuidanceValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Notes" styleClass="details-label"/>
+                            <Label fx:id="eventNotesValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Status" styleClass="details-label"/>
+                            <Label fx:id="eventStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Ticket types" styleClass="details-label"/>
+                            <VBox fx:id="eventTicketTypesBox" styleClass="details-list" spacing="6"/>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+
+        <VBox fx:id="coordinatorCard"
+              styleClass="details-card details-card-fill"
+              spacing="14"
+              visible="false"
+              managed="false">
+            <Label text="Coordinator" styleClass="details-title"/>
+            <ScrollPane fx:id="coordinatorScroll"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        pannable="false"
+                        styleClass="scrollable details-card-scroll"
+                        VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox styleClass="details-content" spacing="10">
+                        <VBox styleClass="details-row">
+                            <Label text="Name" styleClass="details-label"/>
+                            <Label fx:id="coordinatorNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Username" styleClass="details-label"/>
+                            <Label fx:id="coordinatorUsernameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Email" styleClass="details-label"/>
+                            <Label fx:id="coordinatorEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Roles" styleClass="details-label"/>
+                            <Label fx:id="coordinatorRolesValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Assigned event" styleClass="details-label"/>
+                            <Label fx:id="coordinatorEventValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Status" styleClass="details-label"/>
+                            <Label fx:id="coordinatorStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+
+        <VBox fx:id="ticketCard"
+              styleClass="details-card details-card-fill"
+              spacing="14"
+              visible="false"
+              managed="false">
+            <Label text="Ticket" styleClass="details-title"/>
+            <ScrollPane fx:id="ticketScroll"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        pannable="false"
+                        styleClass="scrollable details-card-scroll"
+                        VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox styleClass="details-content" spacing="10">
+                        <VBox styleClass="details-row">
+                            <Label text="Event" styleClass="details-label"/>
+                            <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Code" styleClass="details-label"/>
+                            <Label fx:id="ticketCodeValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Customer" styleClass="details-label"/>
+                            <Label fx:id="ticketCustomerValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Email" styleClass="details-label"/>
+                            <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Issued" styleClass="details-label"/>
+                            <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Redeemed at" styleClass="details-label"/>
+                            <Label fx:id="ticketRedeemedValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Status" styleClass="details-label"/>
+                            <Label fx:id="ticketStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Barcode" styleClass="details-label"/>
+                            <VBox styleClass="details-image-box" spacing="10">
+                                <ImageView fx:id="ticketBarcodeImage" fitWidth="260" fitHeight="90" preserveRatio="false" smooth="true"/>
+                                <ImageView fx:id="ticketQrImage" fitWidth="140" fitHeight="140" preserveRatio="false" smooth="true"/>
+                            </VBox>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+    </StackPane>
+</VBox>

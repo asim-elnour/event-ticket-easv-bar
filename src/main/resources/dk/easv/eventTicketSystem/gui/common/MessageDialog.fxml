@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            stylesheets="@../style/style.css"
+            styleClass="dialog-root"
+            fx:controller="dk.easv.eventTicketSystem.gui.common.MessageDialogController">
+
+    <center>
+        <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scrollable">
+            <content>
+                <VBox styleClass="dialog-content" spacing="12">
+                    <Label fx:id="headerLabel" styleClass="section-label" wrapText="true" text="Information"/>
+                    <Label fx:id="contentLabel" wrapText="true"/>
+                    <VBox fx:id="detailsBox" styleClass="dialog-field">
+                        <Label fx:id="typeTitleLabel" text="Type"/>
+                        <Label fx:id="typeValueLabel" wrapText="true"/>
+                        <Label fx:id="errorTitleLabel" text="Error"/>
+                        <Label fx:id="errorValueLabel" wrapText="true"/>
+                    </VBox>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="dialog-actions">
+            <Button fx:id="okButton" text="OK" onAction="#onClose"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

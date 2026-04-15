@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns:fx="http://javafx.com/fxml"
+            stylesheets="@../style/style.css"
+            styleClass="dialog-root"
+            fx:controller="dk.easv.eventTicketSystem.gui.tickets.TicketPrintDialogController">
+
+    <center>
+        <VBox styleClass="dialog-content ticket-print-dialog" spacing="8">
+            <Label text="Print Ticket" styleClass="section-label"/>
+            <Label text="Choose how you want to deliver this ticket." styleClass="muted-text"/>
+            <Label text="Ticket code:" style="-fx-font-weight: bold;"/>
+            <Label fx:id="lblTicketCode"/>
+            <Label fx:id="lblCustomer" styleClass="muted-text"/>
+        </VBox>
+    </center>
+
+    <bottom>
+        <HBox styleClass="dialog-actions">
+            <Button text="Cancel" onAction="#onCancel"/>
+            <Button text="Send Email" styleClass="button ticket-print-secondary" onAction="#onEmail"/>
+            <Button text="Print" styleClass="button ticket-print-primary" onAction="#onPrint"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane styleClass="page-root"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dk.easv.eventTicketSystem.gui.adminsAndCoordinators.AdminsAndCoordinatorsController">
+
+    <VBox styleClass="page-content"
+          AnchorPane.topAnchor="0.0"
+          AnchorPane.rightAnchor="0.0"
+          AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0"
+        >
+        <HBox styleClass="section-header">
+            <Label fx:id="sectionTitleLabel" styleClass="section-label" text="Users"/>
+            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="showDeletedButton" text="Hide Deleted Users" onAction="#onToggleShowDeletedUsers"/>
+        </HBox>
+
+        <TableView fx:id="usersTable" styleClass="data-view scrollable users-table"
+                   VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
+                <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
+                <TableColumn fx:id="colRole" minWidth="100" text="Role"/>
+                <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
+            </columns>
+
+        </TableView>
+
+        <HBox styleClass="actions-row">
+            <Button fx:id="addButton" text="Add User" HBox.hgrow="ALWAYS" onAction="#onAddUser"/>
+            <Button fx:id="editButton" text="Edit User" HBox.hgrow="ALWAYS" onAction="#onEditUser"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="deactivateButton" text="Deactivate User" HBox.hgrow="ALWAYS" onAction="#onDeactivateUser"/>
+        </HBox>
+
+    </VBox>
+
+</AnchorPane>

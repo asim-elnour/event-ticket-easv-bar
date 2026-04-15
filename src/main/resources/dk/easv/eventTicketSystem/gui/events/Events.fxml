@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane styleClass="page-root"
+            xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="dk.easv.eventTicketSystem.gui.events.EventsController">
+
+    <VBox styleClass="page-content"
+          AnchorPane.topAnchor="0.0"
+          AnchorPane.rightAnchor="0.0"
+          AnchorPane.bottomAnchor="0.0"
+          AnchorPane.leftAnchor="0.0">
+
+        <!-- Header bar -->
+        <HBox styleClass="section-header">
+            <Label fx:id="sectionTitleLabel" styleClass="section-label" text="Events"/>
+            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="showDeletedButton" text="Hide Deleted Events" onAction="#onToggleShowDeletedEvents"/>
+        </HBox>
+
+        <!-- Events table -->
+        <TableView fx:id="eventsTable" styleClass="data-view scrollable" minHeight="150" VBox.vgrow="ALWAYS">
+
+            <columns>
+                <TableColumn fx:id="colName" minWidth="180" text="Name"/>
+                <TableColumn fx:id="colLocation" minWidth="180" text="Location"/>
+                <TableColumn fx:id="colStart" minWidth="160" text="Start"/>
+                <TableColumn fx:id="colStatus" minWidth="120" text="Status"/>
+            </columns>
+
+        </TableView>
+
+        <!-- CRUD buttons -->
+        <HBox styleClass="actions-row">
+            <Button fx:id="addButton" text="Add Event" HBox.hgrow="ALWAYS" onAction="#onAddEvent"/>
+            <Button fx:id="editButton" text="Edit Event" HBox.hgrow="ALWAYS" onAction="#onEditEvent"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="deleteButton" text="Delete Event" HBox.hgrow="ALWAYS" onAction="#onDeleteEvent"/>
+        </HBox>
+
+    </VBox>
+
+</AnchorPane>
