@@ -8,12 +8,14 @@ import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.SceneNavigator;
 import dk.easv.eventTicketSystem.util.SessionManager;
 import javafx.animation.PauseTransition;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.ScrollEvent;
+import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
@@ -61,6 +63,7 @@ public class SearchBarController implements ModelAware {
         logoutButton.setOnAction(event -> onLogout());
 
         clearFilterButton.setVisible(false);
+        clearFilterButton.managedProperty().bind(clearFilterButton.visibleProperty());
         clearFilterButton.setOnAction(event -> filterField.clear());
 
         searchDebounce = new PauseTransition(Duration.millis(250));
@@ -157,6 +160,16 @@ public class SearchBarController implements ModelAware {
     private void configureHorizontalOnlyScroll() {
         if (topBarScroll == null) {
             return;
+        }
+
+        if (topBarScroll.getContent() instanceof Region contentRegion) {
+            contentRegion.minWidthProperty().bind(Bindings.createDoubleBinding(
+                    () -> {
+                        double viewportWidth = topBarScroll.getViewportBounds().getWidth();
+                        return viewportWidth <= 0 ? Region.USE_COMPUTED_SIZE : viewportWidth;
+                    },
+                    topBarScroll.viewportBoundsProperty()
+            ));
         }
 
         topBarScroll.vvalueProperty().addListener((obs, oldValue, newValue) -> {

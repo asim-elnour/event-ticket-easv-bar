@@ -61,6 +61,12 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.top-bar-brand {
+    -fx-text-fill: -fx-text-primary;
+    -fx-font-size: 18px;
+    -fx-font-weight: 700;
+}
+
 .top-bar-center {
     -fx-alignment: CENTER;
 }
