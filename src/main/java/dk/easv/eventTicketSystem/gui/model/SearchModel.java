@@ -51,6 +51,12 @@ public class SearchModel {
                     new SearchColumnOption(COLUMN_CUSTOMER, "Customer"),
                     new SearchColumnOption(COLUMN_EVENT, "Event"),
                     new SearchColumnOption(COLUMN_STATUS, "Status")
+            ),
+            SearchScope.CUSTOMERS, List.of(
+                    ALL_COLUMN,
+                    new SearchColumnOption(COLUMN_CUSTOMER, "Customer"),
+                    new SearchColumnOption(COLUMN_EVENT, "Event"),
+                    new SearchColumnOption(COLUMN_STATUS, "Status")
             )
     );
 

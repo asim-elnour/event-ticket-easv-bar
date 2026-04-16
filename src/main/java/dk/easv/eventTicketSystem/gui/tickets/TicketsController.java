@@ -5,6 +5,7 @@ import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
+import dk.easv.eventTicketSystem.gui.model.DataViewMode;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.TicketPrintService;
@@ -18,6 +19,7 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -43,6 +45,8 @@ public class TicketsController implements ModelAware {
     @FXML
     private TableColumn<Ticket, String> colStatus;
     @FXML
+    private Button addButton;
+    @FXML
     private Button deleteButton;
     @FXML
     private Button redeemButton;
@@ -50,28 +54,35 @@ public class TicketsController implements ModelAware {
     private Button printButton;
     @FXML
     private Button showDeletedButton;
+    @FXML
+    private ChoiceBox<DataViewMode> viewChoice;
 
     private final TicketPrintService ticketPrintService = new TicketPrintService();
+    private final Label placeholderLabel = new Label("No tickets found.");
     private final ListChangeListener<Ticket> ticketsListener = change -> {
         updateShowDeletedButtonText();
+        updatePlaceholder();
         restoreSelection();
     };
 
     private ObservableList<Ticket> observedTickets;
     private AppModel model;
     private StatusBanner statusBanner;
+    private boolean modelListenersBound;
 
     @FXML
     public void initialize() {
         statusBanner = new StatusBanner(statusLabel);
+        placeholderLabel.getStyleClass().add("muted-text");
 
         colCode.setCellValueFactory(cd -> cd.getValue().codeProperty());
         colCustomerName.setCellValueFactory(cd -> cd.getValue().customerNameProperty());
         colEventName.setCellValueFactory(cd -> cd.getValue().eventNameProperty());
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getStatusLabel()));
 
+        ticketsTable.setPlaceholder(placeholderLabel);
         ticketsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldTicket, newTicket) -> {
-            if (model != null && newTicket != null) {
+            if (model != null) {
                 model.setSelectedTicket(newTicket);
             }
             updateActionState(newTicket);
@@ -81,15 +92,25 @@ public class TicketsController implements ModelAware {
             var row = new javafx.scene.control.TableRow<Ticket>();
             row.setOnMouseClicked(event -> {
                 Ticket item = row.getItem();
-                if (item != null && model != null) {
+                if (model != null) {
                     model.setSelectedTicket(item);
-                    updateActionState(item);
                 }
+                updateActionState(item);
             });
             return row;
         });
 
+        viewChoice.getItems().setAll(DataViewMode.values());
+        viewChoice.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (model == null || newValue == null || newValue == model.getTicketsViewMode()) {
+                return;
+            }
+            model.setTicketsViewMode(newValue);
+            reloadTickets();
+        });
+
         ticketsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        updatePlaceholder();
         updateActionState(null);
 
         if (model != null) {
@@ -121,8 +142,36 @@ public class TicketsController implements ModelAware {
         ticketsView.comparatorProperty().bind(ticketsTable.comparatorProperty());
         observedTickets.addListener(ticketsListener);
 
+        if (!modelListenersBound) {
+            model.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
+                if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
+                    reloadTickets();
+                }
+                updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
+            });
+            model.currentEventIdProperty().addListener((obs, oldValue, newValue) -> {
+                if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
+                    reloadTickets();
+                }
+                updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
+            });
+            model.ticketsViewModeProperty().addListener((obs, oldValue, newValue) -> {
+                if (viewChoice.getValue() != newValue) {
+                    viewChoice.setValue(newValue);
+                }
+                updatePlaceholder();
+                updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
+            });
+            modelListenersBound = true;
+        }
+
+        if (viewChoice.getValue() != model.getTicketsViewMode()) {
+            viewChoice.setValue(model.getTicketsViewMode());
+        }
+
         updateShowDeletedButtonText();
-        reloadAllTickets();
+        updatePlaceholder();
+        reloadTickets();
     }
 
     @FXML
@@ -130,6 +179,14 @@ public class TicketsController implements ModelAware {
         Event selectedEvent = resolveCurrentEvent();
         if (selectedEvent == null || selectedEvent.getId() == null || selectedEvent.getId() <= 0) {
             DialogUtils.showWarning("Add Ticket", null, "Please select an event first.");
+            return;
+        }
+        if (model == null || model.getTicketsViewMode() != DataViewMode.SELECTED_EVENT) {
+            DialogUtils.showWarning("Add Ticket", null, "Switch to Selected Event view before adding tickets.");
+            return;
+        }
+        if (selectedEvent.isDeleted()) {
+            DialogUtils.showWarning("Add Ticket", null, "Tickets cannot be added to a deleted event.");
             return;
         }
 
@@ -152,7 +209,7 @@ public class TicketsController implements ModelAware {
 
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
-                reloadAllTickets();
+                reloadTickets();
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -216,8 +273,7 @@ public class TicketsController implements ModelAware {
 
         task.setOnSucceeded(workerStateEvent -> {
             statusBanner.showSaved();
-            updateActionState(selected);
-            reloadAllTickets();
+            reloadTickets();
         });
 
         task.setOnFailed(workerStateEvent -> {
@@ -259,7 +315,7 @@ public class TicketsController implements ModelAware {
 
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
-                reloadAllTickets();
+                reloadTickets();
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -362,17 +418,23 @@ public class TicketsController implements ModelAware {
         return null;
     }
 
-    private void reloadAllTickets() {
+    private void reloadTickets() {
         ticketsTable.getSelectionModel().clearSelection();
         if (model != null) {
             model.tickets().clear();
+            model.setSelectedTicket(null);
         }
+        updatePlaceholder();
         updateActionState(null);
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                model.loadAllTickets();
+                if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
+                    model.loadTicketsForEvent(model.getCurrentEventId());
+                } else {
+                    model.loadAllTickets();
+                }
                 return null;
             }
         };
@@ -390,6 +452,7 @@ public class TicketsController implements ModelAware {
 
         Ticket selected = model.getSelectedTicket();
         if (selected == null || selected.getId() == null) {
+            updateActionState(null);
             return;
         }
 
@@ -398,16 +461,19 @@ public class TicketsController implements ModelAware {
                 ticketsTable.getSelectionModel().select(ticket);
                 ticketsTable.scrollTo(ticket);
                 updateActionState(ticket);
+                model.setSelectedTicket(ticket);
                 return;
             }
         }
 
         ticketsTable.getSelectionModel().clearSelection();
+        model.setSelectedTicket(null);
         updateActionState(null);
     }
 
     private void updateActionState(Ticket selected) {
         boolean hasSelection = selected != null;
+        addButton.setDisable(!canAddTicket());
         deleteButton.setDisable(!hasSelection);
         if (hasSelection) {
             deleteButton.setText(selected.isDeleted() ? "Restore Ticket" : "Delete Ticket");
@@ -418,6 +484,17 @@ public class TicketsController implements ModelAware {
         printButton.setDisable(!hasSelection);
     }
 
+    private boolean canAddTicket() {
+        if (model == null || model.getTicketsViewMode() != DataViewMode.SELECTED_EVENT) {
+            return false;
+        }
+        Event selectedEvent = resolveCurrentEvent();
+        return selectedEvent != null
+                && selectedEvent.getId() != null
+                && selectedEvent.getId() > 0
+                && !selectedEvent.isDeleted();
+    }
+
     @FXML
     private void onToggleShowDeletedTickets() {
         if (model == null) {
@@ -425,7 +502,7 @@ public class TicketsController implements ModelAware {
         }
         model.setShowDeletedTickets(!model.isShowDeletedTickets());
         updateShowDeletedButtonText();
-        reloadAllTickets();
+        reloadTickets();
     }
 
     private void updateShowDeletedButtonText() {
@@ -433,6 +510,17 @@ public class TicketsController implements ModelAware {
             return;
         }
         showDeletedButton.setText(model.isShowDeletedTickets() ? "Hide Deleted Tickets" : "Show Deleted Tickets");
+    }
+
+    private void updatePlaceholder() {
+        if (placeholderLabel == null || model == null) {
+            return;
+        }
+        if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+            placeholderLabel.setText("Select an event to view tickets.");
+            return;
+        }
+        placeholderLabel.setText("No tickets found.");
     }
 
     private Optional<Ticket> showRedeemDialog(Ticket ticket) {

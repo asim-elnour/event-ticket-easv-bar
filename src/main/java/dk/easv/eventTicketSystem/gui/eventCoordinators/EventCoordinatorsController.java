@@ -6,6 +6,7 @@ import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
+import dk.easv.eventTicketSystem.gui.model.DataViewMode;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.UserUiText;
@@ -15,6 +16,7 @@ import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -35,6 +37,14 @@ public class EventCoordinatorsController implements ModelAware {
     @FXML private Button showDeletedButton;
     @FXML private Button addButton;
     @FXML private Button removeButton;
+    @FXML private ChoiceBox<DataViewMode> viewChoice;
+
+    private final Label placeholderLabel = new Label("No coordinators found.");
+    private final ListChangeListener<User> coordinatorsListener = change -> {
+        updateShowDeletedButtonText();
+        updatePlaceholder();
+        restoreSelection();
+    };
 
     private AppModel model;
     private StatusBanner statusBanner;
@@ -43,6 +53,7 @@ public class EventCoordinatorsController implements ModelAware {
     @FXML
     public void initialize() {
         statusBanner = new StatusBanner(statusLabel);
+        placeholderLabel.getStyleClass().add("muted-text");
 
         colUserName.setText("Username");
         colFullName.setText("Name");
@@ -72,8 +83,9 @@ public class EventCoordinatorsController implements ModelAware {
             );
         });
 
+        usersTable.setPlaceholder(placeholderLabel);
         usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
-            if (model != null && newUser != null) {
+            if (model != null) {
                 model.setSelectedEventCoordinator(newUser);
             }
             updateActionState(newUser);
@@ -83,15 +95,25 @@ public class EventCoordinatorsController implements ModelAware {
             TableRow<User> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
                 User item = row.getItem();
-                if (item != null && model != null) {
+                if (model != null) {
                     model.setSelectedEventCoordinator(item);
-                    updateActionState(item);
                 }
+                updateActionState(item);
             });
             return row;
         });
 
+        viewChoice.getItems().setAll(DataViewMode.values());
+        viewChoice.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+            if (model == null || newValue == null || newValue == model.getCoordinatorViewMode()) {
+                return;
+            }
+            model.setCoordinatorViewMode(newValue);
+            reloadCoordinators();
+        });
+
         usersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
+        updatePlaceholder();
         updateShowDeletedButtonText();
         updateActionState(null);
 
@@ -112,30 +134,62 @@ public class EventCoordinatorsController implements ModelAware {
         }
         usersTable.setItems(model.coordinatorUsersView());
         model.coordinatorUsersView().comparatorProperty().bind(usersTable.comparatorProperty());
+        model.coordinatorUsers().removeListener(coordinatorsListener);
+        model.coordinatorUsers().addListener(coordinatorsListener);
         bindModelListeners();
+
+        if (viewChoice.getValue() != model.getCoordinatorViewMode()) {
+            viewChoice.setValue(model.getCoordinatorViewMode());
+        }
+
         updateShowDeletedButtonText();
-        reloadCoordinatorsForAllEvents();
+        updatePlaceholder();
+        reloadCoordinators();
     }
 
     private void bindModelListeners() {
         if (modelListenersBound) {
             return;
         }
-        model.coordinatorUsersView().addListener((ListChangeListener<User>) change -> restoreSelection());
+        model.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
+            if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
+                reloadCoordinators();
+            }
+            updateActionState(usersTable.getSelectionModel().getSelectedItem());
+        });
+        model.currentEventIdProperty().addListener((obs, oldValue, newValue) -> {
+            if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
+                reloadCoordinators();
+            }
+            updateActionState(usersTable.getSelectionModel().getSelectedItem());
+        });
+        model.coordinatorViewModeProperty().addListener((obs, oldValue, newValue) -> {
+            if (viewChoice.getValue() != newValue) {
+                viewChoice.setValue(newValue);
+            }
+            updatePlaceholder();
+            updateActionState(usersTable.getSelectionModel().getSelectedItem());
+        });
         modelListenersBound = true;
     }
 
-    private void reloadCoordinatorsForAllEvents() {
+    private void reloadCoordinators() {
         usersTable.getSelectionModel().clearSelection();
         if (model != null) {
             model.coordinatorUsers().clear();
+            model.setSelectedEventCoordinator(null);
         }
         updateActionState(null);
+        updatePlaceholder();
 
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                model.loadCoordinatorUsersForAllEvents();
+                if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
+                    model.loadCoordinatorUsersForEvent(model.getCurrentEventId());
+                } else {
+                    model.loadCoordinatorUsersForAllEvents();
+                }
                 return null;
             }
         };
@@ -153,6 +207,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         User selected = model.getSelectedEventCoordinator();
         if (selected == null || selected.getId() == null) {
+            updateActionState(null);
             return;
         }
 
@@ -166,11 +221,13 @@ public class EventCoordinatorsController implements ModelAware {
                 usersTable.getSelectionModel().select(coordinator);
                 usersTable.scrollTo(coordinator);
                 updateActionState(coordinator);
+                model.setSelectedEventCoordinator(coordinator);
                 return;
             }
         }
 
         usersTable.getSelectionModel().clearSelection();
+        model.setSelectedEventCoordinator(null);
         updateActionState(null);
     }
 
@@ -181,7 +238,7 @@ public class EventCoordinatorsController implements ModelAware {
         }
         model.setShowDeletedCoordinatorUsers(!model.isShowDeletedCoordinatorUsers());
         updateShowDeletedButtonText();
-        reloadCoordinatorsForAllEvents();
+        reloadCoordinators();
     }
 
     private void updateShowDeletedButtonText() {
@@ -203,10 +260,20 @@ public class EventCoordinatorsController implements ModelAware {
         if (model == null) {
             return;
         }
+        if (model.getCoordinatorViewMode() != DataViewMode.SELECTED_EVENT) {
+            showCoordinatorMessage("Add Coordinator", "Switch to Selected Event view before adding a coordinator.");
+            return;
+        }
 
         long eventId = model.getCurrentEventId();
         if (eventId <= 0) {
             showCoordinatorMessage("Add Coordinator", "Please select an event first.");
+            return;
+        }
+
+        Event selectedEvent = model.getSelectedEvent();
+        if (selectedEvent != null && selectedEvent.isDeleted()) {
+            showCoordinatorMessage("Add Coordinator", "Coordinators cannot be added to a deleted event.");
             return;
         }
 
@@ -238,7 +305,6 @@ public class EventCoordinatorsController implements ModelAware {
             return;
         }
 
-        Event selectedEvent = model.getSelectedEvent();
         String eventName = selectedEvent == null ? "selected event" : selectedEvent.getName();
 
         statusBanner.showSaving();
@@ -253,7 +319,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         task.setOnSucceeded(event -> {
             statusBanner.showSaved();
-            reloadCoordinatorsForAllEvents();
+            reloadCoordinators();
         });
 
         task.setOnFailed(event -> {
@@ -317,7 +383,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         task.setOnSucceeded(event -> {
             statusBanner.showSaved();
-            reloadCoordinatorsForAllEvents();
+            reloadCoordinators();
         });
 
         task.setOnFailed(event -> {
@@ -476,8 +542,9 @@ public class EventCoordinatorsController implements ModelAware {
 
     private void updateActionState(User selected) {
         boolean canManage = canManageCoordinators();
+        boolean canAdd = canManage && canAddCoordinator();
         if (addButton != null) {
-            addButton.setDisable(!canManage);
+            addButton.setDisable(!canAdd);
         }
 
         if (selected == null) {
@@ -493,5 +560,27 @@ public class EventCoordinatorsController implements ModelAware {
 
     private boolean canManageCoordinators() {
         return model != null && model.isAdmin();
+    }
+
+    private boolean canAddCoordinator() {
+        if (model == null || model.getCoordinatorViewMode() != DataViewMode.SELECTED_EVENT) {
+            return false;
+        }
+        Event selectedEvent = model.getSelectedEvent();
+        return selectedEvent != null
+                && selectedEvent.getId() != null
+                && selectedEvent.getId() > 0
+                && !selectedEvent.isDeleted();
+    }
+
+    private void updatePlaceholder() {
+        if (placeholderLabel == null || model == null) {
+            return;
+        }
+        if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+            placeholderLabel.setText("Select an event to view coordinators.");
+            return;
+        }
+        placeholderLabel.setText("No coordinators found.");
     }
 }

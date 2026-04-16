@@ -191,7 +191,7 @@ public class DashboardWorkspaceController implements ModelAware {
             return SearchScope.TICKETS;
         }
         if (button == navCustomersButton) {
-            return SearchScope.TICKETS;
+            return SearchScope.CUSTOMERS;
         }
         return null;
     }

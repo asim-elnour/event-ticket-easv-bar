@@ -38,9 +38,9 @@
                                minWidth="460"
                                styleClass="data-view">
                         <columns>
-                            <TableColumn fx:id="colName" minWidth="180" text="Name"/>
-                            <TableColumn fx:id="colLocation" minWidth="180" text="Location"/>
-                            <TableColumn fx:id="colStart" minWidth="160" text="Start"/>
+                            <TableColumn fx:id="colName" minWidth="170" text="Name"/>
+                            <TableColumn fx:id="colLocation" minWidth="170" text="Location"/>
+                            <TableColumn fx:id="colStart" minWidth="150" text="Start"/>
                             <TableColumn fx:id="colStatus" minWidth="120" text="Status"/>
                         </columns>
                     </TableView>

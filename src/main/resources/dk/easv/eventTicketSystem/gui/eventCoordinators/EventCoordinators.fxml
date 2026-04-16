@@ -15,7 +15,13 @@
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
                     <HBox styleClass="section-header">
-                        <Label minWidth="-Infinity" styleClass="section-label" text="Event Coordinators"/>
+                        <VBox alignment="CENTER_LEFT" spacing="6">
+                            <Label minWidth="-Infinity" styleClass="section-label" text="Event Coordinators"/>
+                            <HBox alignment="CENTER_LEFT" spacing="8">
+                                <Label styleClass="muted-text" text="View"/>
+                                <ChoiceBox fx:id="viewChoice" minWidth="-Infinity"/>
+                            </HBox>
+                        </VBox>
                         <Label fx:id="statusLabel" minWidth="-Infinity" styleClass="status-label" text="" visible="false"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Button fx:id="showDeletedButton"

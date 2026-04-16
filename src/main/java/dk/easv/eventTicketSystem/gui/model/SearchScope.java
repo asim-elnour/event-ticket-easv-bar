@@ -4,7 +4,8 @@ public enum SearchScope {
     ADMINS("Users"),
     EVENTS("Events"),
     EVENT_COORDINATORS("Event Coordinators"),
-    TICKETS("Tickets");
+    TICKETS("Tickets"),
+    CUSTOMERS("Customers");
 
     private final String label;
 

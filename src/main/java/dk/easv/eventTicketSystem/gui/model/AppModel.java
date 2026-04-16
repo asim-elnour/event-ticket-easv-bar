@@ -1,5 +1,6 @@
 package dk.easv.eventTicketSystem.gui.model;
 
+import dk.easv.eventTicketSystem.be.CustomerSummary;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.Ticket;
@@ -18,16 +19,21 @@ public class AppModel {
 
     private final EventModel eventModel = new EventModel();
     private final TicketModel ticketModel = new TicketModel();
+    private final CustomerModel customerModel = new CustomerModel();
     private final UserModel userModel = new UserModel();
     private final SearchModel searchModel = new SearchModel();
 
     private final ObjectProperty<User> selectedUser = new SimpleObjectProperty<>(null);
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
     private final ObjectProperty<Ticket> selectedTicket = new SimpleObjectProperty<>(null);
+    private final ObjectProperty<CustomerSummary> selectedCustomer = new SimpleObjectProperty<>(null);
     private final ObjectProperty<User> selectedEventCoordinator = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<Long> currentCoordinatorId = new SimpleObjectProperty<>(0L);
     private final ObjectProperty<Long> currentEventId = new SimpleObjectProperty<>(0L);
+    private final ObjectProperty<DataViewMode> ticketsViewMode = new SimpleObjectProperty<>(DataViewMode.SELECTED_EVENT);
+    private final ObjectProperty<DataViewMode> customersViewMode = new SimpleObjectProperty<>(DataViewMode.SELECTED_EVENT);
+    private final ObjectProperty<DataViewMode> coordinatorViewMode = new SimpleObjectProperty<>(DataViewMode.SELECTED_EVENT);
 
     private final User currentUser;
     private final boolean admin;
@@ -67,6 +73,10 @@ public class AppModel {
 
     public TicketModel ticketsModel() {
         return ticketModel;
+    }
+
+    public CustomerModel customersModel() {
+        return customerModel;
     }
 
     public SearchModel search() {
@@ -155,6 +165,22 @@ public class AppModel {
         ticketModel.setShowDeletedTickets(showDeletedTickets);
     }
 
+    public ObservableList<CustomerSummary> customers() {
+        return customerModel.customers();
+    }
+
+    public SortedList<CustomerSummary> customersView() {
+        return customerModel.customersView();
+    }
+
+    public boolean isShowDeletedCustomerTickets() {
+        return customerModel.isShowDeletedCustomerTickets();
+    }
+
+    public void setShowDeletedCustomerTickets(boolean showDeletedCustomerTickets) {
+        customerModel.setShowDeletedCustomerTickets(showDeletedCustomerTickets);
+    }
+
     public ObjectProperty<User> selectedUserProperty() {
         return selectedUser;
     }
@@ -189,6 +215,18 @@ public class AppModel {
 
     public void setSelectedTicket(Ticket ticket) {
         selectedTicket.set(ticket);
+    }
+
+    public ObjectProperty<CustomerSummary> selectedCustomerProperty() {
+        return selectedCustomer;
+    }
+
+    public CustomerSummary getSelectedCustomer() {
+        return selectedCustomer.get();
+    }
+
+    public void setSelectedCustomer(CustomerSummary customer) {
+        selectedCustomer.set(customer);
     }
 
     public ObjectProperty<User> selectedEventCoordinatorProperty() {
@@ -227,6 +265,42 @@ public class AppModel {
         currentEventId.set(eventId);
     }
 
+    public ObjectProperty<DataViewMode> ticketsViewModeProperty() {
+        return ticketsViewMode;
+    }
+
+    public DataViewMode getTicketsViewMode() {
+        return normalizeViewMode(ticketsViewMode.get());
+    }
+
+    public void setTicketsViewMode(DataViewMode viewMode) {
+        ticketsViewMode.set(normalizeViewMode(viewMode));
+    }
+
+    public ObjectProperty<DataViewMode> customersViewModeProperty() {
+        return customersViewMode;
+    }
+
+    public DataViewMode getCustomersViewMode() {
+        return normalizeViewMode(customersViewMode.get());
+    }
+
+    public void setCustomersViewMode(DataViewMode viewMode) {
+        customersViewMode.set(normalizeViewMode(viewMode));
+    }
+
+    public ObjectProperty<DataViewMode> coordinatorViewModeProperty() {
+        return coordinatorViewMode;
+    }
+
+    public DataViewMode getCoordinatorViewMode() {
+        return normalizeViewMode(coordinatorViewMode.get());
+    }
+
+    public void setCoordinatorViewMode(DataViewMode viewMode) {
+        coordinatorViewMode.set(normalizeViewMode(viewMode));
+    }
+
     public void applySearch(SearchScope scope, String columnKey, String query) {
         searchModel.updateState(scope, columnKey, query);
         userModel.applySearch(
@@ -235,6 +309,7 @@ public class AppModel {
         );
         eventModel.applySearch(searchModel.getState(SearchScope.EVENTS));
         ticketModel.applySearch(searchModel.getState(SearchScope.TICKETS));
+        customerModel.applySearch(searchModel.getState(SearchScope.CUSTOMERS));
         reloadScopeAsync(scope);
     }
 
@@ -263,14 +338,33 @@ public class AppModel {
             };
             case EVENT_COORDINATORS -> () -> {
                 try {
-                    userModel.loadCoordinatorUsersForAllEvents();
+                    if (getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
+                        userModel.loadCoordinatorUsersForEvent(getCurrentEventId());
+                    } else {
+                        userModel.loadCoordinatorUsersForAllEvents();
+                    }
                 } catch (UserException e) {
                     e.printStackTrace();
                 }
             };
             case TICKETS -> () -> {
                 try {
-                    ticketModel.loadAllTickets();
+                    if (getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
+                        ticketModel.loadTicketsForEvent(getCurrentEventId());
+                    } else {
+                        ticketModel.loadAllTickets();
+                    }
+                } catch (TicketException e) {
+                    e.printStackTrace();
+                }
+            };
+            case CUSTOMERS -> () -> {
+                try {
+                    if (getCustomersViewMode() == DataViewMode.SELECTED_EVENT) {
+                        customerModel.loadCustomersForEvent(getCurrentEventId());
+                    } else {
+                        customerModel.loadAllCustomers();
+                    }
                 } catch (TicketException e) {
                     e.printStackTrace();
                 }
@@ -359,6 +453,14 @@ public class AppModel {
         ticketModel.loadAllTickets();
     }
 
+    public void loadCustomersForEvent(long eventId) throws TicketException {
+        customerModel.loadCustomersForEvent(eventId);
+    }
+
+    public void loadAllCustomers() throws TicketException {
+        customerModel.loadAllCustomers();
+    }
+
     public Ticket addTicket(Event event,
                             Long ticketCategoryId,
                             String customerName,
@@ -373,5 +475,9 @@ public class AppModel {
 
     public void redeemTicket(Ticket ticket) throws TicketException {
         ticketModel.redeemTicket(ticket);
+    }
+
+    private DataViewMode normalizeViewMode(DataViewMode viewMode) {
+        return viewMode == null ? DataViewMode.SELECTED_EVENT : viewMode;
     }
 }

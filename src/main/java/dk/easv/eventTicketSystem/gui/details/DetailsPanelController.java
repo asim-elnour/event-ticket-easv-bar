@@ -4,6 +4,7 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
+import dk.easv.eventTicketSystem.be.CustomerSummary;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.Ticket;
@@ -38,6 +39,8 @@ public class DetailsPanelController implements ModelAware {
     @FXML
     private VBox userCard;
     @FXML
+    private VBox customerCard;
+    @FXML
     private VBox eventCard;
     @FXML
     private VBox coordinatorCard;
@@ -45,6 +48,8 @@ public class DetailsPanelController implements ModelAware {
     private VBox ticketCard;
     @FXML
     private ScrollPane userScroll;
+    @FXML
+    private ScrollPane customerScroll;
     @FXML
     private ScrollPane eventScroll;
     @FXML
@@ -64,6 +69,21 @@ public class DetailsPanelController implements ModelAware {
     private Label userRolesValue;
     @FXML
     private Label userStatusValue;
+
+    @FXML
+    private Label customerNameValue;
+    @FXML
+    private Label customerEmailValue;
+    @FXML
+    private Label customerTicketCountValue;
+    @FXML
+    private Label customerValidCountValue;
+    @FXML
+    private Label customerRedeemedCountValue;
+    @FXML
+    private Label customerDeletedCountValue;
+    @FXML
+    private Label customerEventsValue;
 
     @FXML
     private Label eventNameValue;
@@ -145,6 +165,7 @@ public class DetailsPanelController implements ModelAware {
             listenersBound = true;
             model.activeSearchScopeProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedUserProperty().addListener((obs, oldValue, newValue) -> refreshView());
+            model.selectedCustomerProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedEventProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedEventCoordinatorProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedTicketProperty().addListener((obs, oldValue, newValue) -> refreshView());
@@ -166,6 +187,7 @@ public class DetailsPanelController implements ModelAware {
 
         switch (activeScope) {
             case ADMINS -> showUser(model.getSelectedUser());
+            case CUSTOMERS -> showCustomer(model.getSelectedCustomer());
             case EVENTS -> showEvent(model.getSelectedEvent());
             case EVENT_COORDINATORS -> showCoordinator(model.getSelectedEventCoordinator());
             case TICKETS -> showTicket(model.getSelectedTicket());
@@ -186,6 +208,23 @@ public class DetailsPanelController implements ModelAware {
         userStatusValue.setText(formatUserStatus(user));
         showCard(userCard);
         resetScroll(userScroll);
+    }
+
+    private void showCustomer(CustomerSummary customer) {
+        if (customer == null) {
+            showCard(emptyCard);
+            return;
+        }
+
+        customerNameValue.setText(safeText(customer.getName()));
+        customerEmailValue.setText(safeText(customer.getEmail()));
+        customerTicketCountValue.setText(Integer.toString(customer.getTicketCount()));
+        customerValidCountValue.setText(Integer.toString(customer.getValidCount()));
+        customerRedeemedCountValue.setText(Integer.toString(customer.getRedeemedCount()));
+        customerDeletedCountValue.setText(Integer.toString(customer.getDeletedCount()));
+        customerEventsValue.setText(safeText(customer.getEventsSummary()));
+        showCard(customerCard);
+        resetScroll(customerScroll);
     }
 
     private void showEvent(Event event) {
@@ -305,6 +344,7 @@ public class DetailsPanelController implements ModelAware {
     private void showCard(VBox selectedCard) {
         setVisible(emptyCard, selectedCard == emptyCard);
         setVisible(userCard, selectedCard == userCard);
+        setVisible(customerCard, selectedCard == customerCard);
         setVisible(eventCard, selectedCard == eventCard);
         setVisible(coordinatorCard, selectedCard == coordinatorCard);
         setVisible(ticketCard, selectedCard == ticketCard);

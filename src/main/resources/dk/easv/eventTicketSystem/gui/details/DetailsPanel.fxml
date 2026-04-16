@@ -24,7 +24,7 @@
                    maxWidth="Infinity"
                    alignment="CENTER"
                    textAlignment="CENTER"/>
-            <Label text="Users, events, coordinators, and tickets will appear here."
+            <Label text="Users, customers, events, coordinators, and tickets will appear here."
                    styleClass="muted-text"
                    wrapText="true"
                    maxWidth="Infinity"
@@ -71,6 +71,55 @@
                         <VBox styleClass="details-row">
                             <Label text="Status" styleClass="details-label"/>
                             <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </VBox>
+
+        <VBox fx:id="customerCard"
+              styleClass="details-card details-card-fill"
+              spacing="14"
+              visible="false"
+              managed="false">
+            <Label text="Customer" styleClass="details-title" maxWidth="Infinity" alignment="CENTER" textAlignment="CENTER"/>
+            <ScrollPane fx:id="customerScroll"
+                        fitToWidth="true"
+                        hbarPolicy="NEVER"
+                        vbarPolicy="AS_NEEDED"
+                        pannable="false"
+                        styleClass="details-card-scroll"
+                        minHeight="0"
+                        VBox.vgrow="ALWAYS">
+                <content>
+                    <VBox styleClass="details-content" spacing="10">
+                        <VBox styleClass="details-row">
+                            <Label text="Name" styleClass="details-label"/>
+                            <Label fx:id="customerNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Email" styleClass="details-label"/>
+                            <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Tickets" styleClass="details-label"/>
+                            <Label fx:id="customerTicketCountValue" text="0" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Valid" styleClass="details-label"/>
+                            <Label fx:id="customerValidCountValue" text="0" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Redeemed" styleClass="details-label"/>
+                            <Label fx:id="customerRedeemedCountValue" text="0" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Deleted" styleClass="details-label"/>
+                            <Label fx:id="customerDeletedCountValue" text="0" styleClass="details-value" wrapText="true"/>
+                        </VBox>
+                        <VBox styleClass="details-row">
+                            <Label text="Events" styleClass="details-label"/>
+                            <Label fx:id="customerEventsValue" text="Not set" styleClass="details-value" wrapText="true"/>
                         </VBox>
                     </VBox>
                 </content>
