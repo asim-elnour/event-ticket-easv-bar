@@ -1372,9 +1372,9 @@
 .details-title {
     -fx-font-size: 20px;
     -fx-font-weight: 700;
-    -fx-text-fill: -fx-text-primary;
-    -fx-alignment: CENTER;
-    -fx-text-alignment: CENTER;
+    -fx-text-fill: #ffffff;
+    -fx-alignment: CENTER_LEFT;
+    -fx-text-alignment: LEFT;
     -fx-padding: 10 0 14 0;
 }
 
@@ -1392,9 +1392,18 @@
 }
 
 .details-value {
-    -fx-text-fill: -fx-text-primary;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
+    -fx-min-width: 50;
+    -fx-opacity: 1;
+}
+
+.details-value-token {
+    -fx-text-fill: #ffffff;
+    -fx-wrap-text: false;
+    -fx-text-overrun: clip;
+    -fx-opacity: 1;
 }
 
 .details-list {
@@ -1403,12 +1412,18 @@
 }
 
 .details-list-item {
-    -fx-text-fill: -fx-text-primary;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 14px;
     -fx-font-weight: 600;
     -fx-padding: 0;
     -fx-background-color: transparent;
     -fx-border-color: transparent;
+}
+
+.details-value .text,
+.details-value-token .text,
+.details-list-item .text {
+    -fx-fill: #ffffff;
 }
 
 .details-image-box {

@@ -295,6 +295,7 @@ public class DetailsPanelController implements ModelAware {
     private Label createListItem(String text) {
         Label label = new Label(text);
         label.getStyleClass().add("details-list-item");
+        label.setStyle("-fx-text-fill: #ffffff;");
         label.setWrapText(true);
         label.setMaxWidth(Double.MAX_VALUE);
         return label;
