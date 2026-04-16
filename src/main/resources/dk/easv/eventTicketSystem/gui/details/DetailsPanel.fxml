@@ -17,19 +17,21 @@
         <VBox fx:id="emptyCard"
               styleClass="details-card details-card-fill details-card-empty"
               spacing="10"
-              alignment="TOP_CENTER"
+              alignment="CENTER"
               maxWidth="Infinity"
               maxHeight="Infinity">
             <Label text="Select a row to view details"
                    styleClass="details-title"
                    maxWidth="Infinity"
+                   alignment="CENTER"
+                   textAlignment="CENTER"
                    wrapText="true"/>
             <Label text="Users, customers, events, coordinators, and tickets will appear here."
                    styleClass="muted-text"
                    wrapText="true"
                    maxWidth="Infinity"
-                   alignment="CENTER_LEFT"
-                   textAlignment="LEFT"/>
+                   alignment="CENTER"
+                   textAlignment="CENTER"/>
         </VBox>
 
         <VBox fx:id="userCard"
@@ -39,7 +41,7 @@
               managed="false">
             <Label text="User" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="userScroll"
-                        fitToWidth="true"
+                        fitToWidth="false"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
@@ -54,15 +56,15 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Username:" styleClass="details-label"/>
-                            <Label fx:id="userUsernameValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="userUsernameValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Email:" styleClass="details-label"/>
-                            <Label fx:id="userEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="userEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Phone:" styleClass="details-label"/>
-                            <Label fx:id="userPhoneValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="userPhoneValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Roles:" styleClass="details-label"/>
@@ -70,7 +72,7 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Status:" styleClass="details-label"/>
-                            <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                     </VBox>
                 </content>
@@ -84,7 +86,7 @@
               managed="false">
             <Label text="Customer" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="customerScroll"
-                        fitToWidth="true"
+                        fitToWidth="false"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
@@ -99,11 +101,11 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Email:" styleClass="details-label"/>
-                            <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Customer Since:" styleClass="details-label"/>
-                            <Label fx:id="customerSinceValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="customerSinceValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                     </VBox>
                 </content>
@@ -136,11 +138,11 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Start:" styleClass="details-label"/>
-                            <Label fx:id="eventStartValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="eventStartValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="End:" styleClass="details-label"/>
-                            <Label fx:id="eventEndValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="eventEndValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Guidance:" styleClass="details-label"/>
@@ -152,7 +154,7 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Status:" styleClass="details-label"/>
-                            <Label fx:id="eventStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="eventStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <VBox styleClass="details-row">
                             <Label text="Ticket types:" styleClass="details-label"/>
@@ -170,7 +172,7 @@
               managed="false">
             <Label text="Coordinator" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="coordinatorScroll"
-                        fitToWidth="true"
+                        fitToWidth="false"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
@@ -185,11 +187,11 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Username:" styleClass="details-label"/>
-                            <Label fx:id="coordinatorUsernameValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="coordinatorUsernameValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Email:" styleClass="details-label"/>
-                            <Label fx:id="coordinatorEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="coordinatorEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Roles:" styleClass="details-label"/>
@@ -201,7 +203,7 @@
                         </HBox>
                         <HBox styleClass="details-row">
                             <Label text="Status:" styleClass="details-label"/>
-                            <Label fx:id="coordinatorStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="coordinatorStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
                     </VBox>
                 </content>
@@ -215,7 +217,7 @@
               managed="false">
             <Label text="Ticket" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="ticketScroll"
-                        fitToWidth="true"
+                        fitToWidth="false"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
@@ -230,7 +232,7 @@
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Code" styleClass="details-label"/>
-                            <Label fx:id="ticketCodeValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="ticketCodeValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Customer" styleClass="details-label"/>
@@ -238,19 +240,19 @@
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Email" styleClass="details-label"/>
-                            <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Issued" styleClass="details-label"/>
-                            <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Redeemed at" styleClass="details-label"/>
-                            <Label fx:id="ticketRedeemedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="ticketRedeemedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Status" styleClass="details-label"/>
-                            <Label fx:id="ticketStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity"/>
+                            <Label fx:id="ticketStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </VBox>
                         <VBox styleClass="details-row">
                             <Label text="Barcode" styleClass="details-label"/>

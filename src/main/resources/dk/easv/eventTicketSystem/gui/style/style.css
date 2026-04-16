@@ -1299,7 +1299,7 @@
     -fx-border-color: transparent;
     -fx-border-radius: 0;
     -fx-background-radius: 0;
-    -fx-padding: 16;
+    -fx-padding: 24;
     -fx-spacing: 14;
     -fx-max-width: Infinity;
     -fx-min-height: 0;
@@ -1366,16 +1366,14 @@
 
 .details-content {
     -fx-spacing: 10;
-    -fx-padding: 0 8 0 0;
+    -fx-padding: 0 20 0 20;
 }
 
 .details-title {
     -fx-font-size: 20px;
     -fx-font-weight: 700;
     -fx-text-fill: #ffffff;
-    -fx-alignment: CENTER_LEFT;
-    -fx-text-alignment: LEFT;
-    -fx-padding: 10 0 14 0;
+     -fx-padding: 10 10 10 10;
 }
 
 .details-row {
