@@ -174,12 +174,71 @@
 .dashboard-nav {
     -fx-spacing: 10;
     -fx-alignment: TOP_LEFT;
+    -fx-background-color: transparent;
+}
+
+.dashboard-nav-shell,
+.dashboard-nav-shell:focused {
+    -fx-background-color: #1a0f2e;
+    -fx-border-color: #2d1b4e;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 1;
+    -fx-padding: 16;
+}
+
+.dashboard-nav-shell > .viewport,
+.dashboard-nav-shell > .corner {
+    -fx-background-color: #1a0f2e;
+    -fx-background-radius: 0;
+}
+
+.dashboard-nav-shell > .viewport {
+    -fx-padding: 0;
+}
+
+.dashboard-nav-shell .scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.dashboard-nav-shell .scroll-bar .track,
+.dashboard-nav-shell .scroll-bar .track-background {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.dashboard-nav-shell .scroll-bar .thumb {
+    -fx-background-color: #3d2563;
+    -fx-background-insets: 0;
+}
+
+.dashboard-nav-shell .scroll-bar:vertical {
+    -fx-pref-width: 6;
+}
+
+.dashboard-nav-shell .scroll-bar .increment-button,
+.dashboard-nav-shell .scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+}
+
+.dashboard-nav-shell .scroll-bar .increment-arrow,
+.dashboard-nav-shell .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
 }
 
 .dashboard-nav-title {
     -fx-font-size: 12px;
     -fx-font-weight: 700;
-    -fx-text-fill: -fx-text-secondary;
+    -fx-text-fill: #ffffff;
     -fx-padding: 0 0 6 0;
 }
 
@@ -187,7 +246,7 @@
     -fx-max-width: Infinity;
     -fx-alignment: CENTER_LEFT;
     -fx-padding: 10 12;
-    -fx-text-fill: -fx-text-secondary;
+    -fx-text-fill: #ffffff;
     -fx-background-color: transparent;
     -fx-border-color: -fx-border-subtle;
     -fx-border-width: 1;
@@ -218,6 +277,11 @@
 
 .dashboard-details {
     -fx-min-height: 0;
+    -fx-background-color: #1a0f2e;
+    -fx-border-color: #2d1b4e;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
+    -fx-border-width: 1;
 }
 
 .dashboard-details > * {
@@ -907,13 +971,11 @@
     -fx-faint-focus-color: transparent;
 }
 
-.scroll-pane > .viewport,
-.scroll-pane .panel {
+.scroll-pane > .viewport {
     -fx-background-color: transparent;
-    /*-fx-bg-panel;*/
 }
 .muted-text {
-    -fx-text-fill: #6b7280;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 11px;
 }
 .ticket-print-dialog {
@@ -943,17 +1005,22 @@
 .details-panel {
     -fx-padding: 16;
     -fx-min-height: 0;
+    -fx-background-color: #1a0f2e;
+    -fx-border-color: transparent;
+    -fx-background-radius: 0;
+    -fx-border-radius: 0;
 }
 
 .details-host {
     -fx-min-height: 0;
+    -fx-background-color: #1a0f2e;
 }
 
 .details-card {
-    -fx-background-color: #2d1b4e;
-    -fx-border-color: -fx-border-default;
-    -fx-border-radius: 12;
-    -fx-background-radius: 12;
+    -fx-background-color: #1a0f2e;
+    -fx-border-color: transparent;
+    -fx-border-radius: 0;
+    -fx-background-radius: 0;
     -fx-padding: 16;
     -fx-spacing: 14;
     -fx-max-width: Infinity;
@@ -966,17 +1033,56 @@
 
 .details-card-empty {
     -fx-alignment: CENTER;
+    -fx-spacing: 10;
 }
 
 .details-card-scroll {
-    -fx-background-color: transparent;
+    -fx-background-color: #1a0f2e;
     -fx-border-color: transparent;
     -fx-padding: 0;
 }
 
 .details-card-scroll > .viewport,
 .details-card-scroll > .corner {
+    -fx-background-color: #1a0f2e;
+}
+
+.details-card-scroll .scroll-bar {
     -fx-background-color: transparent;
+}
+
+.details-card-scroll .scroll-bar .track,
+.details-card-scroll .scroll-bar .track-background {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.details-card-scroll .scroll-bar .thumb {
+    -fx-background-color: #3d2563;
+    -fx-background-insets: 0;
+}
+
+.details-card-scroll .scroll-bar:vertical {
+    -fx-pref-width: 6;
+}
+
+.details-card-scroll .scroll-bar .increment-button,
+.details-card-scroll .scroll-bar .decrement-button {
+    -fx-opacity: 0;
+    -fx-padding: 0;
+    -fx-pref-width: 0;
+    -fx-pref-height: 0;
+    -fx-min-width: 0;
+    -fx-min-height: 0;
+    -fx-max-width: 0;
+    -fx-max-height: 0;
+}
+
+.details-card-scroll .scroll-bar .increment-arrow,
+.details-card-scroll .scroll-bar .decrement-arrow {
+    -fx-shape: "";
+    -fx-padding: 0;
 }
 
 .details-content {
@@ -988,6 +1094,9 @@
     -fx-font-size: 16px;
     -fx-font-weight: 700;
     -fx-text-fill: -fx-text-primary;
+    -fx-alignment: CENTER;
+    -fx-text-alignment: CENTER;
+    -fx-padding: 10 0 14 0;
 }
 
 .details-row {
@@ -995,7 +1104,7 @@
 }
 
 .details-label {
-    -fx-text-fill: -fx-text-muted;
+    -fx-text-fill: #ffffff;
     -fx-font-size: 11px;
     -fx-font-weight: 700;
 }

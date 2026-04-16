@@ -1,4 +1,4 @@
-package dk.easv.eventTicketSystem.dal.repository.sql;
+package dk.easv.eventTicketSystem.dal.dao;
 
 import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.dal.repository.TicketRepository;
@@ -13,7 +13,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class SqlTicketRepository implements TicketRepository {
+public final class TicketDAO implements TicketRepository {
 
     private static final String COLUMN_CODE = "code";
     private static final String COLUMN_CUSTOMER = "customer";
@@ -37,9 +37,9 @@ public final class SqlTicketRepository implements TicketRepository {
             JOIN dbo.Events e ON e.id = t.event_id
             """;
 
-    private final SqlDatabase database;
+    private final Database database;
 
-    public SqlTicketRepository(SqlDatabase database) {
+    public TicketDAO(Database database) {
         this.database = database;
     }
 
@@ -94,7 +94,7 @@ public final class SqlTicketRepository implements TicketRepository {
                             String customerName,
                             String customerEmail,
                             String code) throws TicketException {
-        String ticketCode = SqlRepositorySupport.isBlank(code) ? Ticket.generateCode() : code.trim();
+        String ticketCode = DaoSupport.isBlank(code) ? Ticket.generateCode() : code.trim();
 
         try (Connection con = database.getConnection()) {
             ensureEvent(con, eventId);
@@ -108,7 +108,7 @@ public final class SqlTicketRepository implements TicketRepository {
                     VALUES (?, ?, ?, ?, ?, 0, 0)
                     """, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setLong(1, eventId);
-                SqlRepositorySupport.setLongOrNull(stmt, 2, ticketCategoryId);
+                DaoSupport.setLongOrNull(stmt, 2, ticketCategoryId);
                 stmt.setString(3, ticketCode);
                 stmt.setString(4, customerName);
                 stmt.setString(5, customerEmail);
@@ -186,7 +186,7 @@ public final class SqlTicketRepository implements TicketRepository {
             bindParams(stmt, params);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    tickets.add(SqlRepositorySupport.mapTicket(rs));
+                    tickets.add(DaoSupport.mapTicket(rs));
                 }
             }
         } catch (SQLException | RuntimeException e) {
@@ -225,15 +225,15 @@ public final class SqlTicketRepository implements TicketRepository {
     }
 
     private void appendSearch(StringBuilder sql, List<Object> params, String columnKey, String query) {
-        if (SqlRepositorySupport.isBlank(query)) {
+        if (DaoSupport.isBlank(query)) {
             return;
         }
         sql.append(" AND ").append(searchExpression(columnKey)).append(" LIKE ?");
-        params.add(SqlRepositorySupport.likePattern(query));
+        params.add(DaoSupport.likePattern(query));
     }
 
     private String searchExpression(String columnKey) {
-        String normalized = SqlRepositorySupport.safe(columnKey);
+        String normalized = DaoSupport.safe(columnKey);
         return switch (normalized) {
             case COLUMN_CODE -> "LOWER(t.code)";
             case COLUMN_CUSTOMER -> "LOWER(CONCAT(COALESCE(t.customer_name, N''), N' ', COALESCE(t.customer_email, N'')))";

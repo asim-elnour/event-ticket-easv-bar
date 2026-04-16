@@ -1,4 +1,4 @@
-package dk.easv.eventTicketSystem.dal.repository.sql;
+package dk.easv.eventTicketSystem.dal.dao;
 
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.User;
@@ -14,7 +14,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class SqlUserRepository implements UserRepository {
+public final class UserDAO implements UserRepository {
 
     private static final String COLUMN_USERNAME = "username";
     private static final String COLUMN_NAME = "name";
@@ -93,9 +93,9 @@ public final class SqlUserRepository implements UserRepository {
             LEFT JOIN dbo.Events e ON e.id = coordinator.event_id
             """;
 
-    private final SqlDatabase database;
+    private final Database database;
 
-    public SqlUserRepository(SqlDatabase database) {
+    public UserDAO(Database database) {
         this.database = database;
     }
 
@@ -117,7 +117,7 @@ public final class SqlUserRepository implements UserRepository {
             stmt.setLong(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    return SqlRepositorySupport.mapUser(rs);
+                    return DaoSupport.mapUser(rs);
                 }
             }
         } catch (SQLException | RuntimeException e) {
@@ -133,7 +133,7 @@ public final class SqlUserRepository implements UserRepository {
                    AND u.is_locked = 0
                    AND (LOWER(u.username) = ? OR LOWER(u.email) = ?)
                 """;
-        String identifier = SqlRepositorySupport.safe(usernameOrEmail).toLowerCase();
+        String identifier = DaoSupport.safe(usernameOrEmail).toLowerCase();
 
         try (Connection con = database.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
@@ -141,7 +141,7 @@ public final class SqlUserRepository implements UserRepository {
             stmt.setString(2, identifier);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
-                    User user = SqlRepositorySupport.mapUser(rs);
+                    User user = DaoSupport.mapUser(rs);
                     if (PasswordHasher.matches(rawPassword, user.getPassword())) {
                         return user;
                     }
@@ -357,7 +357,7 @@ public final class SqlUserRepository implements UserRepository {
         String sql = "SELECT 1 FROM dbo.Users WHERE LOWER(email) = ?";
         try (Connection con = database.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, SqlRepositorySupport.safe(email).toLowerCase());
+            stmt.setString(1, DaoSupport.safe(email).toLowerCase());
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
             }
@@ -373,7 +373,7 @@ public final class SqlUserRepository implements UserRepository {
             bindParams(stmt, params);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    users.add(SqlRepositorySupport.mapUser(rs));
+                    users.add(DaoSupport.mapUser(rs));
                 }
             }
         } catch (SQLException | RuntimeException e) {
@@ -383,15 +383,15 @@ public final class SqlUserRepository implements UserRepository {
     }
 
     private void appendAdminSearch(StringBuilder sql, List<Object> params, String columnKey, String query) {
-        if (SqlRepositorySupport.isBlank(query)) {
+        if (DaoSupport.isBlank(query)) {
             return;
         }
         sql.append(" AND ").append(adminSearchExpression(columnKey)).append(" LIKE ?");
-        params.add(SqlRepositorySupport.likePattern(query));
+        params.add(DaoSupport.likePattern(query));
     }
 
     private String adminSearchExpression(String columnKey) {
-        String normalized = SqlRepositorySupport.safe(columnKey);
+        String normalized = DaoSupport.safe(columnKey);
         return switch (normalized) {
             case COLUMN_USERNAME -> "LOWER(u.username)";
             case COLUMN_NAME -> "LOWER(CONCAT(u.first_name, N' ', u.last_name))";
@@ -407,15 +407,15 @@ public final class SqlUserRepository implements UserRepository {
                                          String columnKey,
                                          String query,
                                          String coordinatorAlias) {
-        if (SqlRepositorySupport.isBlank(query)) {
+        if (DaoSupport.isBlank(query)) {
             return;
         }
         sql.append(" AND ").append(coordinatorSearchExpression(columnKey, coordinatorAlias)).append(" LIKE ?");
-        params.add(SqlRepositorySupport.likePattern(query));
+        params.add(DaoSupport.likePattern(query));
     }
 
     private String coordinatorSearchExpression(String columnKey, String coordinatorAlias) {
-        String normalized = SqlRepositorySupport.safe(columnKey);
+        String normalized = DaoSupport.safe(columnKey);
         String eventName = "LOWER(COALESCE(e.name, N''))";
         String status = "LOWER(CASE WHEN " + coordinatorAlias + ".id IS NOT NULL AND "
                 + coordinatorAlias + ".removed_at IS NOT NULL THEN N'Removed' ELSE N'Active' END)";

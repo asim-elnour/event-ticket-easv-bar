@@ -1,4 +1,4 @@
-package dk.easv.eventTicketSystem.dal.repository.sql;
+package dk.easv.eventTicketSystem.dal.dao;
 
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
@@ -15,9 +15,9 @@ import java.sql.Types;
 import java.time.LocalDateTime;
 import java.util.List;
 
-final class SqlRepositorySupport {
+final class DaoSupport {
 
-    private SqlRepositorySupport() {
+    private DaoSupport() {
     }
 
     static User mapUser(ResultSet rs) throws SQLException {

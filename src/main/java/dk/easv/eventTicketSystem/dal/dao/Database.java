@@ -1,4 +1,4 @@
-package dk.easv.eventTicketSystem.dal.repository.sql;
+package dk.easv.eventTicketSystem.dal.dao;
 
 import dk.easv.eventTicketSystem.dal.ConnectionManager;
 import dk.easv.eventTicketSystem.util.StartupManager;
@@ -6,13 +6,13 @@ import dk.easv.eventTicketSystem.util.StartupManager;
 import java.sql.Connection;
 import java.sql.SQLException;
 
-public final class SqlDatabase {
+public final class Database {
 
     private final ConnectionManager conMan;
     private final Object initializeLock = new Object();
     private volatile boolean initialized;
 
-    public SqlDatabase(ConnectionManager conMan) {
+    public Database(ConnectionManager conMan) {
         this.conMan = conMan;
     }
 

@@ -16,7 +16,10 @@
     <StackPane VBox.vgrow="ALWAYS" minHeight="0" styleClass="details-host">
         <VBox fx:id="emptyCard"
               styleClass="details-card details-card-fill details-card-empty"
-              spacing="10">
+              spacing="10"
+              alignment="CENTER"
+              maxWidth="Infinity"
+              maxHeight="Infinity">
             <Label text="Select a row to view details"
                    styleClass="details-title"
                    maxWidth="Infinity"
@@ -35,13 +38,13 @@
               spacing="14"
               visible="false"
               managed="false">
-            <Label text="User" styleClass="details-title"/>
+            <Label text="User" styleClass="details-title" maxWidth="Infinity" alignment="CENTER" textAlignment="CENTER"/>
             <ScrollPane fx:id="userScroll"
                         fitToWidth="true"
                         hbarPolicy="NEVER"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
-                        styleClass="scrollable details-card-scroll"
+                        styleClass="details-card-scroll"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -79,13 +82,13 @@
               spacing="14"
               visible="false"
               managed="false">
-            <Label text="Event" styleClass="details-title"/>
+            <Label text="Event" styleClass="details-title" maxWidth="Infinity" alignment="CENTER" textAlignment="CENTER"/>
             <ScrollPane fx:id="eventScroll"
                         fitToWidth="true"
                         hbarPolicy="NEVER"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
-                        styleClass="scrollable details-card-scroll"
+                        styleClass="details-card-scroll"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -131,13 +134,13 @@
               spacing="14"
               visible="false"
               managed="false">
-            <Label text="Coordinator" styleClass="details-title"/>
+            <Label text="Coordinator" styleClass="details-title" maxWidth="Infinity" alignment="CENTER" textAlignment="CENTER"/>
             <ScrollPane fx:id="coordinatorScroll"
                         fitToWidth="true"
                         hbarPolicy="NEVER"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
-                        styleClass="scrollable details-card-scroll"
+                        styleClass="details-card-scroll"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -175,13 +178,13 @@
               spacing="14"
               visible="false"
               managed="false">
-            <Label text="Ticket" styleClass="details-title"/>
+            <Label text="Ticket" styleClass="details-title" maxWidth="Infinity" alignment="CENTER" textAlignment="CENTER"/>
             <ScrollPane fx:id="ticketScroll"
                         fitToWidth="true"
                         hbarPolicy="NEVER"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
-                        styleClass="scrollable details-card-scroll"
+                        styleClass="details-card-scroll"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">

@@ -1,10 +1,10 @@
 package dk.easv.eventTicketSystem.dal.repository;
 
 import dk.easv.eventTicketSystem.dal.ConnectionManager;
-import dk.easv.eventTicketSystem.dal.repository.sql.SqlDatabase;
-import dk.easv.eventTicketSystem.dal.repository.sql.SqlEventRepository;
-import dk.easv.eventTicketSystem.dal.repository.sql.SqlTicketRepository;
-import dk.easv.eventTicketSystem.dal.repository.sql.SqlUserRepository;
+import dk.easv.eventTicketSystem.dal.dao.Database;
+import dk.easv.eventTicketSystem.dal.dao.EventDAO;
+import dk.easv.eventTicketSystem.dal.dao.TicketDAO;
+import dk.easv.eventTicketSystem.dal.dao.UserDAO;
 
 public final class RepositoryProvider {
 
@@ -26,11 +26,11 @@ public final class RepositoryProvider {
     }
 
     private static RepositoryBundle createRepositories() {
-        SqlDatabase database = new SqlDatabase(new ConnectionManager());
+        Database database = new Database(new ConnectionManager());
         return new RepositoryBundle(
-                new SqlUserRepository(database),
-                new SqlEventRepository(database),
-                new SqlTicketRepository(database)
+                new UserDAO(database),
+                new EventDAO(database),
+                new TicketDAO(database)
         );
     }
 

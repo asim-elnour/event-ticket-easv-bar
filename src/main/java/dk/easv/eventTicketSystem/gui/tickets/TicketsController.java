@@ -68,11 +68,15 @@ public class TicketsController implements ModelAware {
 
     private final TicketPrintService ticketPrintService = new TicketPrintService();
     private final ObservableList<CustomerRow> customerRows = FXCollections.observableArrayList();
-    private final ListChangeListener<Ticket> ticketsListener = change -> refreshCustomerTable();
+    private final ListChangeListener<Ticket> ticketsListener = change -> {
+        refreshCustomerTable();
+        restoreSelection();
+    };
 
     private ObservableList<Ticket> observedTickets;
     private AppModel model;
     private StatusBanner statusBanner;
+    private String selectedCustomerKey = "";
 
     @FXML
     public void initialize() {
@@ -88,8 +92,16 @@ public class TicketsController implements ModelAware {
         colCustomerTableTickets.setCellValueFactory(cd -> cd.getValue().ticketCountProperty());
         customersTable.setItems(customerRows);
 
+        customersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldCustomer, newCustomer) -> {
+            if (newCustomer == null) {
+                return;
+            }
+            selectedCustomerKey = customerKey(newCustomer);
+            selectRepresentativeTicketForCustomer(newCustomer);
+        });
+
         ticketsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldTicket, newTicket) -> {
-            if (model != null) {
+            if (model != null && newTicket != null) {
                 model.setSelectedTicket(newTicket);
             }
             updateActionState(newTicket);
@@ -404,6 +416,29 @@ public class TicketsController implements ModelAware {
         new Thread(task, "load-tickets-task").start();
     }
 
+    private void restoreSelection() {
+        if (model == null || ticketsTable == null) {
+            return;
+        }
+
+        Ticket selected = model.getSelectedTicket();
+        if (selected == null || selected.getId() == null) {
+            return;
+        }
+
+        for (Ticket ticket : model.ticketsView()) {
+            if (ticket != null && selected.getId().equals(ticket.getId())) {
+                ticketsTable.getSelectionModel().select(ticket);
+                ticketsTable.scrollTo(ticket);
+                updateActionState(ticket);
+                return;
+            }
+        }
+
+        ticketsTable.getSelectionModel().clearSelection();
+        updateActionState(null);
+    }
+
     private void updateActionState(Ticket selected) {
         boolean hasSelection = selected != null;
         deleteButton.setDisable(!hasSelection);
@@ -499,6 +534,38 @@ public class TicketsController implements ModelAware {
                         .thenComparing(CustomerRow::getEmail, String.CASE_INSENSITIVE_ORDER)
         );
         customerRows.setAll(sortedCustomers);
+        restoreCustomerSelection();
+    }
+
+    private void restoreCustomerSelection() {
+        if (customersTable == null || selectedCustomerKey.isBlank()) {
+            return;
+        }
+
+        for (CustomerRow customer : customerRows) {
+            if (selectedCustomerKey.equals(customerKey(customer))) {
+                customersTable.getSelectionModel().select(customer);
+                customersTable.scrollTo(customer);
+                return;
+            }
+        }
+    }
+
+    private void selectRepresentativeTicketForCustomer(CustomerRow customer) {
+        if (model == null || ticketsTable == null || customer == null) {
+            return;
+        }
+
+        String key = customerKey(customer);
+        for (Ticket ticket : ticketsTable.getItems()) {
+            if (ticket != null && key.equals(customerKey(ticket))) {
+                ticketsTable.getSelectionModel().select(ticket);
+                ticketsTable.scrollTo(ticket);
+                model.setSelectedTicket(ticket);
+                updateActionState(ticket);
+                return;
+            }
+        }
     }
 
     private String cleanText(String value) {
@@ -507,6 +574,22 @@ public class TicketsController implements ModelAware {
 
     private String normalizeKey(String value) {
         return cleanText(value).toLowerCase();
+    }
+
+    private String customerKey(CustomerRow customer) {
+        if (customer == null) {
+            return "";
+        }
+        String email = cleanText(customer.getEmail());
+        return normalizeKey(email.isBlank() ? customer.getName() : email);
+    }
+
+    private String customerKey(Ticket ticket) {
+        if (ticket == null) {
+            return "";
+        }
+        String email = cleanText(ticket.getCustomerEmail());
+        return normalizeKey(email.isBlank() ? ticket.getCustomerName() : email);
     }
 
     private Stage resolveOwnerWindow() {

@@ -76,13 +76,9 @@ public class EventsController implements ModelAware {
         colStart.setCellFactory(col -> new DateTimeCell());
 
         eventsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldEvent, newEvent) -> {
-            if (model != null) {
+            if (model != null && newEvent != null) {
                 model.setSelectedEvent(newEvent);
-                if (newEvent != null) {
-                    model.setCurrentEventId(newEvent.getId());
-                } else {
-                    model.setCurrentEventId(0L);
-                }
+                model.setCurrentEventId(newEvent.getId());
             }
             updateActionState(newEvent);
         });
@@ -132,10 +128,6 @@ public class EventsController implements ModelAware {
         eventsTable.setItems(model.eventsView());
         model.eventsView().comparatorProperty().bind(eventsTable.comparatorProperty());
         updateShowDeletedButtonText();
-
-        eventsTable.getSelectionModel().clearSelection();
-        model.setSelectedEvent(null);
-        model.setCurrentEventId(0L);
 
         if (!modelListenersBound) {
             model.currentCoordinatorIdProperty().addListener((obs, oldValue, newValue) -> {
@@ -340,11 +332,12 @@ public class EventsController implements ModelAware {
             return;
         }
 
-        Event preferred = pickPreferredEvent();
+        Event preferred = pickRememberedEvent();
+        if (preferred == null && model.getSelectedEvent() == null) {
+            preferred = pickPreferredEvent();
+        }
         if (preferred == null) {
             updateActionState(null);
-            model.setSelectedEvent(null);
-            model.setCurrentEventId(0L);
             return;
         }
 
@@ -352,6 +345,24 @@ public class EventsController implements ModelAware {
         model.setSelectedEvent(preferred);
         model.setCurrentEventId(preferred.getId() == null ? 0L : preferred.getId());
         updateActionState(preferred);
+    }
+
+    private Event pickRememberedEvent() {
+        Long selectedId = model.getSelectedEvent() == null ? null : model.getSelectedEvent().getId();
+        long currentEventId = model.getCurrentEventId();
+
+        for (Event event : model.eventsView()) {
+            if (event == null || event.getId() == null) {
+                continue;
+            }
+            if (selectedId != null && selectedId.equals(event.getId())) {
+                return event;
+            }
+            if (selectedId == null && currentEventId > 0 && event.getId() == currentEventId) {
+                return event;
+            }
+        }
+        return null;
     }
 
     private Event pickPreferredEvent() {

@@ -10,6 +10,7 @@ import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -35,6 +36,7 @@ public class EventCoordinatorsController implements ModelAware {
 
     private AppModel model;
     private StatusBanner statusBanner;
+    private boolean modelListenersBound;
 
     @FXML
     public void initialize() {
@@ -68,7 +70,7 @@ public class EventCoordinatorsController implements ModelAware {
         });
 
         usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
-            if (model != null) {
+            if (model != null && newUser != null) {
                 model.setSelectedEventCoordinator(newUser);
             }
             updateActionState(newUser);
@@ -107,8 +109,17 @@ public class EventCoordinatorsController implements ModelAware {
         }
         usersTable.setItems(model.coordinatorUsersView());
         model.coordinatorUsersView().comparatorProperty().bind(usersTable.comparatorProperty());
+        bindModelListeners();
         updateShowDeletedButtonText();
         reloadCoordinatorsForAllEvents();
+    }
+
+    private void bindModelListeners() {
+        if (modelListenersBound) {
+            return;
+        }
+        model.coordinatorUsersView().addListener((ListChangeListener<User>) change -> restoreSelection());
+        modelListenersBound = true;
     }
 
     private void reloadCoordinatorsForAllEvents() {
@@ -130,6 +141,34 @@ public class EventCoordinatorsController implements ModelAware {
                 task.getException() == null ? "Unable to load coordinators." : task.getException().getMessage()));
 
         new Thread(task, "load-coordinators-task").start();
+    }
+
+    private void restoreSelection() {
+        if (model == null || usersTable == null) {
+            return;
+        }
+
+        User selected = model.getSelectedEventCoordinator();
+        if (selected == null || selected.getId() == null) {
+            return;
+        }
+
+        Long selectedEventId = selected.getEventCoordinatorEventId();
+        for (User coordinator : model.coordinatorUsersView()) {
+            if (coordinator == null || !selected.getId().equals(coordinator.getId())) {
+                continue;
+            }
+            Long coordinatorEventId = coordinator.getEventCoordinatorEventId();
+            if (selectedEventId == null || selectedEventId.equals(coordinatorEventId)) {
+                usersTable.getSelectionModel().select(coordinator);
+                usersTable.scrollTo(coordinator);
+                updateActionState(coordinator);
+                return;
+            }
+        }
+
+        usersTable.getSelectionModel().clearSelection();
+        updateActionState(null);
     }
 
     @FXML

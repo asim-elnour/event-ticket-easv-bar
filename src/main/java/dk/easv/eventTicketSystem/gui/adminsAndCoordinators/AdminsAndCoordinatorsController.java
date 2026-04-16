@@ -9,6 +9,7 @@ import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.UserUiText;
 import dk.easv.eventTicketSystem.util.ViewType;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -44,6 +45,7 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
     private AppModel model;
     private StatusBanner statusBanner;
+    private boolean modelListenersBound;
 
     @FXML
     public void initialize() {
@@ -56,7 +58,7 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty(UserUiText.statusLabel(cd.getValue())));
 
         usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
-            if (model != null) {
+            if (model != null && newUser != null) {
                 model.setSelectedUser(newUser);
             }
             updateActionState(newUser);
@@ -105,8 +107,17 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         }
         usersTable.setItems(model.adminAndCoordinatorUsersView());
         model.adminAndCoordinatorUsersView().comparatorProperty().bind(usersTable.comparatorProperty());
+        bindModelListeners();
         updateShowDeletedButtonText();
         reloadUsers();
+    }
+
+    private void bindModelListeners() {
+        if (modelListenersBound) {
+            return;
+        }
+        model.adminAndCoordinatorUsersView().addListener((ListChangeListener<User>) change -> restoreSelection());
+        modelListenersBound = true;
     }
 
     @FXML
@@ -231,6 +242,29 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         ));
 
         new Thread(task, "load-users-task").start();
+    }
+
+    private void restoreSelection() {
+        if (model == null || usersTable == null) {
+            return;
+        }
+
+        User selected = model.getSelectedUser();
+        if (selected == null || selected.getId() == null) {
+            return;
+        }
+
+        for (User user : model.adminAndCoordinatorUsersView()) {
+            if (user != null && selected.getId().equals(user.getId())) {
+                usersTable.getSelectionModel().select(user);
+                usersTable.scrollTo(user);
+                updateActionState(user);
+                return;
+            }
+        }
+
+        usersTable.getSelectionModel().clearSelection();
+        updateActionState(null);
     }
 
     private Optional<User> showUserDialog(User user) {

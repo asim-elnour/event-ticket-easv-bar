@@ -23,13 +23,13 @@
                 hbarPolicy="NEVER"
                 vbarPolicy="AS_NEEDED"
                 pannable="false"
-                styleClass="scrollable"
+                styleClass="dashboard-nav-shell"
                 GridPane.columnIndex="0"
                 GridPane.rowIndex="0"
                 GridPane.hgrow="ALWAYS"
                 GridPane.vgrow="ALWAYS">
         <content>
-            <VBox styleClass="panel dashboard-nav"
+            <VBox styleClass="dashboard-nav"
                   spacing="10" >
                 <Label fx:id="navTitleLabel" styleClass="dashboard-nav-title"/>
                 <ToggleButton fx:id="navUsersButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>

@@ -1,4 +1,4 @@
-package dk.easv.eventTicketSystem.dal.repository.sql;
+package dk.easv.eventTicketSystem.dal.dao;
 
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.TicketCategory;
@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class SqlEventRepository implements EventRepository {
+public final class EventDAO implements EventRepository {
 
     private static final String COLUMN_NAME = "name";
     private static final String COLUMN_LOCATION = "location";
@@ -48,9 +48,9 @@ public final class SqlEventRepository implements EventRepository {
             ) coordinator
             """;
 
-    private final SqlDatabase database;
+    private final Database database;
 
-    public SqlEventRepository(SqlDatabase database) {
+    public EventDAO(Database database) {
         this.database = database;
     }
 
@@ -230,7 +230,7 @@ public final class SqlEventRepository implements EventRepository {
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
                     long eventId = rs.getLong("id");
-                    events.add(SqlRepositorySupport.mapEvent(rs, loadTicketCategories(con, eventId)));
+                    events.add(DaoSupport.mapEvent(rs, loadTicketCategories(con, eventId)));
                 }
             }
         } catch (SQLException | RuntimeException e) {
@@ -264,9 +264,9 @@ public final class SqlEventRepository implements EventRepository {
         stmt.setString(2, event.getLocation());
         stmt.setString(3, event.getLocationGuidance());
         stmt.setString(4, event.getNotes());
-        SqlRepositorySupport.setTimestampOrNull(stmt, 5, event.getStartTime());
-        SqlRepositorySupport.setTimestampOrNull(stmt, 6, event.getEndTime());
-        SqlRepositorySupport.setLongOrNull(stmt, 7, event.getCreatedByUserId());
+        DaoSupport.setTimestampOrNull(stmt, 5, event.getStartTime());
+        DaoSupport.setTimestampOrNull(stmt, 6, event.getEndTime());
+        DaoSupport.setLongOrNull(stmt, 7, event.getCreatedByUserId());
         stmt.setInt(8, event.getCapacity());
         stmt.setBoolean(9, event.isDeleted());
     }
@@ -346,7 +346,7 @@ public final class SqlEventRepository implements EventRepository {
             stmt.setLong(1, eventId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    categories.add(SqlRepositorySupport.mapTicketCategory(rs));
+                    categories.add(DaoSupport.mapTicketCategory(rs));
                 }
             }
         }
@@ -399,15 +399,15 @@ public final class SqlEventRepository implements EventRepository {
     }
 
     private void appendSearch(StringBuilder sql, List<Object> params, String columnKey, String query) {
-        if (SqlRepositorySupport.isBlank(query)) {
+        if (DaoSupport.isBlank(query)) {
             return;
         }
         sql.append(" AND ").append(searchExpression(columnKey)).append(" LIKE ?");
-        params.add(SqlRepositorySupport.likePattern(query));
+        params.add(DaoSupport.likePattern(query));
     }
 
     private String searchExpression(String columnKey) {
-        String normalized = SqlRepositorySupport.safe(columnKey);
+        String normalized = DaoSupport.safe(columnKey);
         return switch (normalized) {
             case COLUMN_NAME -> "LOWER(e.name)";
             case COLUMN_LOCATION -> "LOWER(CONCAT(COALESCE(e.location, N''), N' ', COALESCE(e.location_guidance, N'')))";
