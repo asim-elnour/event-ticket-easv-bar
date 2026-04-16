@@ -21,10 +21,11 @@
             fx:controller="dk.easv.eventTicketSystem.gui.events.EventDialogController">
 
     <center>
-        <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scrollable">
+        <ScrollPane fitToWidth="true" fitToHeight="false" 
+        hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
+         styleClass="scrollable">
             <content>
-                <VBox styleClass="dialog-content" spacing="14" VBox.vgrow="NEVER">
-                    <HBox alignment="TOP_CENTER" fillHeight="false">
+                <VBox alignment="TOP_CENTER" styleClass="dialog-content" spacing="14" VBox.vgrow="NEVER">
                         <VBox spacing="14" prefWidth="820" maxWidth="820" minWidth="620">
                             <GridPane styleClass="dialog-grid dialog-form-grid" alignment="CENTER_LEFT" maxWidth="Infinity" style="-fx-vgap: 6;">
                                 <columnConstraints>
@@ -90,7 +91,6 @@
                                 </HBox>
                             </VBox>
                         </VBox>
-                    </HBox>
                 </VBox>
             </content>
         </ScrollPane>
