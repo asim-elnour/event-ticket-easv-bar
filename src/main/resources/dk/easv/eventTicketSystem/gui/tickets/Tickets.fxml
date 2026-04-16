@@ -8,46 +8,69 @@
             xmlns:fx="http://javafx.com/fxml">
 
     <VBox  styleClass="page-content"
+          minHeight="0"
           AnchorPane.topAnchor="0.0"
           AnchorPane.rightAnchor="0.0"
           AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0">
 
-        <HBox styleClass="section-header">
-            <Label styleClass="section-label" text="Tickets"/>
-            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="showDeletedButton" text="Hide Deleted Tickets" onAction="#onToggleShowDeletedTickets"/>
-        </HBox>
+        <!-- Header: H-scroll only -->
+        <ScrollPane fitToWidth="true" fitToHeight="false"
+                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
+                    minHeight="50"
+                    styleClass="row-scroll">
+            <content>
+                <HBox styleClass="section-header">
+                    <Label styleClass="section-label" text="Tickets" minWidth="-Infinity"/>
+                    <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label" minWidth="-Infinity"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="showDeletedButton" text="Hide Deleted Tickets" minWidth="-Infinity" onAction="#onToggleShowDeletedTickets"/>
+                </HBox>
+            </content>
+        </ScrollPane>
 
-        <TableView fx:id="ticketsTable" styleClass="data-view scrollable" minHeight="150" VBox.vgrow="ALWAYS">
+        <!-- Tables: fill remaining space, both scroll internally H+V -->
+        <SplitPane orientation="VERTICAL" dividerPositions="0.6" VBox.vgrow="ALWAYS">
+            <items>
+                <VBox minHeight="80">
+                    <TableView fx:id="ticketsTable" styleClass="data-view scrollable" minHeight="80" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colCode" minWidth="180" text="Code"/>
+                            <TableColumn fx:id="colCustomerName" minWidth="140" text="Customer"/>
+                            <TableColumn fx:id="colEventName" minWidth="160" text="Event"/>
+                            <TableColumn fx:id="colStatus" minWidth="110" text="Status"/>
+                        </columns>
+                    </TableView>
+                </VBox>
 
-            <columns>
-                <TableColumn fx:id="colCode" minWidth="180" text="Code"/>
-                <TableColumn fx:id="colCustomerName" minWidth="140" text="Customer"/>
-                <TableColumn fx:id="colEventName" minWidth="160" text="Event"/>
-                <TableColumn fx:id="colStatus" minWidth="110" text="Status"/>
-            </columns>
+                <VBox spacing="12" minHeight="0">
+                    <Label styleClass="section-label" text="Customers"/>
+                    <TableView fx:id="customersTable" styleClass="data-view scrollable" minHeight="80" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="colCustomerTableName" minWidth="180" text="Name"/>
+                            <TableColumn fx:id="colCustomerTableEmail" minWidth="220" text="Email"/>
+                            <TableColumn fx:id="colCustomerTableTickets" minWidth="110" text="Tickets"/>
+                        </columns>
+                    </TableView>
+                </VBox>
+            </items>
+        </SplitPane>
 
-        </TableView>
-
-        <HBox styleClass="actions-row">
-            <Button text="Add Ticket" HBox.hgrow="ALWAYS" onAction="#onAddTicket"/>
-            <Button fx:id="redeemButton" text="Redeem Ticket" HBox.hgrow="ALWAYS" onAction="#onRedeemTicket"/>
-            <Button fx:id="deleteButton" text="Delete Ticket" HBox.hgrow="ALWAYS" onAction="#onDeleteTicket"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="printButton" text="Print Ticket" HBox.hgrow="ALWAYS" onAction="#onPrintTicket"/>
-        </HBox>
-
-        <Label styleClass="section-label" text="Customers"/>
-
-        <TableView fx:id="customersTable" styleClass="data-view scrollable" minHeight="160" prefHeight="180">
-            <columns>
-                <TableColumn fx:id="colCustomerTableName" minWidth="180" text="Name"/>
-                <TableColumn fx:id="colCustomerTableEmail" minWidth="220" text="Email"/>
-                <TableColumn fx:id="colCustomerTableTickets" minWidth="110" text="Tickets"/>
-            </columns>
-        </TableView>
+        <!-- Actions: pinned at bottom, H-scroll only -->
+        <ScrollPane fitToWidth="true" fitToHeight="false"
+                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
+                    minHeight="50"
+                    styleClass="row-scroll">
+            <content>
+                <HBox styleClass="actions-row">
+                    <Button text="Add Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onAddTicket"/>
+                    <Button fx:id="redeemButton" text="Redeem Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onRedeemTicket"/>
+                    <Button fx:id="deleteButton" text="Delete Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onDeleteTicket"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button fx:id="printButton" text="Print Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onPrintTicket"/>
+                </HBox>
+            </content>
+        </ScrollPane>
 
     </VBox>
 

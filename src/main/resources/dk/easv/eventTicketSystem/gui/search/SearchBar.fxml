@@ -14,7 +14,7 @@
             fitToWidth="true"
             fitToHeight="true"
 
-            hbarPolicy="AS_NEEDED"
+            hbarPolicy="NEVER"
             vbarPolicy="NEVER"
             pannable="false"
             
@@ -24,9 +24,9 @@
                 <Region HBox.hgrow="ALWAYS"/>
                 
                 <HBox fx:id="centerControls" alignment="CENTER" styleClass="top-bar-center">
-                    <ChoiceBox fx:id="searchScopeChoice" minWidth="170.0"/>
-                    <TextField fx:id="filterField" minWidth="260.0" prefWidth="280.0" promptText="Search..."/>
-                    <Button fx:id="clearFilterButton" minWidth="40.0" prefWidth="40.0" text="X"/>
+                    <ChoiceBox fx:id="searchScopeChoice"/>
+                    <TextField fx:id="filterField" prefWidth="280.0" promptText="Search..."/>
+                    <Button fx:id="clearFilterButton" prefWidth="40.0" text="X"/>
                 </HBox>
                 
                 <Region HBox.hgrow="ALWAYS"/>

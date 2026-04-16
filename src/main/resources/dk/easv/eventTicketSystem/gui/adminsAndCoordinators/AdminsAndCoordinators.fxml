@@ -8,37 +8,68 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="dk.easv.eventTicketSystem.gui.adminsAndCoordinators.AdminsAndCoordinatorsController">
 
-    <VBox styleClass="page-content"
-          AnchorPane.topAnchor="0.0"
-          AnchorPane.rightAnchor="0.0"
-          AnchorPane.bottomAnchor="0.0"
-          AnchorPane.leftAnchor="0.0"
-        >
-        <HBox styleClass="section-header">
-            <Label fx:id="sectionTitleLabel" styleClass="section-label" text="Users"/>
-            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="showDeletedButton" text="Hide Deleted Users" onAction="#onToggleShowDeletedUsers"/>
-        </HBox>
+    <BorderPane styleClass="page-content"
+                minHeight="0"
+                AnchorPane.topAnchor="0.0"
+                AnchorPane.rightAnchor="0.0"
+                AnchorPane.bottomAnchor="0.0"
+                AnchorPane.leftAnchor="0.0">
 
-        <TableView fx:id="usersTable" styleClass="data-view scrollable users-table"
-                   VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
-                <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
-                <TableColumn fx:id="colRole" minWidth="100" text="Role"/>
-                <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
-            </columns>
+        <top>
+            <VBox style="-fx-padding: 0 0 16 0;">
+                <ScrollPane fitToWidth="true"
+                            fitToHeight="false"
+                            hbarPolicy="AS_NEEDED"
+                            vbarPolicy="NEVER"
+                            minHeight="50"
+                            pannable="false"
+                            styleClass="row-scroll">
+                    <content>
+                        <HBox styleClass="section-header">
+                            <Label fx:id="sectionTitleLabel" styleClass="section-label" text="Users" minWidth="-Infinity"/>
+                            <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label" minWidth="-Infinity"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="showDeletedButton" text="Hide Deleted Users" minWidth="-Infinity" onAction="#onToggleShowDeletedUsers"/>
+                        </HBox>
+                    </content>
+                </ScrollPane>
+            </VBox>
+        </top>
 
-        </TableView>
+        <center>
+            <TableView fx:id="usersTable" styleClass="data-view scrollable users-table"
+                       minHeight="80"
+                       BorderPane.alignment="CENTER">
+                <columns>
+                    <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
+                    <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
+                    <TableColumn fx:id="colRole" minWidth="100" text="Role"/>
+                    <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
+                </columns>
+            </TableView>
+        </center>
 
-        <HBox styleClass="actions-row">
-            <Button fx:id="addButton" text="Add User" HBox.hgrow="ALWAYS" onAction="#onAddUser"/>
-            <Button fx:id="editButton" text="Edit User" HBox.hgrow="ALWAYS" onAction="#onEditUser"/>
-            <Region HBox.hgrow="ALWAYS"/>
-            <Button fx:id="deactivateButton" text="Deactivate User" HBox.hgrow="ALWAYS" onAction="#onDeactivateUser"/>
-        </HBox>
+        <bottom>
+            <VBox style="-fx-padding: 16 0 0 0;">
+                <ScrollPane fitToWidth="true"
+                            fitToHeight="false"
+                            hbarPolicy="AS_NEEDED"
+                            vbarPolicy="NEVER"
+                            minHeight="50"
+                            pannable="false"
+                            styleClass="row-scroll">
+                    <content>
+                        <HBox styleClass="actions-row">
+                            <Button fx:id="addButton" text="Add User" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onAddUser"/>
+                            <Button fx:id="editButton" text="Edit User" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onEditUser"/>
+                            <Region HBox.hgrow="ALWAYS"/>
+                            <Button fx:id="deactivateButton" text="Deactivate User" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onDeactivateUser"/>
+                        </HBox>
+                    </content>
+                </ScrollPane>
+            </VBox>
+        </bottom>
 
-    </VBox>
+    </BorderPane>
 
 </AnchorPane>

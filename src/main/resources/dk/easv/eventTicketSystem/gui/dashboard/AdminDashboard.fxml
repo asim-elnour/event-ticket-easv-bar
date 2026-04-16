@@ -18,48 +18,71 @@
         <RowConstraints vgrow="ALWAYS"/>
     </rowConstraints>
 
+    <VBox styleClass="dashboard-nav-shell"
+          spacing="8"
+          GridPane.columnIndex="0"
+          GridPane.rowIndex="0"
+          GridPane.hgrow="ALWAYS"
+          GridPane.vgrow="ALWAYS">
+        <Label fx:id="navTitleLabel" styleClass="dashboard-nav-title"/>
+        <ScrollPane fitToWidth="false"
+                    fitToHeight="false"
+                    hbarPolicy="AS_NEEDED"
+                    vbarPolicy="AS_NEEDED"
+                    pannable="false"
+                    styleClass="dashboard-nav-scroll"
+                    VBox.vgrow="ALWAYS">
+            <content>
+                <VBox styleClass="dashboard-nav"
+                      spacing="10"
+                      minHeight="0"
+                      maxWidth="Infinity">
+                    <ToggleButton fx:id="navUsersButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
+                    <ToggleButton fx:id="navEventsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
+                    <ToggleButton fx:id="navEventCoordinatorsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
+                    <ToggleButton fx:id="navTicketsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
+                    <Region VBox.vgrow="ALWAYS"/>
+                </VBox>
+            </content>
+        </ScrollPane>
+    </VBox>
+
     <ScrollPane fitToWidth="true"
                 fitToHeight="true"
                 hbarPolicy="NEVER"
-                vbarPolicy="AS_NEEDED"
+                vbarPolicy="NEVER"
                 pannable="false"
-                styleClass="dashboard-nav-shell"
-                GridPane.columnIndex="0"
+                styleClass="dashboard-center-shell"
+                GridPane.columnIndex="1"
                 GridPane.rowIndex="0"
                 GridPane.hgrow="ALWAYS"
                 GridPane.vgrow="ALWAYS">
         <content>
-            <VBox styleClass="dashboard-nav"
-                  spacing="10"
-                  minHeight="0">
-                <Label fx:id="navTitleLabel" styleClass="dashboard-nav-title"/>
-                <ToggleButton fx:id="navUsersButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
-                <ToggleButton fx:id="navEventsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
-                <ToggleButton fx:id="navEventCoordinatorsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
-                <ToggleButton fx:id="navTicketsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
-                <Region VBox.vgrow="ALWAYS"/>
-            </VBox>
+            <StackPane fx:id="centerWorkspace"
+                       styleClass="dashboard-center"
+                       minWidth="0"
+                       minHeight="0">
+                <fx:include fx:id="usersPanel" source="/dk/easv/eventTicketSystem/gui/adminsAndCoordinators/AdminsAndCoordinators.fxml"/>
+                <fx:include fx:id="eventsPanel" source="/dk/easv/eventTicketSystem/gui/events/Events.fxml"/>
+                <fx:include fx:id="eventCoordinatorsPanel" source="/dk/easv/eventTicketSystem/gui/eventCoordinators/EventCoordinators.fxml"/>
+                <fx:include fx:id="ticketsPanel" source="/dk/easv/eventTicketSystem/gui/tickets/Tickets.fxml"/>
+            </StackPane>
         </content>
     </ScrollPane>
 
-    <StackPane fx:id="centerWorkspace"
-               styleClass="dashboard-center"
-               GridPane.columnIndex="1"
-               GridPane.rowIndex="0"
-               GridPane.hgrow="ALWAYS"
-               GridPane.vgrow="ALWAYS">
-        <fx:include fx:id="usersPanel" source="/dk/easv/eventTicketSystem/gui/adminsAndCoordinators/AdminsAndCoordinators.fxml"/>
-        <fx:include fx:id="eventsPanel" source="/dk/easv/eventTicketSystem/gui/events/Events.fxml"/>
-        <fx:include fx:id="eventCoordinatorsPanel" source="/dk/easv/eventTicketSystem/gui/eventCoordinators/EventCoordinators.fxml"/>
-        <fx:include fx:id="ticketsPanel" source="/dk/easv/eventTicketSystem/gui/tickets/Tickets.fxml"/>
-    </StackPane>
-
-    <StackPane styleClass="dashboard-details"
-               GridPane.columnIndex="2"
-               GridPane.rowIndex="0"
-               GridPane.hgrow="ALWAYS"
-               GridPane.vgrow="ALWAYS">
-        <fx:include source="/dk/easv/eventTicketSystem/gui/details/DetailsPanel.fxml"/>
-    </StackPane>
+    <ScrollPane fitToWidth="true"
+                fitToHeight="true"
+                hbarPolicy="NEVER"
+                vbarPolicy="NEVER"
+                pannable="false"
+                styleClass="dashboard-details"
+                GridPane.columnIndex="2"
+                GridPane.rowIndex="0"
+                GridPane.hgrow="ALWAYS"
+                GridPane.vgrow="ALWAYS">
+        <content>
+            <fx:include source="/dk/easv/eventTicketSystem/gui/details/DetailsPanel.fxml"/>
+        </content>
+    </ScrollPane>
 
 </GridPane>

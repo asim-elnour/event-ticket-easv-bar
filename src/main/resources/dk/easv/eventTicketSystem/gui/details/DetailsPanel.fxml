@@ -10,8 +10,7 @@
       xmlns:fx="http://javafx.com/fxml/1"
       fx:controller="dk.easv.eventTicketSystem.gui.details.DetailsPanelController"
       styleClass="panel details-panel"
-      spacing="0"
-      minHeight="0">
+      spacing="0">
 
     <StackPane VBox.vgrow="ALWAYS" minHeight="0" styleClass="details-host">
         <VBox fx:id="emptyCard"
@@ -45,6 +44,7 @@
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
                         styleClass="details-card-scroll"
+                        minHeight="0"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -89,6 +89,7 @@
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
                         styleClass="details-card-scroll"
+                        minHeight="0"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -141,6 +142,7 @@
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
                         styleClass="details-card-scroll"
+                        minHeight="0"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
@@ -185,6 +187,7 @@
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
                         styleClass="details-card-scroll"
+                        minHeight="0"
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
