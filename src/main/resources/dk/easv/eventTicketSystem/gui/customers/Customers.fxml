@@ -18,7 +18,7 @@
           AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
         <VBox style="-fx-padding: 0 0 16 0;">
-            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="84" prefHeight="84" pannable="false"
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
                     <HBox styleClass="section-header">

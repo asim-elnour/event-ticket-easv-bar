@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
@@ -48,30 +49,30 @@
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
-                        <VBox styleClass="details-row">
-                            <Label text="Name" styleClass="details-label"/>
-                            <Label fx:id="userNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Username" styleClass="details-label"/>
-                            <Label fx:id="userUsernameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Email" styleClass="details-label"/>
-                            <Label fx:id="userEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Phone" styleClass="details-label"/>
-                            <Label fx:id="userPhoneValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Roles" styleClass="details-label"/>
-                            <Label fx:id="userRolesValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Status" styleClass="details-label"/>
-                            <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Name:" styleClass="details-label"/>
+                            <Label fx:id="userNameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Username:" styleClass="details-label"/>
+                            <Label fx:id="userUsernameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Email:" styleClass="details-label"/>
+                            <Label fx:id="userEmailValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Phone:" styleClass="details-label"/>
+                            <Label fx:id="userPhoneValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Roles:" styleClass="details-label"/>
+                            <Label fx:id="userRolesValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Status:" styleClass="details-label"/>
+                            <Label fx:id="userStatusValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
                     </VBox>
                 </content>
             </ScrollPane>
@@ -93,18 +94,18 @@
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
-                        <VBox styleClass="details-row">
-                            <Label text="Name" styleClass="details-label"/>
-                            <Label fx:id="customerNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Email" styleClass="details-label"/>
-                            <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Customer Since" styleClass="details-label"/>
-                            <Label fx:id="customerSinceValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Name:" styleClass="details-label"/>
+                            <Label fx:id="customerNameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Email:" styleClass="details-label"/>
+                            <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Customer Since:" styleClass="details-label"/>
+                            <Label fx:id="customerSinceValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
                     </VBox>
                 </content>
             </ScrollPane>
@@ -126,36 +127,36 @@
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
+                        <HBox styleClass="details-row">
+                            <Label text="Name:" styleClass="details-label"/>
+                            <Label fx:id="eventNameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Location:" styleClass="details-label"/>
+                            <Label fx:id="eventLocationValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Start:" styleClass="details-label"/>
+                            <Label fx:id="eventStartValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="End:" styleClass="details-label"/>
+                            <Label fx:id="eventEndValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Guidance:" styleClass="details-label"/>
+                            <Label fx:id="eventGuidanceValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Notes:" styleClass="details-label"/>
+                            <Label fx:id="eventNotesValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Status:" styleClass="details-label"/>
+                            <Label fx:id="eventStatusValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
                         <VBox styleClass="details-row">
-                            <Label text="Name" styleClass="details-label"/>
-                            <Label fx:id="eventNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Location" styleClass="details-label"/>
-                            <Label fx:id="eventLocationValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Start" styleClass="details-label"/>
-                            <Label fx:id="eventStartValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="End" styleClass="details-label"/>
-                            <Label fx:id="eventEndValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Guidance" styleClass="details-label"/>
-                            <Label fx:id="eventGuidanceValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Notes" styleClass="details-label"/>
-                            <Label fx:id="eventNotesValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Status" styleClass="details-label"/>
-                            <Label fx:id="eventStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Ticket types" styleClass="details-label"/>
+                            <Label text="Ticket types:" styleClass="details-label"/>
                             <VBox fx:id="eventTicketTypesBox" styleClass="details-list" spacing="6"/>
                         </VBox>
                     </VBox>
@@ -179,30 +180,30 @@
                         VBox.vgrow="ALWAYS">
                 <content>
                     <VBox styleClass="details-content" spacing="10">
-                        <VBox styleClass="details-row">
-                            <Label text="Name" styleClass="details-label"/>
-                            <Label fx:id="coordinatorNameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Username" styleClass="details-label"/>
-                            <Label fx:id="coordinatorUsernameValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Email" styleClass="details-label"/>
-                            <Label fx:id="coordinatorEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Roles" styleClass="details-label"/>
-                            <Label fx:id="coordinatorRolesValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Assigned event" styleClass="details-label"/>
-                            <Label fx:id="coordinatorEventValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Status" styleClass="details-label"/>
-                            <Label fx:id="coordinatorStatusValue" text="Not set" styleClass="details-value" wrapText="true"/>
-                        </VBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Name:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorNameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Username:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorUsernameValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Email:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorEmailValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Roles:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorRolesValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Assigned event:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorEventValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Status:" styleClass="details-label"/>
+                            <Label fx:id="coordinatorStatusValue" text="Not set" styleClass="details-value" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        </HBox>
                     </VBox>
                 </content>
             </ScrollPane>

@@ -274,15 +274,17 @@ public class DetailsPanelController implements ModelAware {
             return;
         }
 
+        int itemNumber = 1;
         for (TicketCategory ticketType : ticketTypes) {
             if (ticketType == null) {
                 continue;
             }
-            String item = safeText(ticketType.getName())
-                    + " | Price: " + formatMoney(ticketType.getPrice())
-                    + " | Seats: " + formatNumber(ticketType.getSeatCount())
-                    + " | Status: " + (ticketType.isDeleted() ? "Deleted" : "Active");
+            String item = itemNumber + ". " + safeText(ticketType.getName())
+                    + "\n    Price: " + formatMoney(ticketType.getPrice())
+                    + "\n    Seats: " + formatNumber(ticketType.getSeatCount())
+                    + "\n    Status: " + (ticketType.isDeleted() ? "Deleted" : "Available");
             eventTicketTypesBox.getChildren().add(createListItem(item));
+            itemNumber++;
         }
 
         if (eventTicketTypesBox.getChildren().isEmpty()) {

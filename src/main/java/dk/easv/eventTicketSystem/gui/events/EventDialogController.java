@@ -97,6 +97,7 @@ public class EventDialogController {
     private boolean saved;
     private long coordinatorId;
     private boolean showDeletedTicketTypes = true;
+    private boolean validationFeedbackEnabled;
 
     @FXML
     public void initialize() {
@@ -126,6 +127,7 @@ public class EventDialogController {
         btnDeleteTicketType.setDisable(true);
         updateTicketTypeButtonState(null);
         updateTicketTypeFilter();
+        clearValidationMessages();
 
         setupLiveValidation();
     }
@@ -136,6 +138,7 @@ public class EventDialogController {
 
     public void setEvent(Event event) {
         this.event = event;
+        validationFeedbackEnabled = false;
         if (event != null) {
             txtName.setText(event.getName());
             txtLocation.setText(event.getLocation());
@@ -157,7 +160,7 @@ public class EventDialogController {
             txtCapacity.setText(Integer.toString(event.getCapacity()));
             ticketTypes.setAll(loadTicketTypesForEvent(event));
             updateTicketTypeFilter();
-            validateAll();
+            clearValidationMessages();
             return;
         }
 
@@ -172,7 +175,7 @@ public class EventDialogController {
         txtCapacity.setText(Integer.toString(EventValidationRules.MIN_CAPACITY));
         ticketTypes.clear();
         updateTicketTypeFilter();
-        validateAll();
+        clearValidationMessages();
     }
 
     public Event getEvent() {
@@ -269,6 +272,7 @@ public class EventDialogController {
 
     @FXML
     private void onSave() {
+        validationFeedbackEnabled = true;
         if (!validateAll()) {
             return;
         }
@@ -377,97 +381,86 @@ public class EventDialogController {
     private boolean validateName() {
         String value = EventValidationRules.normalizeRequired(txtName.getText());
         if (value.isEmpty()) {
-            errName.setText("Name is required.");
-            errName.setVisible(true);
+            showValidationMessage(errName, "Name is required.");
             return false;
         }
         if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
-            errName.setText("Name too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
-            errName.setVisible(true);
+            showValidationMessage(errName, "Name too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
             return false;
         }
-        errName.setVisible(false);
+        hideValidationMessage(errName);
         return true;
     }
 
     private boolean validateLocation() {
         String value = EventValidationRules.normalizeRequired(txtLocation.getText());
         if (value.isEmpty()) {
-            errLocation.setText("Location is required.");
-            errLocation.setVisible(true);
+            showValidationMessage(errLocation, "Location is required.");
             return false;
         }
         if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
-            errLocation.setText("Location too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
-            errLocation.setVisible(true);
+            showValidationMessage(errLocation, "Location too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
             return false;
         }
-        errLocation.setVisible(false);
+        hideValidationMessage(errLocation);
         return true;
     }
 
     private boolean validateStartDate() {
         if (dpStartDate.getValue() == null) {
-            errStartDate.setText("Start date is required.");
-            errStartDate.setVisible(true);
+            showValidationMessage(errStartDate, "Start date is required.");
             return false;
         }
-        errStartDate.setVisible(false);
+        hideValidationMessage(errStartDate);
         return true;
     }
 
     private boolean validateStartTime() {
         String value = txtStartTime.getText();
         if (value == null || value.isBlank()) {
-            errStartTime.setText("Start time is required.");
-            errStartTime.setVisible(true);
+            showValidationMessage(errStartTime, "Start time is required.");
             return false;
         }
         if (!isValidTime(value)) {
-            errStartTime.setText("Use HH:mm format.");
-            errStartTime.setVisible(true);
+            showValidationMessage(errStartTime, "Use HH:mm format.");
             return false;
         }
-        errStartTime.setVisible(false);
+        hideValidationMessage(errStartTime);
         return true;
     }
 
     private boolean validateEndDate() {
         LocalDate date = dpEndDate.getValue();
         if (date == null && !isBlank(txtEndTime)) {
-            errEndDate.setText("End date is required when time is set.");
-            errEndDate.setVisible(true);
+            showValidationMessage(errEndDate, "End date is required when time is set.");
             return false;
         }
-        errEndDate.setVisible(false);
+        hideValidationMessage(errEndDate);
         return true;
     }
 
     private boolean validateEndTime() {
         String value = txtEndTime.getText();
         if ((value == null || value.isBlank()) && dpEndDate.getValue() != null) {
-            errEndTime.setText("End time is required when date is set.");
-            errEndTime.setVisible(true);
+            showValidationMessage(errEndTime, "End time is required when date is set.");
             return false;
         }
         if (value != null && !value.isBlank() && !isValidTime(value)) {
-            errEndTime.setText("Use HH:mm format.");
-            errEndTime.setVisible(true);
+            showValidationMessage(errEndTime, "Use HH:mm format.");
             return false;
         }
         if (!isEndRangeValid()) {
-            errEndTime.setText("End date and time must be after the start date and time.");
-            errEndTime.setVisible(true);
+            showValidationMessage(errEndTime, "End date and time must be after the start date and time.");
             return false;
         }
-        errEndTime.setVisible(false);
+        hideValidationMessage(errEndTime);
         return true;
     }
 
     private boolean validateDateRange() {
         if (!hasEndInput()) {
             if (errEndTime != null && "End date and time must be after the start date and time.".equals(errEndTime.getText())) {
-                errEndTime.setVisible(false);
+                hideValidationMessage(errEndTime);
             }
             return true;
         }
@@ -475,12 +468,11 @@ public class EventDialogController {
             return false;
         }
         if (!isEndRangeValid()) {
-            errEndTime.setText("End date and time must be after the start date and time.");
-            errEndTime.setVisible(true);
+            showValidationMessage(errEndTime, "End date and time must be after the start date and time.");
             return false;
         }
         if ("End date and time must be after the start date and time.".equals(errEndTime.getText())) {
-            errEndTime.setVisible(false);
+            hideValidationMessage(errEndTime);
         }
         return true;
     }
@@ -488,22 +480,19 @@ public class EventDialogController {
     private boolean validateCapacity() {
         String rawValue = txtCapacity.getText();
         if (rawValue == null || rawValue.isBlank()) {
-            errCapacity.setText("Capacity is required.");
-            errCapacity.setVisible(true);
+            showValidationMessage(errCapacity, "Capacity is required.");
             return false;
         }
         Integer capacity = parseCapacityOrNull();
         if (capacity == null) {
-            errCapacity.setText("Capacity must be a whole number.");
-            errCapacity.setVisible(true);
+            showValidationMessage(errCapacity, "Capacity must be a whole number.");
             return false;
         }
         if (capacity < EventValidationRules.MIN_CAPACITY) {
-            errCapacity.setText("Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".");
-            errCapacity.setVisible(true);
+            showValidationMessage(errCapacity, "Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".");
             return false;
         }
-        errCapacity.setVisible(false);
+        hideValidationMessage(errCapacity);
         return true;
     }
 
@@ -527,26 +516,24 @@ public class EventDialogController {
     private boolean validateTicketTypes() {
         int activeTicketTypes = EventValidationRules.countActiveTicketTypes(ticketTypes);
         if (activeTicketTypes == 0) {
-            errTicketTypes.setText("At least one active ticket type is required.");
-            errTicketTypes.setVisible(true);
+            showValidationMessage(errTicketTypes, "At least one active ticket type is required.");
             return false;
         }
 
         Integer capacity = parseCapacityOrNull();
         if (capacity == null || capacity < EventValidationRules.MIN_CAPACITY) {
-            errTicketTypes.setVisible(false);
+            hideValidationMessage(errTicketTypes);
             return true;
         }
 
         int activeSeatCount = getActiveSeatCount();
         if (activeSeatCount != capacity) {
-            errTicketTypes.setText("Ticket type seats must match capacity exactly (allocated "
+            showValidationMessage(errTicketTypes, "Ticket type seats must match capacity exactly (allocated "
                     + activeSeatCount + " / capacity " + capacity + ").");
-            errTicketTypes.setVisible(true);
             return false;
         }
 
-        errTicketTypes.setVisible(false);
+        hideValidationMessage(errTicketTypes);
         return true;
     }
 
@@ -658,5 +645,34 @@ public class EventDialogController {
         } else {
             btnDeleteTicketType.setText(selected.isDeleted() ? "Restore" : "Delete");
         }
+    }
+
+    private void clearValidationMessages() {
+        hideValidationMessage(errName);
+        hideValidationMessage(errLocation);
+        hideValidationMessage(errStartDate);
+        hideValidationMessage(errStartTime);
+        hideValidationMessage(errEndDate);
+        hideValidationMessage(errEndTime);
+        hideValidationMessage(errCapacity);
+        hideValidationMessage(errTicketTypes);
+    }
+
+    private void showValidationMessage(Label label, String message) {
+        if (label == null) {
+            return;
+        }
+        label.setText(message);
+        label.setVisible(validationFeedbackEnabled);
+        label.setManaged(validationFeedbackEnabled);
+    }
+
+    private void hideValidationMessage(Label label) {
+        if (label == null) {
+            return;
+        }
+        label.setText("");
+        label.setVisible(false);
+        label.setManaged(false);
     }
 }

@@ -480,6 +480,8 @@
 .section-header {
     -fx-spacing: 12;
     -fx-alignment: CENTER_LEFT;
+    -fx-padding: 6 0;
+    -fx-min-height: 72;
 }
 
 .section-header .choice-box {
@@ -1368,7 +1370,7 @@
 }
 
 .details-title {
-    -fx-font-size: 16px;
+    -fx-font-size: 20px;
     -fx-font-weight: 700;
     -fx-text-fill: -fx-text-primary;
     -fx-alignment: CENTER;
@@ -1377,32 +1379,36 @@
 }
 
 .details-row {
-    -fx-spacing: 4;
+    -fx-spacing: 8;
+    -fx-alignment: TOP_LEFT;
 }
 
 .details-label {
     -fx-text-fill: #ffffff;
-    -fx-font-size: 11px;
+    -fx-font-size: 13px;
     -fx-font-weight: 700;
+    -fx-min-width: 138;
+    -fx-pref-width: 138;
 }
 
 .details-value {
     -fx-text-fill: -fx-text-primary;
-    -fx-font-size: 12px;
+    -fx-font-size: 14px;
     -fx-font-weight: 600;
 }
 
 .details-list {
-    -fx-spacing: 6;
+    -fx-spacing: 10;
+    -fx-padding: 4 0 0 0;
 }
 
 .details-list-item {
-    -fx-padding: 8;
-    -fx-background-color: rgba(255, 255, 255, 0.04);
-    -fx-border-color: -fx-border-default;
-    -fx-border-radius: 8;
-    -fx-background-radius: 8;
     -fx-text-fill: -fx-text-primary;
+    -fx-font-size: 14px;
+    -fx-font-weight: 600;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
 }
 
 .details-image-box {
