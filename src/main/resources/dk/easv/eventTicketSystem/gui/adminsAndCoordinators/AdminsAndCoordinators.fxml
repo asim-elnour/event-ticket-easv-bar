@@ -32,7 +32,7 @@
         <VBox VBox.vgrow="ALWAYS" minHeight="0">
             <ScrollPane fitToHeight="true"
                         fitToWidth="true"
-                        minHeight="100"
+                        minHeight="85"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         style="-fx-background-color: red;"

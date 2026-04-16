@@ -7,52 +7,63 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="dk.easv.eventTicketSystem.gui.events.EventsController">
 
-    <VBox styleClass="page-content"
-          minHeight="0"
-          AnchorPane.topAnchor="0.0"
-          AnchorPane.rightAnchor="0.0"
-          AnchorPane.bottomAnchor="0.0"
-          AnchorPane.leftAnchor="0.0">
+    <VBox styleClass="page-content" spacing="0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
-        <!-- Header: H-scroll only — button stays at right edge when wide, scrolls H when narrow -->
-        <ScrollPane fitToWidth="true" fitToHeight="false"
-                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-                    minHeight="50"
-                    styleClass="row-scroll">
-            <content>
-                <HBox styleClass="section-header">
-                    <Label fx:id="sectionTitleLabel" styleClass="section-label" text="Events" minWidth="-Infinity"/>
-                    <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label" minWidth="-Infinity"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="showDeletedButton" text="Hide Deleted Events" minWidth="-Infinity" onAction="#onToggleShowDeletedEvents"/>
-                </HBox>
-            </content>
-        </ScrollPane>
+        <VBox style="-fx-padding: 0 0 16 0;">
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+                        styleClass="row-scroll" vbarPolicy="NEVER">
+                <content>
+                    <HBox styleClass="section-header">
+                        <Label fx:id="sectionTitleLabel" minWidth="-Infinity" styleClass="section-label" text="Events"/>
+                        <Label fx:id="statusLabel" minWidth="-Infinity" styleClass="status-label" text="" visible="false"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="showDeletedButton" minWidth="-Infinity" onAction="#onToggleShowDeletedEvents"
+                                text="Hide Deleted Events"/>
+                    </HBox>
+                </content>
+            </ScrollPane>
+        </VBox>
 
-        <!-- Table: fills remaining height, internal H+V scroll — no ellipsis -->
-        <TableView fx:id="eventsTable" styleClass="data-view scrollable" minHeight="80" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="colName" minWidth="180" text="Name"/>
-                <TableColumn fx:id="colLocation" minWidth="180" text="Location"/>
-                <TableColumn fx:id="colStart" minWidth="160" text="Start"/>
-                <TableColumn fx:id="colStatus" minWidth="120" text="Status"/>
-            </columns>
-        </TableView>
+        <VBox VBox.vgrow="ALWAYS" minHeight="0">
+            <ScrollPane fitToHeight="true"
+                        fitToWidth="true"
+                        minHeight="85"
+                        hbarPolicy="AS_NEEDED"
+                        vbarPolicy="AS_NEEDED"
+                        style="-fx-background-color: red;"
+                        styleClass="table-scroll-container">
+                <content>
+                    <TableView fx:id="eventsTable"
+                               minWidth="460"
+                               styleClass="data-view">
+                        <columns>
+                            <TableColumn fx:id="colName" minWidth="180" text="Name"/>
+                            <TableColumn fx:id="colLocation" minWidth="180" text="Location"/>
+                            <TableColumn fx:id="colStart" minWidth="160" text="Start"/>
+                            <TableColumn fx:id="colStatus" minWidth="120" text="Status"/>
+                        </columns>
+                    </TableView>
+                </content>
+            </ScrollPane>
+        </VBox>
 
-        <!-- Actions: H-scroll only — buttons stay full size, scroll H when narrow -->
-        <ScrollPane fitToWidth="true" fitToHeight="false"
-                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-                    minHeight="50"
-                    styleClass="row-scroll">
-            <content>
-                <HBox styleClass="actions-row">
-                    <Button fx:id="addButton" text="Add Event" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onAddEvent"/>
-                    <Button fx:id="editButton" text="Edit Event" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onEditEvent"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="deleteButton" text="Delete Event" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onDeleteEvent"/>
-                </HBox>
-            </content>
-        </ScrollPane>
+        <VBox style="-fx-padding: 16 0 0 0;">
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+                        styleClass="row-scroll" vbarPolicy="NEVER">
+                <content>
+                    <HBox styleClass="actions-row">
+                        <Button fx:id="addButton" minWidth="-Infinity" onAction="#onAddEvent" text="Add Event"
+                                HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="editButton" minWidth="-Infinity" onAction="#onEditEvent" text="Edit Event"
+                                HBox.hgrow="ALWAYS"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="deleteButton" minWidth="-Infinity" onAction="#onDeleteEvent" text="Delete Event"
+                                HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </content>
+            </ScrollPane>
+        </VBox>
 
     </VBox>
 

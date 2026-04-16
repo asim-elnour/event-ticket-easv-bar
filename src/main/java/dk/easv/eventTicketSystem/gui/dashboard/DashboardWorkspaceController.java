@@ -25,6 +25,8 @@ public class DashboardWorkspaceController implements ModelAware {
     private ToggleButton navEventCoordinatorsButton;
     @FXML
     private ToggleButton navTicketsButton;
+    @FXML
+    private ToggleButton navCustomersButton;
 
     @FXML
     private Node usersPanel;
@@ -34,6 +36,8 @@ public class DashboardWorkspaceController implements ModelAware {
     private Node eventCoordinatorsPanel;
     @FXML
     private Node ticketsPanel;
+    @FXML
+    private Node customersPanel;
 
     private final ToggleGroup navigationGroup = new ToggleGroup();
     private final Map<ToggleButton, Node> navigationTargets = new LinkedHashMap<>();
@@ -46,6 +50,7 @@ public class DashboardWorkspaceController implements ModelAware {
         registerNavigationTarget(navEventsButton, eventsPanel);
         registerNavigationTarget(navEventCoordinatorsButton, eventCoordinatorsPanel);
         registerNavigationTarget(navTicketsButton, ticketsPanel);
+        registerNavigationTarget(navCustomersButton, customersPanel);
 
         navigationGroup.selectedToggleProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue == null && oldValue != null) {
@@ -79,6 +84,9 @@ public class DashboardWorkspaceController implements ModelAware {
         if (navTicketsButton != null) {
             navTicketsButton.setText("Tickets");
         }
+        if (navCustomersButton != null) {
+            navCustomersButton.setText("Customers");
+        }
     }
 
     private void registerNavigationTarget(ToggleButton button, Node panel) {
@@ -104,7 +112,8 @@ public class DashboardWorkspaceController implements ModelAware {
                 navUsersButton,
                 navEventsButton,
                 navEventCoordinatorsButton,
-                navTicketsButton
+                navTicketsButton,
+                navCustomersButton
         };
         for (ToggleButton candidate : preferredOrder) {
             if (candidate != null && navigationTargets.containsKey(candidate)) {
@@ -179,6 +188,9 @@ public class DashboardWorkspaceController implements ModelAware {
             return SearchScope.EVENT_COORDINATORS;
         }
         if (button == navTicketsButton) {
+            return SearchScope.TICKETS;
+        }
+        if (button == navCustomersButton) {
             return SearchScope.TICKETS;
         }
         return null;

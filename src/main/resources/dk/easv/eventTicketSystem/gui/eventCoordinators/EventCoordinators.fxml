@@ -7,53 +7,65 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="dk.easv.eventTicketSystem.gui.eventCoordinators.EventCoordinatorsController">
 
-    <VBox styleClass="page-content" minHeight="0" AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
-          AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+    <VBox styleClass="page-content" spacing="0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+          AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
-        <!-- Header: H-scroll only -->
-        <ScrollPane fitToWidth="true" fitToHeight="false"
-                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-                    minHeight="50"
-                    styleClass="row-scroll">
-            <content>
-                <HBox styleClass="section-header">
-                    <Label styleClass="section-label" text="Event Coordinators" minWidth="-Infinity"/>
-                    <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label" minWidth="-Infinity"/>
-                    <Region HBox.hgrow="ALWAYS"/>
-                    <Button fx:id="showDeletedButton"
-                            text="Hide Deleted Coordinators"
-                            minWidth="-Infinity"
-                            onAction="#onToggleShowDeletedCoordinators"/>
-                </HBox>
-            </content>
-        </ScrollPane>
+        <VBox style="-fx-padding: 0 0 16 0;">
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+                        styleClass="row-scroll" vbarPolicy="NEVER">
+                <content>
+                    <HBox styleClass="section-header">
+                        <Label minWidth="-Infinity" styleClass="section-label" text="Event Coordinators"/>
+                        <Label fx:id="statusLabel" minWidth="-Infinity" styleClass="status-label" text="" visible="false"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="showDeletedButton"
+                                minWidth="-Infinity"
+                                onAction="#onToggleShowDeletedCoordinators"
+                                text="Hide Deleted Coordinators"/>
+                    </HBox>
+                </content>
+            </ScrollPane>
+        </VBox>
 
-        <!-- Table: fills remaining height, internal H+V scroll -->
-        <TableView fx:id="usersTable" styleClass="data-view scrollable" minHeight="80" VBox.vgrow="ALWAYS">
-            <columns>
-                <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
-                <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
-                <TableColumn fx:id="colEvent" minWidth="180" text="Event"/>
-                <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
-            </columns>
-        </TableView>
+        <VBox VBox.vgrow="ALWAYS" minHeight="0">
+            <ScrollPane fitToHeight="true"
+                        fitToWidth="true"
+                        minHeight="85"
+                        hbarPolicy="AS_NEEDED"
+                        vbarPolicy="AS_NEEDED"
+                        style="-fx-background-color: red;"
+                        styleClass="table-scroll-container">
+                <content>
+                    <TableView fx:id="usersTable"
+                               minWidth="460"
+                               styleClass="data-view">
+                        <columns>
+                            <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>
+                            <TableColumn fx:id="colUserName" minWidth="120" text="Username"/>
+                            <TableColumn fx:id="colEvent" minWidth="180" text="Event"/>
+                            <TableColumn fx:id="colStatus" minWidth="100" text="Status"/>
+                        </columns>
+                    </TableView>
+                </content>
+            </ScrollPane>
+        </VBox>
 
-        <!-- Actions: H-scroll only -->
-        <ScrollPane fitToWidth="true" fitToHeight="false"
-                    hbarPolicy="AS_NEEDED" vbarPolicy="NEVER"
-                    minHeight="50"
-                    styleClass="row-scroll">
-            <content>
-                <HBox styleClass="actions-row">
-                    <Button text="Add Coordinator" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onAddCoordinator"/>
-                    <Button fx:id="removeButton"
-                            text="Remove Coordinator"
-                            minWidth="-Infinity"
-                            HBox.hgrow="ALWAYS"
-                            onAction="#onRemoveCoordinator"/>
-                </HBox>
-            </content>
-        </ScrollPane>
+        <VBox style="-fx-padding: 16 0 0 0;">
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+                        styleClass="row-scroll" vbarPolicy="NEVER">
+                <content>
+                    <HBox styleClass="actions-row">
+                        <Button minWidth="-Infinity" onAction="#onAddCoordinator" text="Add Coordinator"
+                                HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="removeButton"
+                                minWidth="-Infinity"
+                                onAction="#onRemoveCoordinator"
+                                text="Remove Coordinator"
+                                HBox.hgrow="ALWAYS"/>
+                    </HBox>
+                </content>
+            </ScrollPane>
+        </VBox>
 
     </VBox>
 

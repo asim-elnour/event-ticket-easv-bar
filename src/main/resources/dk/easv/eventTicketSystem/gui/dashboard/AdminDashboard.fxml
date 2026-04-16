@@ -41,6 +41,7 @@
                     <ToggleButton fx:id="navEventsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
                     <ToggleButton fx:id="navEventCoordinatorsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
                     <ToggleButton fx:id="navTicketsButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
+                    <ToggleButton fx:id="navCustomersButton" styleClass="dashboard-nav-button" maxWidth="Infinity"/>
                     <Region VBox.vgrow="ALWAYS"/>
                 </VBox>
             </content>
@@ -66,6 +67,7 @@
                 <fx:include fx:id="eventsPanel" source="/dk/easv/eventTicketSystem/gui/events/Events.fxml"/>
                 <fx:include fx:id="eventCoordinatorsPanel" source="/dk/easv/eventTicketSystem/gui/eventCoordinators/EventCoordinators.fxml"/>
                 <fx:include fx:id="ticketsPanel" source="/dk/easv/eventTicketSystem/gui/tickets/Tickets.fxml"/>
+                <fx:include fx:id="customersPanel" source="/dk/easv/eventTicketSystem/gui/customers/Customers.fxml"/>
             </StackPane>
         </content>
     </ScrollPane>

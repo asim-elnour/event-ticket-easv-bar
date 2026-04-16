@@ -9,9 +9,7 @@ import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.TicketPrintService;
 import dk.easv.eventTicketSystem.util.ViewType;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.concurrent.Task;
@@ -28,11 +26,6 @@ import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 public class TicketsController implements ModelAware {
@@ -50,14 +43,6 @@ public class TicketsController implements ModelAware {
     @FXML
     private TableColumn<Ticket, String> colStatus;
     @FXML
-    private TableView<CustomerRow> customersTable;
-    @FXML
-    private TableColumn<CustomerRow, String> colCustomerTableName;
-    @FXML
-    private TableColumn<CustomerRow, String> colCustomerTableEmail;
-    @FXML
-    private TableColumn<CustomerRow, Number> colCustomerTableTickets;
-    @FXML
     private Button deleteButton;
     @FXML
     private Button redeemButton;
@@ -67,16 +52,14 @@ public class TicketsController implements ModelAware {
     private Button showDeletedButton;
 
     private final TicketPrintService ticketPrintService = new TicketPrintService();
-    private final ObservableList<CustomerRow> customerRows = FXCollections.observableArrayList();
     private final ListChangeListener<Ticket> ticketsListener = change -> {
-        refreshCustomerTable();
+        updateShowDeletedButtonText();
         restoreSelection();
     };
 
     private ObservableList<Ticket> observedTickets;
     private AppModel model;
     private StatusBanner statusBanner;
-    private String selectedCustomerKey = "";
 
     @FXML
     public void initialize() {
@@ -86,19 +69,6 @@ public class TicketsController implements ModelAware {
         colCustomerName.setCellValueFactory(cd -> cd.getValue().customerNameProperty());
         colEventName.setCellValueFactory(cd -> cd.getValue().eventNameProperty());
         colStatus.setCellValueFactory(cd -> new SimpleStringProperty(cd.getValue().getStatusLabel()));
-
-        colCustomerTableName.setCellValueFactory(cd -> cd.getValue().nameProperty());
-        colCustomerTableEmail.setCellValueFactory(cd -> cd.getValue().emailProperty());
-        colCustomerTableTickets.setCellValueFactory(cd -> cd.getValue().ticketCountProperty());
-        customersTable.setItems(customerRows);
-
-        customersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldCustomer, newCustomer) -> {
-            if (newCustomer == null) {
-                return;
-            }
-            selectedCustomerKey = customerKey(newCustomer);
-            selectRepresentativeTicketForCustomer(newCustomer);
-        });
 
         ticketsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldTicket, newTicket) -> {
             if (model != null && newTicket != null) {
@@ -120,7 +90,6 @@ public class TicketsController implements ModelAware {
         });
 
         ticketsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        customersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         updateActionState(null);
 
         if (model != null) {
@@ -153,7 +122,6 @@ public class TicketsController implements ModelAware {
         observedTickets.addListener(ticketsListener);
 
         updateShowDeletedButtonText();
-        refreshCustomerTable();
         reloadAllTickets();
     }
 
@@ -400,7 +368,6 @@ public class TicketsController implements ModelAware {
             model.tickets().clear();
         }
         updateActionState(null);
-        refreshCustomerTable();
 
         Task<Void> task = new Task<>() {
             @Override
@@ -494,163 +461,9 @@ public class TicketsController implements ModelAware {
         return Optional.empty();
     }
 
-    private void refreshCustomerTable() {
-        if (customersTable == null) {
-            return;
-        }
-
-        Map<String, CustomerRow> groupedCustomers = new LinkedHashMap<>();
-        ObservableList<Ticket> visibleTickets = ticketsTable == null ? null : ticketsTable.getItems();
-        if (visibleTickets == null) {
-            customerRows.clear();
-            return;
-        }
-
-        for (Ticket ticket : visibleTickets) {
-            if (ticket == null) {
-                continue;
-            }
-
-            String name = cleanText(ticket.getCustomerName());
-            String email = cleanText(ticket.getCustomerEmail());
-            String key = normalizeKey(email.isBlank() ? name : email);
-            if (key.isBlank()) {
-                continue;
-            }
-
-            CustomerRow row = groupedCustomers.get(key);
-            if (row == null) {
-                row = new CustomerRow(name, email);
-                groupedCustomers.put(key, row);
-            } else {
-                row.merge(name, email);
-            }
-            row.incrementTicketCount();
-        }
-
-        List<CustomerRow> sortedCustomers = new ArrayList<>(groupedCustomers.values());
-        sortedCustomers.sort(
-                Comparator.comparing(CustomerRow::getName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(CustomerRow::getEmail, String.CASE_INSENSITIVE_ORDER)
-        );
-        customerRows.setAll(sortedCustomers);
-        restoreCustomerSelection();
-    }
-
-    private void restoreCustomerSelection() {
-        if (customersTable == null || selectedCustomerKey.isBlank()) {
-            return;
-        }
-
-        for (CustomerRow customer : customerRows) {
-            if (selectedCustomerKey.equals(customerKey(customer))) {
-                customersTable.getSelectionModel().select(customer);
-                customersTable.scrollTo(customer);
-                return;
-            }
-        }
-    }
-
-    private void selectRepresentativeTicketForCustomer(CustomerRow customer) {
-        if (model == null || ticketsTable == null || customer == null) {
-            return;
-        }
-
-        String key = customerKey(customer);
-        for (Ticket ticket : ticketsTable.getItems()) {
-            if (ticket != null && key.equals(customerKey(ticket))) {
-                ticketsTable.getSelectionModel().select(ticket);
-                ticketsTable.scrollTo(ticket);
-                model.setSelectedTicket(ticket);
-                updateActionState(ticket);
-                return;
-            }
-        }
-    }
-
-    private String cleanText(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private String normalizeKey(String value) {
-        return cleanText(value).toLowerCase();
-    }
-
-    private String customerKey(CustomerRow customer) {
-        if (customer == null) {
-            return "";
-        }
-        String email = cleanText(customer.getEmail());
-        return normalizeKey(email.isBlank() ? customer.getName() : email);
-    }
-
-    private String customerKey(Ticket ticket) {
-        if (ticket == null) {
-            return "";
-        }
-        String email = cleanText(ticket.getCustomerEmail());
-        return normalizeKey(email.isBlank() ? ticket.getCustomerName() : email);
-    }
-
     private Stage resolveOwnerWindow() {
         return ticketsTable != null && ticketsTable.getScene() != null
                 ? (Stage) ticketsTable.getScene().getWindow()
                 : null;
-    }
-
-    public static final class CustomerRow {
-        private final SimpleStringProperty name = new SimpleStringProperty("");
-        private final SimpleStringProperty email = new SimpleStringProperty("");
-        private final SimpleIntegerProperty ticketCount = new SimpleIntegerProperty(0);
-
-        public CustomerRow(String name, String email) {
-            setName(name);
-            setEmail(email);
-        }
-
-        public String getName() {
-            return name.get();
-        }
-
-        public void setName(String value) {
-            name.set(value == null ? "" : value.trim());
-        }
-
-        public SimpleStringProperty nameProperty() {
-            return name;
-        }
-
-        public String getEmail() {
-            return email.get();
-        }
-
-        public void setEmail(String value) {
-            email.set(value == null ? "" : value.trim());
-        }
-
-        public SimpleStringProperty emailProperty() {
-            return email;
-        }
-
-        public Number getTicketCount() {
-            return ticketCount.get();
-        }
-
-        public SimpleIntegerProperty ticketCountProperty() {
-            return ticketCount;
-        }
-
-        public void incrementTicketCount() {
-            ticketCount.set(ticketCount.get() + 1);
-        }
-
-        public void merge(String candidateName, String candidateEmail) {
-            if (getName().isBlank() && candidateName != null && !candidateName.isBlank()) {
-                setName(candidateName);
-            }
-            if (getEmail().isBlank() && candidateEmail != null && !candidateEmail.isBlank()) {
-                setEmail(candidateEmail);
-            }
-        }
     }
 }
