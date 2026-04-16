@@ -1,10 +1,13 @@
 package dk.easv.eventTicketSystem.bll;
 
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.be.TicketCategory;
+import dk.easv.eventTicketSystem.dal.repository.CustomerRepository;
 import dk.easv.eventTicketSystem.dal.repository.EventRepository;
 import dk.easv.eventTicketSystem.dal.repository.TicketRepository;
+import dk.easv.eventTicketSystem.exceptions.CustomerException;
 import dk.easv.eventTicketSystem.exceptions.EventException;
 import dk.easv.eventTicketSystem.exceptions.TicketException;
 import org.junit.jupiter.api.Test;
@@ -26,11 +29,12 @@ class TicketLogicRulesTest {
     void shouldRejectAddingTicketForDeletedEvent() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
         Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, false));
         event.setDeleted(true);
         eventRepository.store(event);
 
-        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository);
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
                 () -> logic.addTicket(10L, 100L, "Alice", "alice@example.com", "CODE-1"));
@@ -43,11 +47,12 @@ class TicketLogicRulesTest {
     void shouldRejectAddingTicketForSoldOutCategory() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
         Event event = eventWithCategory(10L, false, category(100L, "VIP", 2, false));
         eventRepository.store(event);
         ticketRepository.setActiveTicketsForCategory(10L, 100L, 2);
 
-        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository);
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
                 () -> logic.addTicket(10L, 100L, "Alice", "alice@example.com", "CODE-1"));
@@ -60,12 +65,13 @@ class TicketLogicRulesTest {
     void shouldRejectRestoringTicketWhenEventIsDeleted() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
         Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, false));
         event.setDeleted(true);
         eventRepository.store(event);
         ticketRepository.store(ticket(1L, 10L, 100L, true));
 
-        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository);
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
                 () -> logic.setTicketDeletedState(1L, false));
@@ -78,11 +84,12 @@ class TicketLogicRulesTest {
     void shouldRejectRestoringTicketWhenCategoryIsDeleted() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
         Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, true));
         eventRepository.store(event);
         ticketRepository.store(ticket(1L, 10L, 100L, true));
 
-        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository);
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
                 () -> logic.setTicketDeletedState(1L, false));
@@ -95,17 +102,57 @@ class TicketLogicRulesTest {
     void shouldRestoreDeletedTicketWhenSeatsAreAvailable() throws TicketException {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
         Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, false));
         eventRepository.store(event);
         ticketRepository.store(ticket(1L, 10L, 100L, true));
         ticketRepository.setActiveTicketsForCategory(10L, 100L, 4);
 
-        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository);
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         Ticket restored = logic.setTicketDeletedState(1L, false);
 
         assertTrue(ticketRepository.stateChangeCalled);
         assertFalse(restored.isDeleted());
+    }
+
+    @Test
+    void shouldReuseExistingCustomerWhenNameAndEmailMatch() throws TicketException {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        Event event = eventWithCategory(10L, false, category(100L, "Standard", 10, false));
+        eventRepository.store(event);
+        customerRepository.store(customer(7L, "Alice Student", "alice@example.com"));
+
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
+
+        logic.addTicket(10L, 100L, "Alice Student", "alice@example.com", "CODE-7");
+
+        assertTrue(ticketRepository.addCalled);
+        assertEquals(7L, ticketRepository.lastCustomerId);
+        assertFalse(customerRepository.createCalled);
+    }
+
+    @Test
+    void shouldRejectAddingTicketWhenEmailBelongsToDifferentCustomerName() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        Event event = eventWithCategory(10L, false, category(100L, "Standard", 10, false));
+        eventRepository.store(event);
+        customerRepository.store(customer(7L, "Alice Student", "alice@example.com"));
+
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.addTicket(10L, 100L, "Alice Changed", "alice@example.com", "CODE-8"));
+
+        assertEquals(
+                "This email already belongs to an existing customer. Please select Existing Customer.",
+                exception.getMessage()
+        );
+        assertFalse(ticketRepository.addCalled);
     }
 
     private static Event eventWithCategory(long eventId, boolean deleted, TicketCategory category) {
@@ -139,6 +186,15 @@ class TicketLogicRulesTest {
         ticket.setDeleted(deleted);
         ticket.setCode("CODE-" + ticketId);
         return ticket;
+    }
+
+    private static Customer customer(long customerId, String name, String email) {
+        Customer customer = new Customer();
+        customer.setId(customerId);
+        customer.setName(name);
+        customer.setEmail(email);
+        customer.setCreatedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
+        return customer;
     }
 
     private static final class FakeEventRepository implements EventRepository {
@@ -209,6 +265,7 @@ class TicketLogicRulesTest {
 
         private boolean addCalled;
         private boolean stateChangeCalled;
+        private long lastCustomerId;
         private long nextId = 100L;
 
         void store(Ticket ticket) {
@@ -240,14 +297,14 @@ class TicketLogicRulesTest {
         }
 
         @Override
-        public Ticket addTicket(long eventId, Long ticketCategoryId, String customerName, String customerEmail, String code) {
+        public Ticket addTicket(long eventId, Long ticketCategoryId, long customerId, String code) {
             addCalled = true;
+            lastCustomerId = customerId;
             Ticket ticket = new Ticket();
             ticket.setId(nextId++);
             ticket.setEventId(eventId);
             ticket.setTicketCategoryId(ticketCategoryId);
-            ticket.setCustomerName(customerName);
-            ticket.setCustomerEmail(customerEmail);
+            ticket.setCustomerId(customerId);
             ticket.setCode(code);
             ticket.setDeleted(false);
             tickets.put(ticket.getId(), ticket.copy());
@@ -287,6 +344,59 @@ class TicketLogicRulesTest {
 
         private String categoryKey(long eventId, long categoryId) {
             return eventId + ":" + categoryId;
+        }
+    }
+
+    private static final class FakeCustomerRepository implements CustomerRepository {
+        private final Map<Long, Customer> customers = new HashMap<>();
+        private long nextId = 100L;
+        private boolean createCalled;
+
+        void store(Customer customer) {
+            customers.put(customer.getId(), customer.copy());
+        }
+
+        @Override
+        public List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Customer> getAllCustomers(boolean includeDeletedTickets) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public List<Customer> getCustomerDirectory() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Customer getCustomerById(long customerId) throws CustomerException {
+            Customer customer = customers.get(customerId);
+            if (customer == null) {
+                throw new CustomerException("Customer not found.");
+            }
+            return customer.copy();
+        }
+
+        @Override
+        public Customer findCustomerByEmail(String email) {
+            String normalized = email == null ? "" : email.trim().toLowerCase();
+            return customers.values().stream()
+                    .filter(customer -> customer.getEmail() != null
+                            && customer.getEmail().trim().toLowerCase().equals(normalized))
+                    .findFirst()
+                    .map(Customer::copy)
+                    .orElse(null);
+        }
+
+        @Override
+        public Customer createCustomer(String name, String email) {
+            createCalled = true;
+            Customer customer = customer(nextId++, name, email);
+            customers.put(customer.getId(), customer.copy());
+            return customer.copy();
         }
     }
 }

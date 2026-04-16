@@ -1,5 +1,6 @@
 package dk.easv.eventTicketSystem.dal.dao;
 
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.Ticket;
@@ -71,11 +72,21 @@ final class DaoSupport {
         );
     }
 
+    static Customer mapCustomer(ResultSet rs) throws SQLException {
+        return new Customer(
+                getLongObject(rs, "id"),
+                rs.getString("name"),
+                rs.getString("email"),
+                getLocalDateTime(rs, "created_at")
+        );
+    }
+
     static Ticket mapTicket(ResultSet rs) throws SQLException {
         return new Ticket(
                 getLongObject(rs, "id"),
                 getLongObject(rs, "event_id"),
                 getLongObject(rs, "ticket_category_id"),
+                getLongObject(rs, "customer_id"),
                 rs.getString("event_name"),
                 rs.getString("code"),
                 rs.getString("customer_name"),

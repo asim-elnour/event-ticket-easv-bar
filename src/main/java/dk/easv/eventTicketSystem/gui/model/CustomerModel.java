@@ -1,36 +1,33 @@
 package dk.easv.eventTicketSystem.gui.model;
 
-import dk.easv.eventTicketSystem.be.CustomerSummary;
-import dk.easv.eventTicketSystem.be.Ticket;
-import dk.easv.eventTicketSystem.bll.TicketLogic;
-import dk.easv.eventTicketSystem.exceptions.TicketException;
+import dk.easv.eventTicketSystem.be.Customer;
+import dk.easv.eventTicketSystem.bll.CustomerLogic;
+import dk.easv.eventTicketSystem.exceptions.CustomerException;
+import dk.easv.eventTicketSystem.util.CustomerValidationRules;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class CustomerModel {
 
-    private final TicketLogic ticketLogic = new TicketLogic();
-    private final ObservableList<CustomerSummary> customers = FXCollections.observableArrayList();
-    private final SortedList<CustomerSummary> customersSorted = new SortedList<>(customers);
+    private final CustomerLogic customerLogic = new CustomerLogic();
+    private final ObservableList<Customer> customers = FXCollections.observableArrayList();
+    private final SortedList<Customer> customersSorted = new SortedList<>(customers);
     private final AtomicLong customersRequestVersion = new AtomicLong(0);
 
     private boolean showDeletedCustomerTickets = true;
     private SearchModel.SearchState customerSearchState = new SearchModel.SearchState(SearchModel.COLUMN_ALL, "");
 
-    public ObservableList<CustomerSummary> customers() {
+    public ObservableList<Customer> customers() {
         return customers;
     }
 
-    public SortedList<CustomerSummary> customersView() {
+    public SortedList<Customer> customersView() {
         return customersSorted;
     }
 
@@ -48,7 +45,7 @@ public class CustomerModel {
                 : state;
     }
 
-    public void loadCustomersForEvent(long eventId) throws TicketException {
+    public void loadCustomersForEvent(long eventId) throws CustomerException {
         long requestVersion = customersRequestVersion.incrementAndGet();
         if (eventId <= 0) {
             Platform.runLater(() -> {
@@ -59,26 +56,17 @@ public class CustomerModel {
             return;
         }
 
-        List<Ticket> loadedTickets = ticketLogic.searchTicketsForEvent(
-                eventId,
-                customerSearchState.columnKey(),
-                customerSearchState.query(),
-                showDeletedCustomerTickets
-        );
-        setCustomers(requestVersion, summarizeCustomers(loadedTickets));
+        List<Customer> loadedCustomers = customerLogic.getCustomersForEvent(eventId, showDeletedCustomerTickets);
+        setCustomers(requestVersion, filterAndSort(loadedCustomers));
     }
 
-    public void loadAllCustomers() throws TicketException {
+    public void loadAllCustomers() throws CustomerException {
         long requestVersion = customersRequestVersion.incrementAndGet();
-        List<Ticket> loadedTickets = ticketLogic.searchAllTickets(
-                customerSearchState.columnKey(),
-                customerSearchState.query(),
-                showDeletedCustomerTickets
-        );
-        setCustomers(requestVersion, summarizeCustomers(loadedTickets));
+        List<Customer> loadedCustomers = customerLogic.getAllCustomers(showDeletedCustomerTickets);
+        setCustomers(requestVersion, filterAndSort(loadedCustomers));
     }
 
-    private void setCustomers(long requestVersion, List<CustomerSummary> loadedCustomers) {
+    private void setCustomers(long requestVersion, List<Customer> loadedCustomers) {
         Platform.runLater(() -> {
             if (requestVersion == customersRequestVersion.get()) {
                 customers.setAll(loadedCustomers);
@@ -86,41 +74,38 @@ public class CustomerModel {
         });
     }
 
-    private List<CustomerSummary> summarizeCustomers(List<Ticket> tickets) {
-        Map<String, CustomerSummary> groupedCustomers = new LinkedHashMap<>();
-        if (tickets == null) {
+    private List<Customer> filterAndSort(List<Customer> loadedCustomers) {
+        if (loadedCustomers == null || loadedCustomers.isEmpty()) {
             return List.of();
         }
 
-        for (Ticket ticket : tickets) {
-            if (ticket == null) {
-                continue;
-            }
+        String columnKey = customerSearchState.columnKey();
+        String query = customerSearchState.query();
 
-            String name = cleanText(ticket.getCustomerName());
-            String email = cleanText(ticket.getCustomerEmail());
-            String key = normalizeKey(email.isBlank() ? name : email);
-            if (key.isBlank()) {
-                continue;
-            }
+        return loadedCustomers.stream()
+                .filter(customer -> matchesCustomer(customer, columnKey, query))
+                .map(Customer::copy)
+                .sorted(Comparator.comparing(Customer::getName, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Customer::getEmail, String.CASE_INSENSITIVE_ORDER)
+                        .thenComparing(Customer::getId, Comparator.nullsLast(Long::compareTo)))
+                .toList();
+    }
 
-            CustomerSummary summary = groupedCustomers.computeIfAbsent(key, ignored -> new CustomerSummary(key, name, email));
-            summary.includeTicket(ticket);
+    private boolean matchesCustomer(Customer customer, String columnKey, String query) {
+        if (customer == null) {
+            return false;
+        }
+        if (query == null || query.isBlank()) {
+            return true;
         }
 
-        List<CustomerSummary> sortedCustomers = new ArrayList<>(groupedCustomers.values());
-        sortedCustomers.sort(
-                Comparator.comparing(CustomerSummary::getName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(CustomerSummary::getEmail, String.CASE_INSENSITIVE_ORDER)
-        );
-        return sortedCustomers;
-    }
-
-    private String cleanText(String value) {
-        return value == null ? "" : value.trim();
-    }
-
-    private String normalizeKey(String value) {
-        return cleanText(value).toLowerCase();
+        String normalizedColumn = columnKey == null ? SearchModel.COLUMN_ALL : columnKey;
+        return switch (normalizedColumn) {
+            case SearchModel.COLUMN_NAME -> CustomerValidationRules.matchesSearch(query, customer.getName());
+            case SearchModel.COLUMN_EMAIL -> CustomerValidationRules.matchesSearch(query, customer.getEmail());
+            case SearchModel.COLUMN_CUSTOMER, SearchModel.COLUMN_ALL ->
+                    CustomerValidationRules.matchesSearch(query, customer.getName(), customer.getEmail());
+            default -> CustomerValidationRules.matchesSearch(query, customer.getName(), customer.getEmail());
+        };
     }
 }

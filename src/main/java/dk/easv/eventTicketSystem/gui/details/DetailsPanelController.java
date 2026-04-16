@@ -4,7 +4,7 @@ import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.MultiFormatWriter;
 import com.google.zxing.common.BitMatrix;
-import dk.easv.eventTicketSystem.be.CustomerSummary;
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.Ticket;
@@ -75,15 +75,7 @@ public class DetailsPanelController implements ModelAware {
     @FXML
     private Label customerEmailValue;
     @FXML
-    private Label customerTicketCountValue;
-    @FXML
-    private Label customerValidCountValue;
-    @FXML
-    private Label customerRedeemedCountValue;
-    @FXML
-    private Label customerDeletedCountValue;
-    @FXML
-    private Label customerEventsValue;
+    private Label customerSinceValue;
 
     @FXML
     private Label eventNameValue;
@@ -210,7 +202,7 @@ public class DetailsPanelController implements ModelAware {
         resetScroll(userScroll);
     }
 
-    private void showCustomer(CustomerSummary customer) {
+    private void showCustomer(Customer customer) {
         if (customer == null) {
             showCard(emptyCard);
             return;
@@ -218,11 +210,7 @@ public class DetailsPanelController implements ModelAware {
 
         customerNameValue.setText(safeText(customer.getName()));
         customerEmailValue.setText(safeText(customer.getEmail()));
-        customerTicketCountValue.setText(Integer.toString(customer.getTicketCount()));
-        customerValidCountValue.setText(Integer.toString(customer.getValidCount()));
-        customerRedeemedCountValue.setText(Integer.toString(customer.getRedeemedCount()));
-        customerDeletedCountValue.setText(Integer.toString(customer.getDeletedCount()));
-        customerEventsValue.setText(safeText(customer.getEventsSummary()));
+        customerSinceValue.setText(formatDateTime(customer.getCreatedAt()));
         showCard(customerCard);
         resetScroll(customerScroll);
     }

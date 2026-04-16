@@ -17,8 +17,7 @@ public interface TicketRepository {
 
     Ticket addTicket(long eventId,
                      Long ticketCategoryId,
-                     String customerName,
-                     String customerEmail,
+                     long customerId,
                      String code) throws TicketException;
 
     Ticket getTicketById(long ticketId) throws TicketException;

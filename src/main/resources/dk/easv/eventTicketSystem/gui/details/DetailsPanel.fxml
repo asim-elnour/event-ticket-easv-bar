@@ -102,24 +102,8 @@
                             <Label fx:id="customerEmailValue" text="Not set" styleClass="details-value" wrapText="true"/>
                         </VBox>
                         <VBox styleClass="details-row">
-                            <Label text="Tickets" styleClass="details-label"/>
-                            <Label fx:id="customerTicketCountValue" text="0" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Valid" styleClass="details-label"/>
-                            <Label fx:id="customerValidCountValue" text="0" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Redeemed" styleClass="details-label"/>
-                            <Label fx:id="customerRedeemedCountValue" text="0" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Deleted" styleClass="details-label"/>
-                            <Label fx:id="customerDeletedCountValue" text="0" styleClass="details-value" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Events" styleClass="details-label"/>
-                            <Label fx:id="customerEventsValue" text="Not set" styleClass="details-value" wrapText="true"/>
+                            <Label text="Customer Since" styleClass="details-label"/>
+                            <Label fx:id="customerSinceValue" text="Not set" styleClass="details-value" wrapText="true"/>
                         </VBox>
                     </VBox>
                 </content>

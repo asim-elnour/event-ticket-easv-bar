@@ -482,6 +482,44 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.section-header .choice-box {
+    -fx-padding: 2 10;
+    -fx-background-color: -fx-bg-input;
+    -fx-background-radius: 8;
+    -fx-border-color: -fx-border-default;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.section-header .choice-box > .label {
+    -fx-text-fill: -fx-text-primary;
+}
+
+.section-header .choice-box:focused {
+    -fx-border-color: -fx-accent-primary;
+}
+
+.section-header .choice-box > .open-button {
+    -fx-background-color: transparent;
+}
+
+.section-header .choice-box > .open-button > .arrow {
+    -fx-background-color: -fx-text-secondary;
+}
+
+.section-header .choice-box .context-menu {
+    -fx-background-color: -fx-bg-panel;
+    -fx-border-color: -fx-border-default;
+}
+
+.section-header .choice-box .menu-item > .label {
+    -fx-text-fill: -fx-text-primary;
+}
+
+.section-header .choice-box .menu-item:focused {
+    -fx-background-color: rgba(168, 85, 247, 0.15);
+}
+
 .actions-row {
     -fx-spacing: 10;
     -fx-min-height: 0;

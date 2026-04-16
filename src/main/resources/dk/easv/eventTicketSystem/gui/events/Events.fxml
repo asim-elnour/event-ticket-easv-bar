@@ -31,7 +31,6 @@
                         minHeight="85"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
-                        style="-fx-background-color: red;"
                         styleClass="table-scroll-container">
                 <content>
                     <TableView fx:id="eventsTable"

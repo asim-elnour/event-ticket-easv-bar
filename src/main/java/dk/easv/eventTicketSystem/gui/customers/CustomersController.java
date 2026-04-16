@@ -1,6 +1,6 @@
 package dk.easv.eventTicketSystem.gui.customers;
 
-import dk.easv.eventTicketSystem.be.CustomerSummary;
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.DataViewMode;
@@ -20,20 +20,18 @@ public class CustomersController implements ModelAware {
     @FXML
     private Label statusLabel;
     @FXML
-    private TableView<CustomerSummary> customersTable;
+    private TableView<Customer> customersTable;
     @FXML
-    private TableColumn<CustomerSummary, String> colCustomerTableName;
+    private TableColumn<Customer, String> colCustomerTableName;
     @FXML
-    private TableColumn<CustomerSummary, String> colCustomerTableEmail;
-    @FXML
-    private TableColumn<CustomerSummary, Number> colCustomerTableTickets;
+    private TableColumn<Customer, String> colCustomerTableEmail;
     @FXML
     private Button showDeletedButton;
     @FXML
     private ChoiceBox<DataViewMode> viewChoice;
 
     private final Label placeholderLabel = new Label("No customers found.");
-    private final ListChangeListener<CustomerSummary> customersListener = change -> {
+    private final ListChangeListener<Customer> customersListener = change -> {
         updateShowDeletedButtonText();
         updatePlaceholder();
         restoreSelection();
@@ -50,7 +48,6 @@ public class CustomersController implements ModelAware {
 
         colCustomerTableName.setCellValueFactory(cd -> cd.getValue().nameProperty());
         colCustomerTableEmail.setCellValueFactory(cd -> cd.getValue().emailProperty());
-        colCustomerTableTickets.setCellValueFactory(cd -> cd.getValue().ticketCountProperty());
 
         customersTable.setPlaceholder(placeholderLabel);
         customersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
@@ -169,13 +166,13 @@ public class CustomersController implements ModelAware {
             return;
         }
 
-        CustomerSummary selected = model.getSelectedCustomer();
-        if (selected == null || selected.getIdentityKey() == null || selected.getIdentityKey().isBlank()) {
+        Customer selected = model.getSelectedCustomer();
+        if (selected == null || selected.getId() == null) {
             return;
         }
 
-        for (CustomerSummary customer : model.customersView()) {
-            if (customer != null && selected.getIdentityKey().equals(customer.getIdentityKey())) {
+        for (Customer customer : model.customersView()) {
+            if (customer != null && selected.getId().equals(customer.getId())) {
                 customersTable.getSelectionModel().select(customer);
                 customersTable.scrollTo(customer);
                 model.setSelectedCustomer(customer);

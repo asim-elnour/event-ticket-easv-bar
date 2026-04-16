@@ -25,16 +25,18 @@ public final class TicketDAO implements TicketRepository {
                 t.id,
                 t.event_id,
                 t.ticket_category_id,
+                t.customer_id,
                 e.name AS event_name,
                 t.code,
-                t.customer_name,
-                t.customer_email,
+                c.name AS customer_name,
+                c.email AS customer_email,
                 t.issued_at,
                 t.redeemed_at,
                 t.redeemed,
                 t.deleted
             FROM dbo.Tickets t
             JOIN dbo.Events e ON e.id = t.event_id
+            JOIN dbo.Customers c ON c.id = t.customer_id
             """;
 
     private final Database database;
@@ -91,11 +93,13 @@ public final class TicketDAO implements TicketRepository {
     @Override
     public Ticket addTicket(long eventId,
                             Long ticketCategoryId,
-                            String customerName,
-                            String customerEmail,
+                            long customerId,
                             String code) throws TicketException {
         if (ticketCategoryId == null || ticketCategoryId <= 0) {
             throw new TicketException("Ticket type is required.", null);
+        }
+        if (customerId <= 0) {
+            throw new TicketException("Customer is required.", null);
         }
         String ticketCode = DaoSupport.isBlank(code) ? Ticket.generateCode() : code.trim();
 
@@ -103,17 +107,17 @@ public final class TicketDAO implements TicketRepository {
             ensureActiveEvent(con, eventId);
             int seatCount = ensureActiveTicketCategory(con, eventId, ticketCategoryId);
             ensureCategoryHasAvailableSeats(con, eventId, ticketCategoryId, seatCount);
+            ensureCustomerExists(con, customerId);
 
             try (PreparedStatement stmt = con.prepareStatement("""
                     INSERT INTO dbo.Tickets
-                        (event_id, ticket_category_id, code, customer_name, customer_email, redeemed, deleted)
-                    VALUES (?, ?, ?, ?, ?, 0, 0)
+                        (event_id, ticket_category_id, customer_id, code, redeemed, deleted)
+                    VALUES (?, ?, ?, ?, 0, 0)
                     """, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setLong(1, eventId);
                 DaoSupport.setLongOrNull(stmt, 2, ticketCategoryId);
-                stmt.setString(3, ticketCode);
-                stmt.setString(4, customerName);
-                stmt.setString(5, customerEmail);
+                stmt.setLong(3, customerId);
+                stmt.setString(4, ticketCode);
                 stmt.executeUpdate();
 
                 try (ResultSet keys = stmt.getGeneratedKeys()) {
@@ -250,6 +254,21 @@ public final class TicketDAO implements TicketRepository {
         }
     }
 
+    private void ensureCustomerExists(Connection con, long customerId) throws SQLException, TicketException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Customers
+                WHERE id = ?
+                """)) {
+            stmt.setLong(1, customerId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new TicketException("Selected customer is not available.", null);
+                }
+            }
+        }
+    }
+
     private void ensureCategoryHasAvailableSeats(Connection con,
                                                  long eventId,
                                                  long ticketCategoryId,
@@ -335,11 +354,11 @@ public final class TicketDAO implements TicketRepository {
         String normalized = DaoSupport.safe(columnKey);
         return switch (normalized) {
             case COLUMN_CODE -> "LOWER(t.code)";
-            case COLUMN_CUSTOMER -> "LOWER(CONCAT(COALESCE(t.customer_name, N''), N' ', COALESCE(t.customer_email, N'')))";
+            case COLUMN_CUSTOMER -> "LOWER(CONCAT(COALESCE(c.name, N''), N' ', COALESCE(c.email, N'')))";
             case COLUMN_EVENT -> "LOWER(e.name)";
             case COLUMN_STATUS -> statusExpression();
-            default -> "LOWER(CONCAT(t.code, N' ', COALESCE(t.customer_name, N''), N' ', "
-                    + "COALESCE(t.customer_email, N''), N' ', e.name, N' ', "
+            default -> "LOWER(CONCAT(t.code, N' ', COALESCE(c.name, N''), N' ', "
+                    + "COALESCE(c.email, N''), N' ', e.name, N' ', "
                     + "CASE WHEN t.deleted = 1 THEN N'Deleted' "
                     + "WHEN t.redeemed = 1 THEN N'Redeemed' ELSE N'Valid' END))";
         };

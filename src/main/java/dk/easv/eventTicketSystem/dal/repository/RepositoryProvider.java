@@ -1,6 +1,7 @@
 package dk.easv.eventTicketSystem.dal.repository;
 
 import dk.easv.eventTicketSystem.dal.ConnectionManager;
+import dk.easv.eventTicketSystem.dal.dao.CustomerDAO;
 import dk.easv.eventTicketSystem.dal.dao.Database;
 import dk.easv.eventTicketSystem.dal.dao.EventDAO;
 import dk.easv.eventTicketSystem.dal.dao.TicketDAO;
@@ -21,6 +22,10 @@ public final class RepositoryProvider {
         return REPOSITORIES.events();
     }
 
+    public static CustomerRepository customers() {
+        return REPOSITORIES.customers();
+    }
+
     public static TicketRepository tickets() {
         return REPOSITORIES.tickets();
     }
@@ -30,12 +35,14 @@ public final class RepositoryProvider {
         return new RepositoryBundle(
                 new UserDAO(database),
                 new EventDAO(database),
+                new CustomerDAO(database),
                 new TicketDAO(database)
         );
     }
 
     private record RepositoryBundle(UserRepository users,
                                     EventRepository events,
+                                    CustomerRepository customers,
                                     TicketRepository tickets) {
     }
 }

@@ -15,6 +15,7 @@ public class Ticket {
     private final ObjectProperty<Long> id = new SimpleObjectProperty<>();
     private final ObjectProperty<Long> eventId = new SimpleObjectProperty<>();
     private final ObjectProperty<Long> ticketCategoryId = new SimpleObjectProperty<>();
+    private final ObjectProperty<Long> customerId = new SimpleObjectProperty<>();
     private final StringProperty eventName = new SimpleStringProperty();
     private final StringProperty code = new SimpleStringProperty();
     private final StringProperty customerName = new SimpleStringProperty();
@@ -25,12 +26,13 @@ public class Ticket {
     private final BooleanProperty deleted = new SimpleBooleanProperty(false);
 
     public Ticket() {
-        this(null, null, null, null, generateCode(), null, null, LocalDateTime.now(), null, false, false);
+        this(null, null, null, null, null, generateCode(), null, null, LocalDateTime.now(), null, false, false);
     }
 
     public Ticket(Long id,
                   Long eventId,
                   Long ticketCategoryId,
+                  Long customerId,
                   String eventName,
                   String code,
                   String customerName,
@@ -42,6 +44,7 @@ public class Ticket {
         this.id.set(id);
         this.eventId.set(eventId);
         this.ticketCategoryId.set(ticketCategoryId);
+        this.customerId.set(customerId);
         this.eventName.set(eventName);
         this.code.set(code);
         this.customerName.set(customerName);
@@ -90,6 +93,18 @@ public class Ticket {
 
     public ObjectProperty<Long> ticketCategoryIdProperty() {
         return ticketCategoryId;
+    }
+
+    public Long getCustomerId() {
+        return customerId.get();
+    }
+
+    public void setCustomerId(Long customerId) {
+        this.customerId.set(customerId);
+    }
+
+    public ObjectProperty<Long> customerIdProperty() {
+        return customerId;
     }
 
     public String getEventName() {
@@ -203,6 +218,7 @@ public class Ticket {
                 getId(),
                 getEventId(),
                 getTicketCategoryId(),
+                getCustomerId(),
                 getEventName(),
                 getCode(),
                 getCustomerName(),
@@ -221,6 +237,7 @@ public class Ticket {
         setId(ticket.getId());
         setEventId(ticket.getEventId());
         setTicketCategoryId(ticket.getTicketCategoryId());
+        setCustomerId(ticket.getCustomerId());
         setEventName(ticket.getEventName());
         setCode(ticket.getCode());
         setCustomerName(ticket.getCustomerName());

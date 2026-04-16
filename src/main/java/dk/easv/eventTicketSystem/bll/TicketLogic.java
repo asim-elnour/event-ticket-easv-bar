@@ -1,14 +1,16 @@
 package dk.easv.eventTicketSystem.bll;
 
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.be.TicketCategory;
 import dk.easv.eventTicketSystem.dal.repository.EventRepository;
 import dk.easv.eventTicketSystem.dal.repository.RepositoryProvider;
 import dk.easv.eventTicketSystem.dal.repository.TicketRepository;
+import dk.easv.eventTicketSystem.exceptions.CustomerException;
 import dk.easv.eventTicketSystem.exceptions.EventException;
 import dk.easv.eventTicketSystem.exceptions.TicketException;
-import dk.easv.eventTicketSystem.util.EventValidationRules;
+import dk.easv.eventTicketSystem.util.CustomerValidationRules;
 
 import java.util.List;
 
@@ -16,18 +18,26 @@ public class TicketLogic {
 
     private final TicketRepository ticketRepository;
     private final EventRepository eventRepository;
+    private final CustomerLogic customerLogic;
 
     public TicketLogic() {
-        this(RepositoryProvider.tickets(), RepositoryProvider.events());
+        this(RepositoryProvider.tickets(), RepositoryProvider.events(), new CustomerLogic());
     }
 
     public TicketLogic(TicketRepository ticketRepository) {
-        this(ticketRepository, RepositoryProvider.events());
+        this(ticketRepository, RepositoryProvider.events(), new CustomerLogic());
     }
 
     public TicketLogic(TicketRepository ticketRepository, EventRepository eventRepository) {
+        this(ticketRepository, eventRepository, new CustomerLogic());
+    }
+
+    public TicketLogic(TicketRepository ticketRepository,
+                       EventRepository eventRepository,
+                       CustomerLogic customerLogic) {
         this.ticketRepository = ticketRepository;
         this.eventRepository = eventRepository;
+        this.customerLogic = customerLogic;
     }
 
     public List<Ticket> getTicketsForEvent(long eventId) throws TicketException {
@@ -73,7 +83,8 @@ public class TicketLogic {
                 "Selected ticket type is not available for this event.");
         ensureCategoryHasSeats(eventId, category);
 
-        return ticketRepository.addTicket(eventId, ticketCategoryId, normalizedCustomerName, normalizedCustomerEmail, code);
+        Customer customer = resolveCustomer(normalizedCustomerName, normalizedCustomerEmail);
+        return ticketRepository.addTicket(eventId, ticketCategoryId, customer.getId(), code);
     }
 
     public Ticket getTicketById(long ticketId) throws TicketException {
@@ -148,18 +159,30 @@ public class TicketLogic {
     }
 
     private String normalizeRequired(String value, String fieldName) throws TicketException {
-        String normalized = EventValidationRules.normalizeRequired(value);
+        String normalized = CustomerValidationRules.normalizeRequired(value);
         if (normalized.isEmpty()) {
             throw new TicketException(fieldName + " is required.", null);
         }
-        if (normalized.length() > EventValidationRules.MAX_TEXT_LENGTH) {
+        if (normalized.length() > CustomerValidationRules.MAX_TEXT_LENGTH) {
             throw new TicketException(fieldName + " is too long.", null);
         }
         return normalized;
     }
 
     private String safeTicketTypeName(TicketCategory category) {
-        String name = category == null ? null : EventValidationRules.normalizeRequired(category.getName());
+        String name = category == null ? null : CustomerValidationRules.normalizeRequired(category.getName());
         return name == null || name.isEmpty() ? "selected ticket type" : name;
+    }
+
+    private Customer resolveCustomer(String customerName, String customerEmail) throws TicketException {
+        if (!CustomerValidationRules.isValidEmail(customerEmail)) {
+            throw new TicketException("Customer email must be a valid email address.", null);
+        }
+
+        try {
+            return customerLogic.resolveOrCreateCustomer(customerName, customerEmail);
+        } catch (CustomerException e) {
+            throw new TicketException(e.getMessage(), e);
+        }
     }
 }

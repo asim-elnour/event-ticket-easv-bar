@@ -1,10 +1,11 @@
 package dk.easv.eventTicketSystem.gui.model;
 
-import dk.easv.eventTicketSystem.be.CustomerSummary;
+import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.be.User;
+import dk.easv.eventTicketSystem.exceptions.CustomerException;
 import dk.easv.eventTicketSystem.exceptions.EventException;
 import dk.easv.eventTicketSystem.exceptions.TicketException;
 import dk.easv.eventTicketSystem.exceptions.UserException;
@@ -26,7 +27,7 @@ public class AppModel {
     private final ObjectProperty<User> selectedUser = new SimpleObjectProperty<>(null);
     private final ObjectProperty<Event> selectedEvent = new SimpleObjectProperty<>(null);
     private final ObjectProperty<Ticket> selectedTicket = new SimpleObjectProperty<>(null);
-    private final ObjectProperty<CustomerSummary> selectedCustomer = new SimpleObjectProperty<>(null);
+    private final ObjectProperty<Customer> selectedCustomer = new SimpleObjectProperty<>(null);
     private final ObjectProperty<User> selectedEventCoordinator = new SimpleObjectProperty<>(null);
 
     private final ObjectProperty<Long> currentCoordinatorId = new SimpleObjectProperty<>(0L);
@@ -165,11 +166,11 @@ public class AppModel {
         ticketModel.setShowDeletedTickets(showDeletedTickets);
     }
 
-    public ObservableList<CustomerSummary> customers() {
+    public ObservableList<Customer> customers() {
         return customerModel.customers();
     }
 
-    public SortedList<CustomerSummary> customersView() {
+    public SortedList<Customer> customersView() {
         return customerModel.customersView();
     }
 
@@ -217,15 +218,15 @@ public class AppModel {
         selectedTicket.set(ticket);
     }
 
-    public ObjectProperty<CustomerSummary> selectedCustomerProperty() {
+    public ObjectProperty<Customer> selectedCustomerProperty() {
         return selectedCustomer;
     }
 
-    public CustomerSummary getSelectedCustomer() {
+    public Customer getSelectedCustomer() {
         return selectedCustomer.get();
     }
 
-    public void setSelectedCustomer(CustomerSummary customer) {
+    public void setSelectedCustomer(Customer customer) {
         selectedCustomer.set(customer);
     }
 
@@ -365,7 +366,7 @@ public class AppModel {
                     } else {
                         customerModel.loadAllCustomers();
                     }
-                } catch (TicketException e) {
+                } catch (CustomerException e) {
                     e.printStackTrace();
                 }
             };
@@ -453,11 +454,11 @@ public class AppModel {
         ticketModel.loadAllTickets();
     }
 
-    public void loadCustomersForEvent(long eventId) throws TicketException {
+    public void loadCustomersForEvent(long eventId) throws CustomerException {
         customerModel.loadCustomersForEvent(eventId);
     }
 
-    public void loadAllCustomers() throws TicketException {
+    public void loadAllCustomers() throws CustomerException {
         customerModel.loadAllCustomers();
     }
 

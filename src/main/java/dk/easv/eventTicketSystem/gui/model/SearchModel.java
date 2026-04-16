@@ -17,6 +17,7 @@ public class SearchModel {
     public static final String COLUMN_EVENT = "event";
     public static final String COLUMN_LOCATION = "location";
     public static final String COLUMN_START = "start";
+    public static final String COLUMN_EMAIL = "email";
     public static final String COLUMN_CODE = "code";
     public static final String COLUMN_CUSTOMER = "customer";
 
@@ -54,9 +55,8 @@ public class SearchModel {
             ),
             SearchScope.CUSTOMERS, List.of(
                     ALL_COLUMN,
-                    new SearchColumnOption(COLUMN_CUSTOMER, "Customer"),
-                    new SearchColumnOption(COLUMN_EVENT, "Event"),
-                    new SearchColumnOption(COLUMN_STATUS, "Status")
+                    new SearchColumnOption(COLUMN_NAME, "Name"),
+                    new SearchColumnOption(COLUMN_EMAIL, "Email")
             )
     );
 

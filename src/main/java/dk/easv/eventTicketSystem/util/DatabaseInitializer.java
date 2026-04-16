@@ -31,6 +31,7 @@ public class DatabaseInitializer {
         ensureEventsUpdatedAtColumn();
         createEventCoordinatorsTable();
         createTicketCategoriesTable();
+        createCustomersTable();
         createTicketsTable();
         createIndexes();
         seedDefaultUsers();
@@ -40,6 +41,7 @@ public class DatabaseInitializer {
     private void dropAllTables() throws SQLException {
         execute("IF OBJECT_ID(N'dbo.TicketUpdates', N'U') IS NOT NULL DROP TABLE dbo.TicketUpdates");
         execute("IF OBJECT_ID(N'dbo.Tickets', N'U') IS NOT NULL DROP TABLE dbo.Tickets");
+        execute("IF OBJECT_ID(N'dbo.Customers', N'U') IS NOT NULL DROP TABLE dbo.Customers");
         execute("IF OBJECT_ID(N'dbo.TicketCategories', N'U') IS NOT NULL DROP TABLE dbo.TicketCategories");
         execute("IF OBJECT_ID(N'dbo.EventToppings', N'U') IS NOT NULL DROP TABLE dbo.EventToppings");
         execute("IF OBJECT_ID(N'dbo.EventUpdates', N'U') IS NOT NULL DROP TABLE dbo.EventUpdates");
@@ -245,6 +247,20 @@ public class DatabaseInitializer {
                 """);
     }
 
+    private void createCustomersTable() throws SQLException {
+        execute("""
+                IF OBJECT_ID(N'dbo.Customers', N'U') IS NULL
+                BEGIN
+                    CREATE TABLE dbo.Customers (
+                        id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Customers PRIMARY KEY,
+                        name NVARCHAR(255) NOT NULL,
+                        email NVARCHAR(255) NOT NULL CONSTRAINT UQ_Customers_Email UNIQUE,
+                        created_at DATETIME2 NOT NULL CONSTRAINT DF_Customers_CreatedAt DEFAULT SYSDATETIME()
+                    )
+                END
+                """);
+    }
+
     private void createTicketsTable() throws SQLException {
         execute("""
                 IF OBJECT_ID(N'dbo.Tickets', N'U') IS NULL
@@ -253,9 +269,8 @@ public class DatabaseInitializer {
                         id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Tickets PRIMARY KEY,
                         event_id BIGINT NOT NULL CONSTRAINT FK_Tickets_Events REFERENCES dbo.Events(id) ON DELETE CASCADE,
                         ticket_category_id BIGINT NULL CONSTRAINT FK_Tickets_TicketCategories REFERENCES dbo.TicketCategories(id),
+                        customer_id BIGINT NOT NULL CONSTRAINT FK_Tickets_Customers REFERENCES dbo.Customers(id),
                         code NVARCHAR(255) NOT NULL CONSTRAINT UQ_Tickets_Code UNIQUE,
-                        customer_name NVARCHAR(255) NULL,
-                        customer_email NVARCHAR(255) NULL,
                         issued_at DATETIME2 NOT NULL CONSTRAINT DF_Tickets_IssuedAt DEFAULT SYSDATETIME(),
                         redeemed_at DATETIME2 NULL,
                         redeemed BIT NOT NULL CONSTRAINT DF_Tickets_Redeemed DEFAULT 0,
@@ -396,7 +411,8 @@ public class DatabaseInitializer {
                 new BigDecimal("120.00"),
                 20
         );
-        createDemoTicket(eventId, standardCategoryId);
+        long customerId = createDemoCustomer("Alice Student", "alice@example.com");
+        createDemoTicket(eventId, standardCategoryId, customerId);
     }
 
     private long findUserIdByUsername(String username) throws SQLException {
@@ -486,19 +502,38 @@ public class DatabaseInitializer {
         throw new SQLException("Failed to seed demo ticket category.");
     }
 
-    private void createDemoTicket(long eventId, long ticketCategoryId) throws SQLException {
+    private long createDemoCustomer(String name, String email) throws SQLException {
+        try (Connection con = conMan.getConnection();
+             PreparedStatement stmt = con.prepareStatement("""
+                     INSERT INTO dbo.Customers (name, email)
+                     VALUES (?, ?)
+                     """, Statement.RETURN_GENERATED_KEYS)) {
+            stmt.setString(1, name);
+            stmt.setString(2, email);
+            stmt.executeUpdate();
+
+            try (ResultSet keys = stmt.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getLong(1);
+                }
+            }
+        }
+
+        throw new SQLException("Failed to seed demo customer.");
+    }
+
+    private void createDemoTicket(long eventId, long ticketCategoryId, long customerId) throws SQLException {
         try (Connection con = conMan.getConnection();
              PreparedStatement stmt = con.prepareStatement("""
                      INSERT INTO dbo.Tickets
-                         (event_id, ticket_category_id, code, customer_name, customer_email, issued_at, redeemed, deleted)
-                     VALUES (?, ?, ?, ?, ?, ?, 0, 0)
+                         (event_id, ticket_category_id, customer_id, code, issued_at, redeemed, deleted)
+                     VALUES (?, ?, ?, ?, ?, 0, 0)
                      """)) {
             stmt.setLong(1, eventId);
             stmt.setLong(2, ticketCategoryId);
-            stmt.setString(3, "DEMO-FRIDAY-BAR-001");
-            stmt.setString(4, "Alice Student");
-            stmt.setString(5, "alice@example.com");
-            stmt.setTimestamp(6, Timestamp.valueOf(LocalDateTime.now().minusHours(6)));
+            stmt.setLong(3, customerId);
+            stmt.setString(4, "DEMO-FRIDAY-BAR-001");
+            stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now().minusHours(6)));
             stmt.executeUpdate();
         }
     }

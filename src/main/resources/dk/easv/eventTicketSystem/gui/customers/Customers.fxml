@@ -45,7 +45,6 @@
                         minHeight="85"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
-                        style="-fx-background-color: red;"
                         styleClass="table-scroll-container">
                 <content>
                     <TableView fx:id="customersTable"
@@ -54,7 +53,6 @@
                         <columns>
                             <TableColumn fx:id="colCustomerTableName" minWidth="180" text="Name"/>
                             <TableColumn fx:id="colCustomerTableEmail" minWidth="220" text="Email"/>
-                            <TableColumn fx:id="colCustomerTableTickets" minWidth="110" text="Tickets"/>
                         </columns>
                     </TableView>
                 </content>
