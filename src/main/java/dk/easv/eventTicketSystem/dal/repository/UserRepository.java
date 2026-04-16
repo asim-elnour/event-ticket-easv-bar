@@ -34,4 +34,18 @@ public interface UserRepository {
     User updateUser(User user) throws UserException;
 
     boolean existsByEmail(String email) throws UserException;
+
+    boolean existsByEmail(String email, Long excludeUserId) throws UserException;
+
+    boolean existsByUsername(String username) throws UserException;
+
+    boolean existsByUsername(String username, Long excludeUserId) throws UserException;
+
+    boolean isOnlyActiveAdmin(long userId) throws UserException;
+
+    List<String> findActiveEventsWhereUserIsOnlyCoordinator(long userId) throws UserException;
+
+    boolean isOnlyActiveCoordinatorForEvent(long eventId, long userId) throws UserException;
+
+    String getEventName(long eventId) throws UserException;
 }

@@ -154,8 +154,12 @@ public class UserModel {
     }
 
     public void setCoordinatorDeleted(User user, boolean deleted) throws UserException {
-        user.setDeleted(deleted);
-        userLogic.updateUser(user);
+        if (user == null) {
+            throw new UserException("User is required.");
+        }
+        User candidate = user.copy();
+        candidate.setDeleted(deleted);
+        userLogic.updateUser(candidate);
     }
 
     public User addAdminOrCoordinator(User user) throws UserException {
@@ -174,8 +178,12 @@ public class UserModel {
     }
 
     public void setAdminOrCoordinatorDeleted(User user, boolean deleted) throws UserException {
-        user.setDeleted(deleted);
-        userLogic.updateUser(user);
+        if (user == null) {
+            throw new UserException("User is required.");
+        }
+        User candidate = user.copy();
+        candidate.setDeleted(deleted);
+        userLogic.updateUser(candidate);
     }
 
     private SearchModel.SearchState normalizeState(SearchModel.SearchState state) {

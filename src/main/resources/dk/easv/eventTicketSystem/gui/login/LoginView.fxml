@@ -26,10 +26,10 @@
                    text="Login"/>
 
             <TextField fx:id="emailField"
-                       promptText="Email"/>
+                       promptText="Enter your email"/>
 
             <PasswordField fx:id="passwordField"
-                           promptText="Password"/>
+                           promptText="Enter your password"/>
 
             <Button fx:id="loginButton"
                     text="Login"

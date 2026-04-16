@@ -3,6 +3,7 @@ package dk.easv.eventTicketSystem.gui.adminsAndCoordinators;
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.util.UserUiText;
+import dk.easv.eventTicketSystem.util.UserValidationRules;
 import javafx.fxml.FXML;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -12,8 +13,6 @@ import javafx.stage.Stage;
 import javafx.util.StringConverter;
 
 public class AdminCoordinatorDialogController {
-    private static final int MAX_TEXT_LENGTH = 255;
-
     @FXML private TextField txtUsername;
     @FXML private TextField txtFirstName;
     @FXML private TextField txtLastName;
@@ -21,6 +20,7 @@ public class AdminCoordinatorDialogController {
     @FXML private TextField txtPhone;
     @FXML private ComboBox<Role> cmbRole;
     @FXML private PasswordField txtPassword;
+    @FXML private PasswordField txtRepeatPassword;
     @FXML private Label errUsername;
     @FXML private Label errFirstName;
     @FXML private Label errLastName;
@@ -28,6 +28,7 @@ public class AdminCoordinatorDialogController {
     @FXML private Label errPhone;
     @FXML private Label errRole;
     @FXML private Label errPassword;
+    @FXML private Label errRepeatPassword;
 
     private User user;
     private boolean saved;
@@ -61,7 +62,10 @@ public class AdminCoordinatorDialogController {
             txtEmail.setText(user.getEmail());
             txtPhone.setText(user.getPhone());
             cmbRole.setValue(user.getRole());
+            txtPassword.clear();
+            txtRepeatPassword.clear();
             txtPassword.setPromptText("Leave blank to keep existing password");
+            txtRepeatPassword.setPromptText("Repeat new password");
         } else {
             txtUsername.clear();
             txtFirstName.clear();
@@ -70,7 +74,9 @@ public class AdminCoordinatorDialogController {
             txtPhone.clear();
             cmbRole.setValue(Role.COORDINATOR);
             txtPassword.clear();
+            txtRepeatPassword.clear();
             txtPassword.setPromptText("Password");
+            txtRepeatPassword.setPromptText("Repeat password");
         }
         clearAllErrors();
     }
@@ -100,7 +106,7 @@ public class AdminCoordinatorDialogController {
         String lastName = txtLastName.getText().trim();
         String email = txtEmail.getText().trim();
         String phone = txtPhone.getText().trim();
-        String password = txtPassword.getText().trim();
+        String password = UserValidationRules.normalizeRequired(txtPassword.getText());
         Role selectedRole = cmbRole.getValue();
 
         if (isEdit) {
@@ -137,6 +143,7 @@ public class AdminCoordinatorDialogController {
         txtPhone.textProperty().addListener((obs, oldValue, newValue) -> validatePhone());
         cmbRole.valueProperty().addListener((obs, oldValue, newValue) -> validateRole());
         txtPassword.textProperty().addListener((obs, oldValue, newValue) -> validatePassword());
+        txtRepeatPassword.textProperty().addListener((obs, oldValue, newValue) -> validateRepeatPassword());
     }
 
     private boolean validateAll() {
@@ -148,6 +155,7 @@ public class AdminCoordinatorDialogController {
         ok = validatePhone() && ok;
         ok = validateRole() && ok;
         ok = validatePassword() && ok;
+        ok = validateRepeatPassword() && ok;
         return ok;
     }
 
@@ -164,17 +172,31 @@ public class AdminCoordinatorDialogController {
     }
 
     private boolean validatePhone() {
-        return validateRequiredAndMax(txtPhone, errPhone, "Phone");
+        String value = UserValidationRules.normalizeRequired(txtPhone.getText());
+        if (value.isEmpty()) {
+            showError(errPhone, "Phone is required.");
+            return false;
+        }
+        if (value.length() > UserValidationRules.MAX_PHONE_LENGTH) {
+            showError(errPhone, "Phone too long (max " + UserValidationRules.MAX_PHONE_LENGTH + ").");
+            return false;
+        }
+        if (!UserValidationRules.isValidPhone(value)) {
+            showError(errPhone, "Phone must contain only numbers.");
+            return false;
+        }
+        clearError(errPhone);
+        return true;
     }
 
     private boolean validateRequiredAndMax(TextField field, Label error, String fieldLabel) {
-        String value = field.getText();
+        String value = UserValidationRules.normalizeRequired(field.getText());
         if (value == null || value.isBlank()) {
             showError(error, fieldLabel + " is required.");
             return false;
         }
-        if (value.length() > MAX_TEXT_LENGTH) {
-            showError(error, fieldLabel + " too long (max " + MAX_TEXT_LENGTH + ").");
+        if (value.length() > UserValidationRules.MAX_TEXT_LENGTH) {
+            showError(error, fieldLabel + " too long (max " + UserValidationRules.MAX_TEXT_LENGTH + ").");
             return false;
         }
         clearError(error);
@@ -182,7 +204,21 @@ public class AdminCoordinatorDialogController {
     }
 
     private boolean validateEmail() {
-        return validateRequiredAndMax(txtEmail, errEmail, "Email");
+        String value = UserValidationRules.normalizeRequired(txtEmail.getText());
+        if (value.isEmpty()) {
+            showError(errEmail, "Email is required.");
+            return false;
+        }
+        if (value.length() > UserValidationRules.MAX_TEXT_LENGTH) {
+            showError(errEmail, "Email too long (max " + UserValidationRules.MAX_TEXT_LENGTH + ").");
+            return false;
+        }
+        if (!UserValidationRules.isValidEmail(value)) {
+            showError(errEmail, "Enter a valid email address.");
+            return false;
+        }
+        clearError(errEmail);
+        return true;
     }
 
     private boolean validateRole() {
@@ -195,12 +231,63 @@ public class AdminCoordinatorDialogController {
     }
 
     private boolean validatePassword() {
-        String value = txtPassword.getText();
-        if (!isEdit && (value == null || value.isBlank())) {
+        String value = UserValidationRules.normalizeRequired(txtPassword.getText());
+        String repeatValue = UserValidationRules.normalizeRequired(txtRepeatPassword.getText());
+
+        if (!isEdit && value.isBlank()) {
             showError(errPassword, "Password is required.");
             return false;
         }
+
+        if (isEdit && value.isBlank() && repeatValue.isBlank()) {
+            clearError(errPassword);
+            return true;
+        }
+
+        if (value.isBlank()) {
+            showError(errPassword, "Enter a password first.");
+            return false;
+        }
+
+        if (value.length() > UserValidationRules.MAX_TEXT_LENGTH) {
+            showError(errPassword, "Password too long (max " + UserValidationRules.MAX_TEXT_LENGTH + ").");
+            return false;
+        }
+
+        if (!UserValidationRules.isValidPassword(value)) {
+            showError(errPassword, "Password must be at least " + UserValidationRules.MIN_PASSWORD_LENGTH + " characters.");
+            return false;
+        }
+
         clearError(errPassword);
+        return true;
+    }
+
+    private boolean validateRepeatPassword() {
+        String value = UserValidationRules.normalizeRequired(txtPassword.getText());
+        String repeatValue = UserValidationRules.normalizeRequired(txtRepeatPassword.getText());
+
+        if (isEdit && value.isBlank() && repeatValue.isBlank()) {
+            clearError(errRepeatPassword);
+            return true;
+        }
+
+        if (repeatValue.isBlank()) {
+            showError(errRepeatPassword, "Repeat password is required.");
+            return false;
+        }
+
+        if (value.isBlank()) {
+            showError(errRepeatPassword, "Enter the password first.");
+            return false;
+        }
+
+        if (!value.equals(repeatValue)) {
+            showError(errRepeatPassword, "Passwords do not match.");
+            return false;
+        }
+
+        clearError(errRepeatPassword);
         return true;
     }
 
@@ -230,5 +317,6 @@ public class AdminCoordinatorDialogController {
         clearError(errPhone);
         clearError(errRole);
         clearError(errPassword);
+        clearError(errRepeatPassword);
     }
 }

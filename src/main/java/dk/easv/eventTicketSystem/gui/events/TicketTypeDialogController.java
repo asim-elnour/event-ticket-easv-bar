@@ -1,6 +1,7 @@
 package dk.easv.eventTicketSystem.gui.events;
 
 import dk.easv.eventTicketSystem.be.TicketCategory;
+import dk.easv.eventTicketSystem.util.EventValidationRules;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -92,15 +93,15 @@ public class TicketTypeDialogController {
     }
 
     private boolean validateName() {
-        String value = txtName.getText();
-        if (value == null || value.isBlank()) {
+        String value = EventValidationRules.normalizeRequired(txtName.getText());
+        if (value.isEmpty()) {
             errName.setText("Name is required.");
             errName.setVisible(true);
             return false;
         }
 
-        if (value.length() > 255) {
-            errName.setText("Name too long (max 255).");
+        if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
+            errName.setText("Name too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
             errName.setVisible(true);
             return false;
         }
@@ -144,8 +145,8 @@ public class TicketTypeDialogController {
 
         try {
             int seats = Integer.parseInt(value.trim());
-            if (seats <= 0) {
-                errSeats.setText("Seats / number must be greater than 0.");
+            if (seats < EventValidationRules.MIN_SEAT_COUNT) {
+                errSeats.setText("Seats / number must be at least " + EventValidationRules.MIN_SEAT_COUNT + ".");
                 errSeats.setVisible(true);
                 return false;
             }

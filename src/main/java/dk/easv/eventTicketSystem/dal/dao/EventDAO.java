@@ -4,6 +4,7 @@ import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.TicketCategory;
 import dk.easv.eventTicketSystem.dal.repository.EventRepository;
 import dk.easv.eventTicketSystem.exceptions.EventException;
+import dk.easv.eventTicketSystem.util.EventValidationRules;
 
 import java.math.BigDecimal;
 import java.sql.Connection;
@@ -119,6 +120,7 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
+                validateEventState(con, event);
                 long eventId = insertEvent(con, event);
                 event.setId(eventId);
                 saveTicketCategories(con, event);
@@ -147,6 +149,7 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
+                validateEventState(con, event);
                 String sql = """
                         UPDATE dbo.Events
                         SET name = ?,
@@ -191,18 +194,27 @@ public final class EventDAO implements EventRepository {
 
     @Override
     public void setEventDeleted(long eventId, long coordinatorId, boolean deleted) throws EventException {
-        try (Connection con = database.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
-                     UPDATE dbo.Events
-                     SET is_deleted = ?,
-                         updated_at = SYSDATETIME()
-                     WHERE id = ?
-                     """)) {
-            stmt.setBoolean(1, deleted);
-            stmt.setLong(2, eventId);
-            int rows = stmt.executeUpdate();
-            if (rows == 0) {
-                throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
+        try (Connection con = database.getConnection()) {
+            con.setAutoCommit(false);
+            try (PreparedStatement stmt = con.prepareStatement("""
+                    UPDATE dbo.Events
+                    SET is_deleted = ?,
+                        updated_at = SYSDATETIME()
+                    WHERE id = ?
+                    """)) {
+                stmt.setBoolean(1, deleted);
+                stmt.setLong(2, eventId);
+                int rows = stmt.executeUpdate();
+                if (rows == 0) {
+                    throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
+                }
+                if (deleted) {
+                    setTicketsDeletedForEvent(con, eventId, true);
+                }
+                con.commit();
+            } catch (SQLException | RuntimeException | EventException e) {
+                con.rollback();
+                throw e;
             }
         } catch (EventException e) {
             throw e;
@@ -220,6 +232,24 @@ public final class EventDAO implements EventRepository {
             throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
         }
         return events.get(0);
+    }
+
+    @Override
+    public int countActiveTicketsForEvent(long eventId) throws EventException {
+        try (Connection con = database.getConnection()) {
+            return countActiveTicketsForEvent(con, eventId);
+        } catch (SQLException | RuntimeException e) {
+            throw new EventException("Could not load active tickets.", e, EventException.ErrorType.DATABASE_ERROR);
+        }
+    }
+
+    @Override
+    public int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) throws EventException {
+        try (Connection con = database.getConnection()) {
+            return countActiveTicketsForTicketCategory(con, eventId, ticketCategoryId);
+        } catch (SQLException | RuntimeException e) {
+            throw new EventException("Could not load ticket type usage.", e, EventException.ErrorType.DATABASE_ERROR);
+        }
     }
 
     private List<Event> queryEvents(String sql, List<Object> params) throws EventException {
@@ -351,6 +381,125 @@ public final class EventDAO implements EventRepository {
             }
         }
         return categories;
+    }
+
+    private void validateEventState(Connection con, Event event) throws SQLException, EventException {
+        if (event == null) {
+            throw new EventException("Event is required.", EventException.ErrorType.VALIDATION_ERROR);
+        }
+        if (event.getCapacity() < EventValidationRules.MIN_CAPACITY) {
+            throw new EventException("Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".",
+                    EventException.ErrorType.VALIDATION_ERROR);
+        }
+        if (EventValidationRules.countActiveTicketTypes(event.getTicketTypes()) == 0) {
+            throw new EventException("At least one active ticket type is required.",
+                    EventException.ErrorType.VALIDATION_ERROR);
+        }
+
+        int activeSeatCount = EventValidationRules.countActiveSeats(event.getTicketTypes());
+        if (activeSeatCount != event.getCapacity()) {
+            throw new EventException("Ticket type seats must match capacity exactly (allocated "
+                    + activeSeatCount + " / capacity " + event.getCapacity() + ").",
+                    EventException.ErrorType.VALIDATION_ERROR);
+        }
+
+        if (event.getId() == null || event.getId() <= 0) {
+            return;
+        }
+
+        int activeTicketsForEvent = countActiveTicketsForEvent(con, event.getId());
+        if (event.getCapacity() < activeTicketsForEvent) {
+            throw new EventException("You cannot reduce capacity below " + activeTicketsForEvent + " active tickets.",
+                    EventException.ErrorType.VALIDATION_ERROR);
+        }
+
+        List<TicketCategory> existingCategories = loadTicketCategories(con, event.getId());
+        for (TicketCategory existingCategory : existingCategories) {
+            if (existingCategory == null || existingCategory.getId() == null || existingCategory.getId() <= 0) {
+                continue;
+            }
+
+            int activeTickets = countActiveTicketsForTicketCategory(con, event.getId(), existingCategory.getId());
+            if (activeTickets <= 0) {
+                continue;
+            }
+
+            TicketCategory updatedCategory = findCategoryById(event.getTicketTypes(), existingCategory.getId());
+            String ticketTypeName = safeTicketTypeName(existingCategory);
+            if (updatedCategory == null || updatedCategory.isDeleted()) {
+                throw new EventException("You cannot delete ticket type '" + ticketTypeName
+                        + "' because it already has " + activeTickets + " active tickets.",
+                        EventException.ErrorType.VALIDATION_ERROR);
+            }
+
+            Integer updatedSeatCount = updatedCategory.getSeatCount();
+            if (updatedSeatCount == null || updatedSeatCount < activeTickets) {
+                throw new EventException("You cannot reduce ticket type '" + ticketTypeName
+                        + "' below " + activeTickets + " active tickets.",
+                        EventException.ErrorType.VALIDATION_ERROR);
+            }
+        }
+    }
+
+    private TicketCategory findCategoryById(List<TicketCategory> categories, Long categoryId) {
+        if (categories == null || categoryId == null) {
+            return null;
+        }
+
+        for (TicketCategory category : categories) {
+            if (category != null && categoryId.equals(category.getId())) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private int countActiveTicketsForEvent(Connection con, long eventId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT COUNT(*)
+                FROM dbo.Tickets
+                WHERE event_id = ?
+                  AND deleted = 0
+                """)) {
+            stmt.setLong(1, eventId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    private int countActiveTicketsForTicketCategory(Connection con, long eventId, long ticketCategoryId)
+            throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT COUNT(*)
+                FROM dbo.Tickets
+                WHERE event_id = ?
+                  AND ticket_category_id = ?
+                  AND deleted = 0
+                """)) {
+            stmt.setLong(1, eventId);
+            stmt.setLong(2, ticketCategoryId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    private void setTicketsDeletedForEvent(Connection con, long eventId, boolean deleted) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                UPDATE dbo.Tickets
+                SET deleted = ?
+                WHERE event_id = ?
+                """)) {
+            stmt.setBoolean(1, deleted);
+            stmt.setLong(2, eventId);
+            stmt.executeUpdate();
+        }
+    }
+
+    private String safeTicketTypeName(TicketCategory category) {
+        String name = category == null ? null : EventValidationRules.normalizeRequired(category.getName());
+        return name == null || name.isEmpty() ? "selected ticket type" : name;
     }
 
     private void attachCoordinatorIfNeeded(Connection con, long eventId, long coordinatorId) throws SQLException {

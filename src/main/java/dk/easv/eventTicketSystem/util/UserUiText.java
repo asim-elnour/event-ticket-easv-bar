@@ -27,4 +27,17 @@ public final class UserUiText {
         }
         return "Active";
     }
+
+    public static String coordinatorStatusLabel(User user) {
+        if (user == null) {
+            return "";
+        }
+        if (user.isDeleted()) {
+            return "Deleted";
+        }
+        if (user.isEventCoordinatorRemoved()) {
+            return "Removed";
+        }
+        return "Active";
+    }
 }

@@ -21,7 +21,7 @@
             fx:controller="dk.easv.eventTicketSystem.gui.events.EventDialogController">
 
     <center>
-        <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scrollable">
+        <ScrollPane fitToWidth="true" fitToHeight="false" hbarPolicy="NEVER" vbarPolicy="AS_NEEDED" styleClass="scrollable">
             <content>
                 <VBox styleClass="dialog-content" spacing="14" VBox.vgrow="NEVER">
                     <HBox alignment="TOP_CENTER" fillHeight="false">
@@ -67,13 +67,13 @@
                                 <Label styleClass="error-label" fx:id="errCapacity" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
                             </GridPane>
 
-                            <VBox styleClass="dialog-section-card" spacing="8" maxWidth="Infinity">
+                            <VBox styleClass="dialog-section-card" spacing="12" maxWidth="Infinity">
                                 <HBox styleClass="dialog-section-header" alignment="CENTER_LEFT" spacing="8">
                                     <Label text="Ticket types" styleClass="section-label"/>
                                     <Region HBox.hgrow="ALWAYS"/>
                                     <Button fx:id="btnToggleDeletedTicketTypes" text="Hide Deleted Types" onAction="#onToggleDeletedTicketTypes"/>
                                 </HBox>
-                                <TableView fx:id="ticketTypesTable" prefHeight="180">
+                                <TableView fx:id="ticketTypesTable" minHeight="240.0" prefHeight="240.0" maxHeight="Infinity" VBox.vgrow="ALWAYS">
                                     <columns>
                                         <TableColumn fx:id="colTicketTypeName" text="Name"/>
                                         <TableColumn fx:id="colTicketTypePrice" text="Price"/>

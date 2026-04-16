@@ -27,14 +27,14 @@ public class Event {
     private final ObjectProperty<LocalDateTime> endTime = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> createdAt = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> updatedAt = new SimpleObjectProperty<>();
-    private final IntegerProperty capacity = new SimpleIntegerProperty(0);
+    private final IntegerProperty capacity = new SimpleIntegerProperty(1);
     private final ObjectProperty<Long> createdByUserId = new SimpleObjectProperty<>();
     private final BooleanProperty deleted = new SimpleBooleanProperty(false);
     private final ObservableList<TicketCategory> ticketTypes = FXCollections.observableArrayList();
 
     public Event() {
         this(null, null, null, null, null, null, null, null, LocalDateTime.now(), LocalDateTime.now(),
-                0, null, false, List.of());
+                1, null, false, List.of());
     }
 
     public Event(Long id,
@@ -61,7 +61,7 @@ public class Event {
         this.endTime.set(endTime);
         this.createdAt.set(createdAt);
         this.updatedAt.set(updatedAt);
-        this.capacity.set(Math.max(0, capacity));
+        this.capacity.set(capacity);
         this.createdByUserId.set(createdByUserId);
         this.deleted.set(deleted);
         setTicketTypes(ticketTypes);
@@ -108,7 +108,7 @@ public class Event {
     public ObjectProperty<LocalDateTime> updatedAtProperty() { return updatedAt; }
 
     public int getCapacity() { return capacity.get(); }
-    public void setCapacity(int capacity) { this.capacity.set(Math.max(0, capacity)); }
+    public void setCapacity(int capacity) { this.capacity.set(capacity); }
     public IntegerProperty capacityProperty() { return capacity; }
 
     public Long getCreatedByUserId() { return createdByUserId.get(); }

@@ -94,13 +94,15 @@ public final class TicketDAO implements TicketRepository {
                             String customerName,
                             String customerEmail,
                             String code) throws TicketException {
+        if (ticketCategoryId == null || ticketCategoryId <= 0) {
+            throw new TicketException("Ticket type is required.", null);
+        }
         String ticketCode = DaoSupport.isBlank(code) ? Ticket.generateCode() : code.trim();
 
         try (Connection con = database.getConnection()) {
-            ensureEvent(con, eventId);
-            if (ticketCategoryId != null && ticketCategoryId > 0) {
-                ensureTicketCategory(con, eventId, ticketCategoryId);
-            }
+            ensureActiveEvent(con, eventId);
+            int seatCount = ensureActiveTicketCategory(con, eventId, ticketCategoryId);
+            ensureCategoryHasAvailableSeats(con, eventId, ticketCategoryId, seatCount);
 
             try (PreparedStatement stmt = con.prepareStatement("""
                     INSERT INTO dbo.Tickets
@@ -120,6 +122,8 @@ public final class TicketDAO implements TicketRepository {
                     }
                 }
             }
+        } catch (TicketException e) {
+            throw e;
         } catch (SQLException | RuntimeException e) {
             throw new TicketException("Could not add ticket.", e);
         }
@@ -128,20 +132,43 @@ public final class TicketDAO implements TicketRepository {
     }
 
     @Override
+    public Ticket getTicketById(long ticketId) throws TicketException {
+        List<Ticket> tickets = queryTickets(TICKET_SELECT + " WHERE t.id = ?", List.of(ticketId));
+        if (tickets.isEmpty()) {
+            throw new TicketException("Ticket not found.", null);
+        }
+        return tickets.get(0);
+    }
+
+    @Override
+    public int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) throws TicketException {
+        try (Connection con = database.getConnection()) {
+            return countActiveTicketsForTicketCategory(con, eventId, ticketCategoryId);
+        } catch (SQLException | RuntimeException e) {
+            throw new TicketException("Could not load ticket usage.", e);
+        }
+    }
+
+    @Override
     public Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException {
-        try (Connection con = database.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
+        try (Connection con = database.getConnection()) {
+            if (!deleted) {
+                ensureTicketCanBeRestored(con, ticketId);
+            }
+
+            try (PreparedStatement stmt = con.prepareStatement("""
                      UPDATE dbo.Tickets
                      SET deleted = ?
                      WHERE id = ?
                      """)) {
-            stmt.setBoolean(1, deleted);
-            stmt.setLong(2, ticketId);
-            int rows = stmt.executeUpdate();
-            if (rows == 0) {
-                throw new TicketException("Ticket not found.", null);
+                stmt.setBoolean(1, deleted);
+                stmt.setLong(2, ticketId);
+                int rows = stmt.executeUpdate();
+                if (rows == 0) {
+                    throw new TicketException("Ticket not found.", null);
+                }
+                return getTicketById(ticketId);
             }
-            return getTicketById(ticketId);
         } catch (TicketException e) {
             throw e;
         } catch (SQLException | RuntimeException e) {
@@ -171,14 +198,6 @@ public final class TicketDAO implements TicketRepository {
         }
     }
 
-    private Ticket getTicketById(long ticketId) throws TicketException {
-        List<Ticket> tickets = queryTickets(TICKET_SELECT + " WHERE t.id = ?", List.of(ticketId));
-        if (tickets.isEmpty()) {
-            throw new TicketException("Ticket not found.", null);
-        }
-        return tickets.get(0);
-    }
-
     private List<Ticket> queryTickets(String sql, List<Object> params) throws TicketException {
         List<Ticket> tickets = new ArrayList<>();
         try (Connection con = database.getConnection();
@@ -195,20 +214,26 @@ public final class TicketDAO implements TicketRepository {
         return tickets;
     }
 
-    private void ensureEvent(Connection con, long eventId) throws SQLException {
-        try (PreparedStatement stmt = con.prepareStatement("SELECT 1 FROM dbo.Events WHERE id = ?")) {
+    private void ensureActiveEvent(Connection con, long eventId) throws SQLException, TicketException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Events
+                WHERE id = ?
+                  AND is_deleted = 0
+                """)) {
             stmt.setLong(1, eventId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    throw new SQLException("Event not found.");
+                    throw new TicketException("Selected event is not available.", null);
                 }
             }
         }
     }
 
-    private void ensureTicketCategory(Connection con, long eventId, long ticketCategoryId) throws SQLException {
+    private int ensureActiveTicketCategory(Connection con, long eventId, long ticketCategoryId)
+            throws SQLException, TicketException {
         try (PreparedStatement stmt = con.prepareStatement("""
-                SELECT 1
+                SELECT seat_count
                 FROM dbo.TicketCategories
                 WHERE id = ?
                   AND event_id = ?
@@ -218,8 +243,82 @@ public final class TicketDAO implements TicketRepository {
             stmt.setLong(2, eventId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (!rs.next()) {
-                    throw new SQLException("Ticket category not found for event.");
+                    throw new TicketException("Selected ticket type is not available for this event.", null);
                 }
+                return rs.getInt("seat_count");
+            }
+        }
+    }
+
+    private void ensureCategoryHasAvailableSeats(Connection con,
+                                                 long eventId,
+                                                 long ticketCategoryId,
+                                                 int seatCount) throws SQLException, TicketException {
+        int activeTickets = countActiveTicketsForTicketCategory(con, eventId, ticketCategoryId);
+        if (activeTickets >= seatCount) {
+            throw new TicketException("No seats are left for the selected ticket type.", null);
+        }
+    }
+
+    private int countActiveTicketsForTicketCategory(Connection con, long eventId, long ticketCategoryId)
+            throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT COUNT(*)
+                FROM dbo.Tickets
+                WHERE event_id = ?
+                  AND ticket_category_id = ?
+                  AND deleted = 0
+                """)) {
+            stmt.setLong(1, eventId);
+            stmt.setLong(2, ticketCategoryId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next() ? rs.getInt(1) : 0;
+            }
+        }
+    }
+
+    private void ensureTicketCanBeRestored(Connection con, long ticketId) throws SQLException, TicketException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT
+                    t.event_id,
+                    t.ticket_category_id,
+                    t.deleted,
+                    e.is_deleted AS event_deleted,
+                    tc.id AS category_id_check,
+                    tc.is_deleted AS category_deleted,
+                    tc.seat_count
+                FROM dbo.Tickets t
+                JOIN dbo.Events e ON e.id = t.event_id
+                LEFT JOIN dbo.TicketCategories tc
+                    ON tc.id = t.ticket_category_id
+                   AND tc.event_id = t.event_id
+                WHERE t.id = ?
+                """)) {
+            stmt.setLong(1, ticketId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new TicketException("Ticket not found.", null);
+                }
+                if (!rs.getBoolean("deleted")) {
+                    return;
+                }
+                if (rs.getBoolean("event_deleted")) {
+                    throw new TicketException("Cannot restore a ticket for a deleted event.", null);
+                }
+
+                Long ticketCategoryId = DaoSupport.getLongObject(rs, "ticket_category_id");
+                if (ticketCategoryId == null || ticketCategoryId <= 0) {
+                    throw new TicketException("Cannot restore a ticket without a ticket type.", null);
+                }
+
+                Long existingCategoryId = DaoSupport.getLongObject(rs, "category_id_check");
+                if (existingCategoryId == null || rs.getBoolean("category_deleted")) {
+                    throw new TicketException("Cannot restore this ticket because its ticket type is deleted.", null);
+                }
+
+                long eventId = rs.getLong("event_id");
+                int seatCount = rs.getInt("seat_count");
+                ensureCategoryHasAvailableSeats(con, eventId, ticketCategoryId, seatCount);
             }
         }
     }

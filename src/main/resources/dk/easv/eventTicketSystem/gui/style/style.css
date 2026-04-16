@@ -1008,6 +1008,11 @@
     -fx-max-width: 320;
 }
 
+#emailField,
+#passwordField {
+    -fx-prompt-text-fill: #e5e7eb;
+}
+
 #errorLabel {
     -fx-text-fill: -fx-error;
 }
@@ -1052,6 +1057,7 @@
 .dialog-section-actions {
     -fx-spacing: 8;
     -fx-alignment: CENTER_LEFT;
+    -fx-padding: 8 0 0 0;
 }
 
 .dialog-actions {

@@ -189,6 +189,7 @@ public class EventsController implements ModelAware {
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
                 reloadCurrentEventView();
+                reloadAllTickets();
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -228,6 +229,7 @@ public class EventsController implements ModelAware {
                 statusBanner.showSaved();
                 updateActionState(selected);
                 reloadCurrentEventView();
+                reloadAllTickets();
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -266,6 +268,7 @@ public class EventsController implements ModelAware {
         task.setOnSucceeded(workerStateEvent -> {
             statusBanner.showSaved();
             reloadCurrentEventView();
+            reloadAllTickets();
         });
 
         task.setOnFailed(workerStateEvent -> {
@@ -319,6 +322,22 @@ public class EventsController implements ModelAware {
                 task.getException() == null ? "Unable to load events." : task.getException().getMessage()));
 
         new Thread(task, "load-all-events-task").start();
+    }
+
+    private void reloadAllTickets() {
+        if (model == null) {
+            return;
+        }
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                model.loadAllTickets();
+                return null;
+            }
+        };
+
+        new Thread(task, "refresh-tickets-after-event-task").start();
     }
 
     private void ensureEventSelection() {

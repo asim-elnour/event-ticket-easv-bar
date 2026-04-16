@@ -191,7 +191,8 @@ public final class UserDAO implements UserRepository {
         params.add(Role.COORDINATOR.getId());
 
         if (!includeRemoved) {
-            sql.append(" AND (coordinator.id IS NULL OR coordinator.removed_at IS NULL)");
+            sql.append(" AND u.is_deleted = 0")
+                    .append(" AND (coordinator.id IS NULL OR coordinator.removed_at IS NULL)");
         }
         appendCoordinatorSearch(sql, params, columnKey, query, "coordinator");
         sql.append(" ORDER BY LOWER(u.username), u.id");
@@ -213,7 +214,8 @@ public final class UserDAO implements UserRepository {
         params.add(Role.COORDINATOR.getId());
 
         if (!includeRemoved) {
-            sql.append(" AND coordinator.removed_at IS NULL");
+            sql.append(" AND u.is_deleted = 0")
+                    .append(" AND coordinator.removed_at IS NULL");
         }
         appendCoordinatorSearch(sql, params, columnKey, query, "coordinator");
         sql.append(" ORDER BY LOWER(u.username), u.id");
@@ -257,6 +259,10 @@ public final class UserDAO implements UserRepository {
         try (Connection con = database.getConnection()) {
             ensureCoordinator(con, userId);
             ensureEvent(con, eventId);
+
+            if (isOnlyActiveCoordinatorForEvent(con, eventId, userId)) {
+                throw new UserException("You cannot remove the only coordinator from event '" + getEventName(con, eventId) + "'.");
+            }
 
             try (PreparedStatement stmt = con.prepareStatement("""
                     UPDATE dbo.EventCoordinators
@@ -334,7 +340,7 @@ public final class UserDAO implements UserRepository {
                     }
                 }
 
-                if (!user.hasRole(Role.COORDINATOR)) {
+                if (!canCoordinate(user)) {
                     removeActiveAssignments(con, user.getId());
                 }
 
@@ -354,15 +360,116 @@ public final class UserDAO implements UserRepository {
 
     @Override
     public boolean existsByEmail(String email) throws UserException {
-        String sql = "SELECT 1 FROM dbo.Users WHERE LOWER(email) = ?";
-        try (Connection con = database.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql)) {
-            stmt.setString(1, DaoSupport.safe(email).toLowerCase());
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
+        return existsByEmail(email, null);
+    }
+
+    @Override
+    public boolean existsByEmail(String email, Long excludeUserId) throws UserException {
+        StringBuilder sql = new StringBuilder("SELECT 1 FROM dbo.Users WHERE LOWER(email) = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(DaoSupport.safe(email).toLowerCase());
+        if (excludeUserId != null && excludeUserId > 0) {
+            sql.append(" AND id <> ?");
+            params.add(excludeUserId);
+        }
+        return exists(sql.toString(), params, "Could not check email.");
+    }
+
+    @Override
+    public boolean existsByUsername(String username) throws UserException {
+        return existsByUsername(username, null);
+    }
+
+    @Override
+    public boolean existsByUsername(String username, Long excludeUserId) throws UserException {
+        StringBuilder sql = new StringBuilder("SELECT 1 FROM dbo.Users WHERE LOWER(username) = ?");
+        List<Object> params = new ArrayList<>();
+        params.add(DaoSupport.safe(username).toLowerCase());
+        if (excludeUserId != null && excludeUserId > 0) {
+            sql.append(" AND id <> ?");
+            params.add(excludeUserId);
+        }
+        return exists(sql.toString(), params, "Could not check username.");
+    }
+
+    @Override
+    public boolean isOnlyActiveAdmin(long userId) throws UserException {
+        try (Connection con = database.getConnection()) {
+            if (!isActiveAdmin(con, userId)) {
+                return false;
+            }
+            try (PreparedStatement stmt = con.prepareStatement("""
+                    SELECT COUNT(*)
+                    FROM dbo.Users
+                    WHERE role_id = ?
+                      AND is_deleted = 0
+                    """)) {
+                stmt.setInt(1, Role.ADMIN.getId());
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1) <= 1;
+                    }
+                }
             }
         } catch (SQLException | RuntimeException e) {
-            throw new UserException("Could not check email.", e);
+            throw new UserException("Could not verify admin status.", e);
+        }
+        return false;
+    }
+
+    @Override
+    public List<String> findActiveEventsWhereUserIsOnlyCoordinator(long userId) throws UserException {
+        String sql = """
+                SELECT DISTINCT e.name
+                FROM dbo.EventCoordinators ec
+                JOIN dbo.Events e ON e.id = ec.event_id
+                WHERE ec.user_id = ?
+                  AND ec.removed_at IS NULL
+                  AND e.is_deleted = 0
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM dbo.EventCoordinators other
+                      JOIN dbo.Users other_user ON other_user.id = other.user_id
+                      WHERE other.event_id = ec.event_id
+                        AND other.user_id <> ec.user_id
+                        AND other.removed_at IS NULL
+                        AND other_user.role_id = ?
+                        AND other_user.is_deleted = 0
+                  )
+                ORDER BY e.name
+                """;
+
+        List<String> eventNames = new ArrayList<>();
+        try (Connection con = database.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
+            stmt.setLong(1, userId);
+            stmt.setInt(2, Role.COORDINATOR.getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    eventNames.add(rs.getString(1));
+                }
+            }
+        } catch (SQLException | RuntimeException e) {
+            throw new UserException("Could not verify coordinator assignments.", e);
+        }
+        return eventNames;
+    }
+
+    @Override
+    public boolean isOnlyActiveCoordinatorForEvent(long eventId, long userId) throws UserException {
+        try (Connection con = database.getConnection()) {
+            return isOnlyActiveCoordinatorForEvent(con, eventId, userId);
+        } catch (SQLException | RuntimeException e) {
+            throw new UserException("Could not verify event coordinators.", e);
+        }
+    }
+
+    @Override
+    public String getEventName(long eventId) throws UserException {
+        try (Connection con = database.getConnection()) {
+            return getEventName(con, eventId);
+        } catch (SQLException | RuntimeException e) {
+            throw new UserException("Could not load event name.", e);
         }
     }
 
@@ -417,7 +524,8 @@ public final class UserDAO implements UserRepository {
     private String coordinatorSearchExpression(String columnKey, String coordinatorAlias) {
         String normalized = DaoSupport.safe(columnKey);
         String eventName = "LOWER(COALESCE(e.name, N''))";
-        String status = "LOWER(CASE WHEN " + coordinatorAlias + ".id IS NOT NULL AND "
+        String status = "LOWER(CASE WHEN u.is_deleted = 1 THEN N'Deleted' WHEN "
+                + coordinatorAlias + ".id IS NOT NULL AND "
                 + coordinatorAlias + ".removed_at IS NOT NULL THEN N'Removed' ELSE N'Active' END)";
         return switch (normalized) {
             case COLUMN_USERNAME -> "LOWER(u.username)";
@@ -426,7 +534,7 @@ public final class UserDAO implements UserRepository {
             case COLUMN_STATUS -> status;
             default -> "LOWER(CONCAT(u.username, N' ', u.first_name, N' ', u.last_name, N' ', u.email, N' ', "
                     + "COALESCE(e.name, N''), N' ', "
-                    + "CASE WHEN " + coordinatorAlias + ".id IS NOT NULL AND "
+                    + "CASE WHEN u.is_deleted = 1 THEN N'Deleted' WHEN " + coordinatorAlias + ".id IS NOT NULL AND "
                     + coordinatorAlias + ".removed_at IS NOT NULL THEN N'Removed' ELSE N'Active' END))";
         };
     }
@@ -472,6 +580,18 @@ public final class UserDAO implements UserRepository {
         }
     }
 
+    private boolean exists(String sql, List<Object> params, String message) throws UserException {
+        try (Connection con = database.getConnection();
+             PreparedStatement stmt = con.prepareStatement(sql)) {
+            bindParams(stmt, params);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException | RuntimeException e) {
+            throw new UserException(message, e);
+        }
+    }
+
     private void ensureEventExists(long eventId) throws UserException {
         try (Connection con = database.getConnection()) {
             ensureEvent(con, eventId);
@@ -489,6 +609,18 @@ public final class UserDAO implements UserRepository {
                 }
             }
         }
+    }
+
+    private String getEventName(Connection con, long eventId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("SELECT name FROM dbo.Events WHERE id = ?")) {
+            stmt.setLong(1, eventId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getString(1);
+                }
+            }
+        }
+        return "selected event";
     }
 
     private void ensureCoordinator(Connection con, long userId) throws SQLException {
@@ -523,6 +655,55 @@ public final class UserDAO implements UserRepository {
                 return rs.next();
             }
         }
+    }
+
+    private boolean isOnlyActiveCoordinatorForEvent(Connection con, long eventId, long userId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.EventCoordinators ec
+                JOIN dbo.Events e ON e.id = ec.event_id
+                WHERE ec.event_id = ?
+                  AND ec.user_id = ?
+                  AND ec.removed_at IS NULL
+                  AND e.is_deleted = 0
+                  AND NOT EXISTS (
+                      SELECT 1
+                      FROM dbo.EventCoordinators other
+                      JOIN dbo.Users other_user ON other_user.id = other.user_id
+                      WHERE other.event_id = ec.event_id
+                        AND other.user_id <> ec.user_id
+                        AND other.removed_at IS NULL
+                        AND other_user.role_id = ?
+                        AND other_user.is_deleted = 0
+                  )
+                """)) {
+            stmt.setLong(1, eventId);
+            stmt.setLong(2, userId);
+            stmt.setInt(3, Role.COORDINATOR.getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private boolean isActiveAdmin(Connection con, long userId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Users
+                WHERE id = ?
+                  AND role_id = ?
+                  AND is_deleted = 0
+                """)) {
+            stmt.setLong(1, userId);
+            stmt.setInt(2, Role.ADMIN.getId());
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private boolean canCoordinate(User user) {
+        return user != null && user.hasRole(Role.COORDINATOR) && !user.isDeleted();
     }
 
     private void removeActiveAssignments(Connection con, long userId) throws SQLException {

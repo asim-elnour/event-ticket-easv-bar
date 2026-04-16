@@ -8,6 +8,7 @@ import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
+import dk.easv.eventTicketSystem.util.UserUiText;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.ListChangeListener;
@@ -32,6 +33,7 @@ public class EventCoordinatorsController implements ModelAware {
     @FXML private TableColumn<User, String> colEvent;
     @FXML private TableColumn<User, String> colStatus;
     @FXML private Button showDeletedButton;
+    @FXML private Button addButton;
     @FXML private Button removeButton;
 
     private AppModel model;
@@ -64,7 +66,8 @@ public class EventCoordinatorsController implements ModelAware {
                 return new SimpleStringProperty("");
             }
             return Bindings.createStringBinding(
-                    () -> user.isEventCoordinatorRemoved() ? "Removed" : "Active",
+                    () -> UserUiText.coordinatorStatusLabel(user),
+                    user.deletedProperty(),
                     user.eventCoordinatorRemovedProperty()
             );
         });
@@ -192,6 +195,11 @@ public class EventCoordinatorsController implements ModelAware {
 
     @FXML
     private void onAddCoordinator() {
+        if (!canManageCoordinators()) {
+            showCoordinatorMessage("Coordinator Permissions", "Only admins can manage event coordinators.");
+            return;
+        }
+
         if (model == null) {
             return;
         }
@@ -210,6 +218,11 @@ public class EventCoordinatorsController implements ModelAware {
 
         if (selected.getId() == null || selected.getId() <= 0) {
             showCoordinatorMessage("Add Coordinator", "Please select a valid user first.");
+            return;
+        }
+
+        if (selected.isDeleted()) {
+            showCoordinatorMessage("Add Coordinator", "Selected user must be active.");
             return;
         }
 
@@ -256,9 +269,19 @@ public class EventCoordinatorsController implements ModelAware {
 
     @FXML
     private void onRemoveCoordinator() {
+        if (!canManageCoordinators()) {
+            showCoordinatorMessage("Coordinator Permissions", "Only admins can manage event coordinators.");
+            return;
+        }
+
         User selected = usersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             DialogUtils.showWarning("Remove Coordinator", null, "Please select a coordinator to remove.");
+            return;
+        }
+
+        if (selected.isDeleted()) {
+            showCoordinatorMessage("Coordinator", "Deleted users cannot be changed here.");
             return;
         }
 
@@ -361,9 +384,12 @@ public class EventCoordinatorsController implements ModelAware {
         } else if (isDataConflictIssue(root, normalized)) {
             type = "Data Conflict";
             detail = "The data conflicts with existing records.";
-        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized")) {
+        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "only admins")) {
             type = "Permission";
             detail = "You do not have permission to perform this action.";
+        } else if (containsAny(normalized, "required", "valid", "must", "cannot", "only coordinator")) {
+            type = "Validation";
+            detail = "The request violates a validation or business rule.";
         } else if (containsAny(normalized, "not found", "no longer exists", "missing")) {
             type = "Coordinator Not Found";
             detail = "The selected coordinator record no longer exists.";
@@ -449,14 +475,23 @@ public class EventCoordinatorsController implements ModelAware {
     }
 
     private void updateActionState(User selected) {
+        boolean canManage = canManageCoordinators();
+        if (addButton != null) {
+            addButton.setDisable(!canManage);
+        }
+
         if (selected == null) {
             removeButton.setDisable(true);
             removeButton.setText("Remove Coordinator");
             return;
         }
-        removeButton.setDisable(false);
+        removeButton.setDisable(!canManage || selected.isDeleted());
         removeButton.setText(selected.isEventCoordinatorRemoved()
                 ? "Restore Coordinator"
                 : "Remove Coordinator");
+    }
+
+    private boolean canManageCoordinators() {
+        return model != null && model.isAdmin();
     }
 }

@@ -8,19 +8,14 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 
-<ScrollPane fx:id="topBarScroll"
-            xmlns="http://javafx.com/javafx/24.0.1"
-            xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="dk.easv.eventTicketSystem.gui.search.SearchBarController"
-            fitToWidth="false"
-            fitToHeight="true"
-            hbarPolicy="AS_NEEDED"
-            vbarPolicy="NEVER"
-            pannable="false"
-            
-            styleClass="top-bar-scroll">
-    <content>
-         <HBox styleClass="top-bar" alignment="CENTER_LEFT">
+<HBox xmlns="http://javafx.com/javafx/24.0.1"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="dk.easv.eventTicketSystem.gui.search.SearchBarController"
+      styleClass="top-bar-outer">
+
+   
+            <HBox styleClass="top-bar" alignment="CENTER_LEFT"  HBox.hgrow="ALWAYS">
+
                 <HBox alignment="CENTER_LEFT" styleClass="top-bar-left">
                     <Label styleClass="top-bar-brand" text="Event Ticket System"/>
                 </HBox>
@@ -38,6 +33,7 @@
                 <HBox fx:id="rightControls" alignment="CENTER_RIGHT" styleClass="top-bar-right">
                     <Button fx:id="logoutButton" styleClass="top-bar-action" text="Log Out"/>
                 </HBox>
+
             </HBox>
-    </content>
-</ScrollPane>
+
+</HBox>

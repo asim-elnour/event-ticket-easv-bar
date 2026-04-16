@@ -52,6 +52,10 @@
                             <Label text="Password:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
                             <PasswordField fx:id="txtPassword" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errPassword" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
+
+                            <Label text="Repeat Password:" GridPane.rowIndex="14" GridPane.columnIndex="0"/>
+                            <PasswordField fx:id="txtRepeatPassword" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <Label styleClass="error-label" fx:id="errRepeatPassword" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
                         </GridPane>
                     </HBox>
                 </VBox>

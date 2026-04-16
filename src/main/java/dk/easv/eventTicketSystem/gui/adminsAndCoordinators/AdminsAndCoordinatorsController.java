@@ -1,10 +1,13 @@
 package dk.easv.eventTicketSystem.gui.adminsAndCoordinators;
 
+import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.util.DialogUtils;
+import dk.easv.eventTicketSystem.util.SceneNavigator;
+import dk.easv.eventTicketSystem.util.SessionManager;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.UserUiText;
 import dk.easv.eventTicketSystem.util.ViewType;
@@ -142,6 +145,11 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
     @FXML
     private void onAddUser() {
+        if (!canManageUsers()) {
+            showMessageDialog("User Permissions", "Only admins can manage users.");
+            return;
+        }
+
         Optional<User> result = showUserDialog(null);
         result.ifPresent(user -> {
             statusBanner.showSaving();
@@ -165,6 +173,11 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
     @FXML
     private void onEditUser() {
+        if (!canManageUsers()) {
+            showMessageDialog("User Permissions", "Only admins can manage users.");
+            return;
+        }
+
         User selected = usersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessageDialog("Edit User", "Please select a user to edit.");
@@ -173,6 +186,8 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
         Optional<User> result = showUserDialog(selected);
         result.ifPresent(user -> {
+            boolean shouldForceLogout = isCurrentSessionUser(user)
+                    && (user.isDeleted() || !user.hasRole(Role.ADMIN));
             statusBanner.showSaving();
             Task<Void> task = new Task<>() {
                 @Override
@@ -183,6 +198,10 @@ public class AdminsAndCoordinatorsController implements ModelAware {
             };
             task.setOnSucceeded(event -> {
                 statusBanner.showSaved();
+                if (shouldForceLogout) {
+                    forceLogout("Your account permissions changed. Please log in again.");
+                    return;
+                }
                 reloadUsers();
             });
             task.setOnFailed(event -> {
@@ -195,6 +214,11 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
     @FXML
     private void onDeactivateUser() {
+        if (!canManageUsers()) {
+            showMessageDialog("User Permissions", "Only admins can manage users.");
+            return;
+        }
+
         User selected = usersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             showMessageDialog("User State", "Please select a user first.");
@@ -217,6 +241,10 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         };
         task.setOnSucceeded(event -> {
             statusBanner.showSaved();
+            if (shouldDelete && isCurrentSessionUser(selected)) {
+                forceLogout("Your account was deactivated. Please log in again.");
+                return;
+            }
             updateActionState(selected);
             reloadUsers();
         });
@@ -275,7 +303,7 @@ public class AdminsAndCoordinatorsController implements ModelAware {
             Parent root = loader.load();
 
             AdminCoordinatorDialogController controller = loader.getController();
-            controller.setUser(user);
+            controller.setUser(user == null ? null : user.copy());
 
             Stage stage = new Stage();
             stage.initModality(Modality.APPLICATION_MODAL);
@@ -336,9 +364,12 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         } else if (isDataConflictIssue(root, normalized)) {
             type = "Data Conflict";
             detail = "The data conflicts with existing records.";
-        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized")) {
+        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "only admins")) {
             type = "Permission";
             detail = "You do not have permission to perform this action.";
+        } else if (containsAny(normalized, "required", "valid", "must", "cannot", "password", "email", "phone", "last active admin", "only coordinator")) {
+            type = "Validation";
+            detail = "The request violates a validation or business rule.";
         } else if (containsAny(normalized, "not found", "no longer exists", "missing")) {
             type = "User Not Found";
             detail = "The selected user record no longer exists.";
@@ -424,6 +455,11 @@ public class AdminsAndCoordinatorsController implements ModelAware {
     }
 
     private void updateActionState(User selected) {
+        boolean canManage = canManageUsers();
+        if (addButton != null) {
+            addButton.setDisable(!canManage);
+        }
+
         if (selected == null) {
             editButton.setDisable(true);
             deactivateButton.setDisable(true);
@@ -432,8 +468,35 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         }
 
         boolean isDeleted = selected.isDeleted();
-        editButton.setDisable(isDeleted);
-        deactivateButton.setDisable(false);
+        editButton.setDisable(!canManage || isDeleted);
+        deactivateButton.setDisable(!canManage);
         deactivateButton.setText(isDeleted ? "Restore User" : "Deactivate User");
+    }
+
+    private boolean canManageUsers() {
+        return model != null && model.isAdmin();
+    }
+
+    private boolean isCurrentSessionUser(User user) {
+        if (user == null || user.getId() == null || model == null || model.getCurrentUser() == null) {
+            return false;
+        }
+
+        Long currentUserId = model.getCurrentUser().getId();
+        return currentUserId != null && currentUserId.equals(user.getId());
+    }
+
+    private void forceLogout(String message) {
+        Window owner = resolveOwnerWindow();
+        DialogUtils.showMessageDialog("Session Updated", message, "OK", owner);
+        SessionManager.clearCurrentUser();
+
+        if (owner instanceof Stage stage) {
+            try {
+                SceneNavigator.openLogin(stage);
+            } catch (IOException e) {
+                showMessageDialog("Log Out", "Could not return to the login page: " + e.getMessage());
+            }
+        }
     }
 }

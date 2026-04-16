@@ -23,4 +23,8 @@ public interface EventRepository {
     void setEventDeleted(long eventId, long coordinatorId, boolean deleted) throws EventException;
 
     Event getEventById(long eventId) throws EventException;
+
+    int countActiveTicketsForEvent(long eventId) throws EventException;
+
+    int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) throws EventException;
 }

@@ -21,6 +21,10 @@ public interface TicketRepository {
                      String customerEmail,
                      String code) throws TicketException;
 
+    Ticket getTicketById(long ticketId) throws TicketException;
+
+    int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) throws TicketException;
+
     Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException;
 
     Ticket redeemTicketById(long ticketId) throws TicketException;

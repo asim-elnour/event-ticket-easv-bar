@@ -101,6 +101,44 @@ public class User {
         return "Active";
     }
 
+    public User copy() {
+        User copy = new User(
+                getUsername(),
+                getFirstName(),
+                getLastName(),
+                getEmail(),
+                getPassword(),
+                getRole()
+        );
+        copy.idProperty().set(getId());
+        copy.setPhone(getPhone());
+        copy.setDeleted(isDeleted());
+        copy.setEventCoordinatorRemoved(isEventCoordinatorRemoved());
+        copy.setEventCoordinatorEventId(getEventCoordinatorEventId());
+        copy.setEventCoordinatorEventName(getEventCoordinatorEventName());
+        copy.createdAtProperty().set(getCreatedAt());
+        return copy;
+    }
+
+    public void restoreFrom(User user) {
+        if (user == null) {
+            return;
+        }
+        idProperty().set(user.getId());
+        setUsername(user.getUsername());
+        setFirstName(user.getFirstName());
+        setLastName(user.getLastName());
+        setEmail(user.getEmail());
+        setPhone(user.getPhone());
+        setPassword(user.getPassword());
+        setRole(user.getRole());
+        setDeleted(user.isDeleted());
+        setEventCoordinatorRemoved(user.isEventCoordinatorRemoved());
+        setEventCoordinatorEventId(user.getEventCoordinatorEventId());
+        setEventCoordinatorEventName(user.getEventCoordinatorEventName());
+        createdAtProperty().set(user.getCreatedAt());
+    }
+
     @Override
     public String toString() {
         return getFullName() + " (" + getUsername() + ")";

@@ -31,8 +31,8 @@ public class LoginController {
     @FXML
     public void initialize() {
         loginTitle.setText("Login");
-        emailField.setPromptText("Email");
-        passwordField.setPromptText("Password");
+        emailField.setPromptText("Enter your email");
+        passwordField.setPromptText("Enter your password");
         loginButton.setText("Login");
         emailField.setOnAction(event -> passwordField.requestFocus());
         passwordField.setOnAction(event -> onLogin());

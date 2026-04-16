@@ -55,7 +55,7 @@
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
                     <HBox styleClass="actions-row">
-                        <Button minWidth="-Infinity" onAction="#onAddCoordinator" text="Add Coordinator"
+                        <Button fx:id="addButton" minWidth="-Infinity" onAction="#onAddCoordinator" text="Add Coordinator"
                                 HBox.hgrow="ALWAYS"/>
                         <Button fx:id="removeButton"
                                 minWidth="-Infinity"
