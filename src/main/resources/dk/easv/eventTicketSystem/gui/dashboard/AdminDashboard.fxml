@@ -10,8 +10,8 @@
           fx:controller="dk.easv.eventTicketSystem.gui.dashboard.DashboardWorkspaceController">
 
     <columnConstraints>
-        <ColumnConstraints percentWidth="18"/>
-        <ColumnConstraints percentWidth="52" hgrow="ALWAYS"/>
+        <ColumnConstraints percentWidth="20"/>
+        <ColumnConstraints percentWidth="50" hgrow="ALWAYS"/>
         <ColumnConstraints percentWidth="30" hgrow="ALWAYS"/>
     </columnConstraints>
     <rowConstraints>
