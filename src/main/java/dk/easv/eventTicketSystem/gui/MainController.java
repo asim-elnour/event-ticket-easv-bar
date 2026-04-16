@@ -52,16 +52,7 @@ public class MainController {
 
         loadTopBar();
 
-        ViewType dashboard;
-        if (model.isAdmin() && model.isCoordinator()) {
-            dashboard = ViewType.DASHBOARD_ADMIN_AND_COORDINATOR;
-        } else if (model.isAdmin()) {
-            dashboard = ViewType.DASHBOARD_ADMIN;
-        } else {
-            dashboard = ViewType.DASHBOARD_COORDINATOR;
-        }
-
-        loadDashboard(dashboard);
+        loadDashboard(ViewType.DASHBOARD);
 
         if (searchBarController != null) {
             searchBarController.setModel(model);

@@ -4,9 +4,7 @@ public enum ViewType {
     LOGIN("/dk/easv/eventTicketSystem/gui/login/LoginView.fxml"),
     MAIN("/dk/easv/eventTicketSystem/gui/MainView.fxml"),
 
-    DASHBOARD_ADMIN_AND_COORDINATOR("/dk/easv/eventTicketSystem/gui/dashboard/AdminAndCoordinatorDashboard.fxml"),
-    DASHBOARD_ADMIN("/dk/easv/eventTicketSystem/gui/dashboard/AdminDashboard.fxml"),
-    DASHBOARD_COORDINATOR("/dk/easv/eventTicketSystem/gui/dashboard/CoordinatorDashboard.fxml"),
+    DASHBOARD("/dk/easv/eventTicketSystem/gui/dashboard/AdminDashboard.fxml"),
 
     MESSAGE_DIALOG("/dk/easv/eventTicketSystem/gui/common/MessageDialog.fxml"),
     SEARCH_BAR("/dk/easv/eventTicketSystem/gui/search/SearchBar.fxml"),
