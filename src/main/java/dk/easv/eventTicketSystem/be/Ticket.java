@@ -17,9 +17,14 @@ public class Ticket {
     private final ObjectProperty<Long> ticketCategoryId = new SimpleObjectProperty<>();
     private final ObjectProperty<Long> customerId = new SimpleObjectProperty<>();
     private final StringProperty eventName = new SimpleStringProperty();
+    private final StringProperty eventLocation = new SimpleStringProperty();
+    private final StringProperty eventGuidance = new SimpleStringProperty();
+    private final StringProperty eventNotes = new SimpleStringProperty();
     private final StringProperty code = new SimpleStringProperty();
     private final StringProperty customerName = new SimpleStringProperty();
     private final StringProperty customerEmail = new SimpleStringProperty();
+    private final ObjectProperty<LocalDateTime> eventStartTime = new SimpleObjectProperty<>();
+    private final ObjectProperty<LocalDateTime> eventEndTime = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> issuedAt = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> redeemedAt = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> refundedAt = new SimpleObjectProperty<>();
@@ -119,6 +124,42 @@ public class Ticket {
         return eventName;
     }
 
+    public String getEventLocation() {
+        return eventLocation.get();
+    }
+
+    public void setEventLocation(String eventLocation) {
+        this.eventLocation.set(eventLocation);
+    }
+
+    public StringProperty eventLocationProperty() {
+        return eventLocation;
+    }
+
+    public String getEventGuidance() {
+        return eventGuidance.get();
+    }
+
+    public void setEventGuidance(String eventGuidance) {
+        this.eventGuidance.set(eventGuidance);
+    }
+
+    public StringProperty eventGuidanceProperty() {
+        return eventGuidance;
+    }
+
+    public String getEventNotes() {
+        return eventNotes.get();
+    }
+
+    public void setEventNotes(String eventNotes) {
+        this.eventNotes.set(eventNotes);
+    }
+
+    public StringProperty eventNotesProperty() {
+        return eventNotes;
+    }
+
     public String getCode() {
         return code.get();
     }
@@ -153,6 +194,30 @@ public class Ticket {
 
     public StringProperty customerEmailProperty() {
         return customerEmail;
+    }
+
+    public LocalDateTime getEventStartTime() {
+        return eventStartTime.get();
+    }
+
+    public void setEventStartTime(LocalDateTime eventStartTime) {
+        this.eventStartTime.set(eventStartTime);
+    }
+
+    public ObjectProperty<LocalDateTime> eventStartTimeProperty() {
+        return eventStartTime;
+    }
+
+    public LocalDateTime getEventEndTime() {
+        return eventEndTime.get();
+    }
+
+    public void setEventEndTime(LocalDateTime eventEndTime) {
+        this.eventEndTime.set(eventEndTime);
+    }
+
+    public ObjectProperty<LocalDateTime> eventEndTimeProperty() {
+        return eventEndTime;
     }
 
     public LocalDateTime getIssuedAt() {
@@ -221,7 +286,7 @@ public class Ticket {
     }
 
     public Ticket copy() {
-        return new Ticket(
+        Ticket copy = new Ticket(
                 getId(),
                 getEventId(),
                 getTicketCategoryId(),
@@ -235,6 +300,12 @@ public class Ticket {
                 getRefundedAt(),
                 isRedeemed()
         );
+        copy.setEventLocation(getEventLocation());
+        copy.setEventGuidance(getEventGuidance());
+        copy.setEventNotes(getEventNotes());
+        copy.setEventStartTime(getEventStartTime());
+        copy.setEventEndTime(getEventEndTime());
+        return copy;
     }
 
     public void restoreFrom(Ticket ticket) {
@@ -246,9 +317,14 @@ public class Ticket {
         setTicketCategoryId(ticket.getTicketCategoryId());
         setCustomerId(ticket.getCustomerId());
         setEventName(ticket.getEventName());
+        setEventLocation(ticket.getEventLocation());
+        setEventGuidance(ticket.getEventGuidance());
+        setEventNotes(ticket.getEventNotes());
         setCode(ticket.getCode());
         setCustomerName(ticket.getCustomerName());
         setCustomerEmail(ticket.getCustomerEmail());
+        setEventStartTime(ticket.getEventStartTime());
+        setEventEndTime(ticket.getEventEndTime());
         setIssuedAt(ticket.getIssuedAt());
         setRedeemedAt(ticket.getRedeemedAt());
         setRefundedAt(ticket.getRefundedAt());

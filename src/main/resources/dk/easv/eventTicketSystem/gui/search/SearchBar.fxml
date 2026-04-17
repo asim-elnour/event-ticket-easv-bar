@@ -17,7 +17,7 @@
             <HBox styleClass="top-bar" alignment="CENTER_LEFT"  HBox.hgrow="ALWAYS">
 
                 <HBox alignment="CENTER_LEFT" styleClass="top-bar-left">
-                    <Label styleClass="top-bar-brand" text="Event Ticket System"/>
+                    <Label styleClass="top-bar-brand" wrapText="false" text="Event Ticket System"/>
                 </HBox>
 
                 <Region HBox.hgrow="ALWAYS"/>

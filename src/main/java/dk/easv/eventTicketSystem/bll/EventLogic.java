@@ -9,9 +9,7 @@ import dk.easv.eventTicketSystem.util.EventValidationRules;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class EventLogic {
 
@@ -53,7 +51,6 @@ public class EventLogic {
     public void updateEvent(Event event) throws EventException {
         normalizeEvent(event);
         validateEvent(event);
-        enforceIssuedTicketRules(event);
         Event updated = eventRepository.updateEvent(event);
         event.restoreFrom(updated);
     }
@@ -98,11 +95,6 @@ public class EventLogic {
                     EventException.ErrorType.VALIDATION_ERROR);
         }
 
-        if (event.getCapacity() < EventValidationRules.MIN_CAPACITY) {
-            throw new EventException("Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".",
-                    EventException.ErrorType.VALIDATION_ERROR);
-        }
-
         List<TicketCategory> ticketTypes = event.getTicketTypes();
         if (ticketTypes == null || ticketTypes.isEmpty()) {
             throw new EventException("At least one ticket type is required.", EventException.ErrorType.VALIDATION_ERROR);
@@ -115,13 +107,6 @@ public class EventLogic {
         int activeTicketTypes = EventValidationRules.countActiveTicketTypes(ticketTypes);
         if (activeTicketTypes == 0) {
             throw new EventException("At least one active ticket type is required.",
-                    EventException.ErrorType.VALIDATION_ERROR);
-        }
-
-        int activeSeatCount = EventValidationRules.countActiveSeats(ticketTypes);
-        if (activeSeatCount != event.getCapacity()) {
-            throw new EventException("Ticket type seats must match capacity exactly (allocated "
-                    + activeSeatCount + " / capacity " + event.getCapacity() + ").",
                     EventException.ErrorType.VALIDATION_ERROR);
         }
     }
@@ -147,7 +132,7 @@ public class EventLogic {
 
         Integer seats = ticketType.getSeatCount();
         if (seats == null || seats < EventValidationRules.MIN_SEAT_COUNT) {
-            throw new EventException("Ticket seats/number must be at least " + EventValidationRules.MIN_SEAT_COUNT + ".",
+            throw new EventException("Ticket seats must be at least " + EventValidationRules.MIN_SEAT_COUNT + ".",
                     EventException.ErrorType.VALIDATION_ERROR);
         }
     }
@@ -159,56 +144,5 @@ public class EventLogic {
         if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
             throw new EventException(fieldName + " is too long.", EventException.ErrorType.VALIDATION_ERROR);
         }
-    }
-
-    private void enforceIssuedTicketRules(Event event) throws EventException {
-        if (event == null || event.getId() == null || event.getId() <= 0) {
-            throw new EventException("Valid event is required.", EventException.ErrorType.VALIDATION_ERROR);
-        }
-
-        Event existing = eventRepository.getEventById(event.getId());
-        int activeTicketsForEvent = eventRepository.countActiveTicketsForEvent(event.getId());
-        if (event.getCapacity() < activeTicketsForEvent) {
-            throw new EventException("You cannot reduce capacity below " + activeTicketsForEvent + " active tickets.",
-                    EventException.ErrorType.VALIDATION_ERROR);
-        }
-
-        Map<Long, TicketCategory> updatedCategoriesById = new HashMap<>();
-        for (TicketCategory category : event.getTicketTypes()) {
-            if (category != null && category.getId() != null && category.getId() > 0) {
-                updatedCategoriesById.put(category.getId(), category);
-            }
-        }
-
-        for (TicketCategory existingCategory : existing.getTicketTypes()) {
-            if (existingCategory == null || existingCategory.getId() == null || existingCategory.getId() <= 0) {
-                continue;
-            }
-
-            int activeTickets = eventRepository.countActiveTicketsForTicketCategory(event.getId(), existingCategory.getId());
-            if (activeTickets <= 0) {
-                continue;
-            }
-
-            TicketCategory updatedCategory = updatedCategoriesById.get(existingCategory.getId());
-            String ticketTypeName = safeTicketTypeName(existingCategory);
-            if (updatedCategory == null || updatedCategory.isDeleted()) {
-                throw new EventException("You cannot delete ticket type '" + ticketTypeName
-                        + "' because it already has " + activeTickets + " active tickets.",
-                        EventException.ErrorType.VALIDATION_ERROR);
-            }
-
-            Integer updatedSeatCount = updatedCategory.getSeatCount();
-            if (updatedSeatCount == null || updatedSeatCount < activeTickets) {
-                throw new EventException("You cannot reduce ticket type '" + ticketTypeName
-                        + "' below " + activeTickets + " active tickets.",
-                        EventException.ErrorType.VALIDATION_ERROR);
-            }
-        }
-    }
-
-    private String safeTicketTypeName(TicketCategory category) {
-        String name = category == null ? null : EventValidationRules.normalizeRequired(category.getName());
-        return name == null || name.isEmpty() ? "selected ticket type" : name;
     }
 }

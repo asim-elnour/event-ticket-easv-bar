@@ -110,7 +110,7 @@ public final class DialogUtils {
             controller.configureDetailed(
                     resolveHeaderText(title, null),
                     safeMessage(message),
-                    type,
+                    null,
                     error,
                     "OK"
             );
@@ -124,11 +124,8 @@ public final class DialogUtils {
         }
 
         StringBuilder fallbackMessage = new StringBuilder(message == null ? "" : message);
-        if (type != null && !type.isBlank()) {
-            fallbackMessage.append("\n").append("Type").append(": ").append(type);
-        }
         if (error != null && !error.isBlank()) {
-            fallbackMessage.append("\n").append("Error").append(": ").append(error);
+            fallbackMessage.append("\n\n").append(error);
         }
         showFallbackAlert(Alert.AlertType.ERROR, title, null, fallbackMessage.toString());
     }

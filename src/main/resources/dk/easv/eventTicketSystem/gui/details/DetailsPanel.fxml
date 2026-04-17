@@ -160,6 +160,14 @@
                             <Label text="Ticket types:" styleClass="details-label"/>
                             <VBox fx:id="eventTicketTypesBox" styleClass="details-list" spacing="6"/>
                         </VBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Total seats:" styleClass="details-label"/>
+                            <Label fx:id="eventTotalSeatsValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Total sold:" styleClass="details-label"/>
+                            <Label fx:id="eventTotalSoldValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                        </HBox>
                     </VBox>
                 </content>
             </ScrollPane>
@@ -233,6 +241,18 @@
                                     <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                                 </HBox>
                                 <HBox styleClass="details-row">
+                                    <Label text="Location:" styleClass="details-label"/>
+                                    <Label fx:id="ticketLocationValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Start:" styleClass="details-label"/>
+                                    <Label fx:id="ticketStartValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="End:" styleClass="details-label"/>
+                                    <Label fx:id="ticketEndValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
                                     <Label text="Customer:" styleClass="details-label"/>
                                     <Label fx:id="ticketCustomerValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                                 </HBox>
@@ -243,6 +263,14 @@
                                 <HBox styleClass="details-row">
                                     <Label text="Issued:" styleClass="details-label"/>
                                     <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Guidance:" styleClass="details-label"/>
+                                    <Label fx:id="ticketGuidanceValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Notes:" styleClass="details-label"/>
+                                    <Label fx:id="ticketNotesValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                                 </HBox>
                                 <HBox styleClass="details-row">
                                     <Label fx:id="ticketLifecycleLabel" text="Status:" styleClass="details-label"/>

@@ -13,7 +13,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +34,6 @@ public final class EventDAO implements EventRepository {
                 e.start_time,
                 e.end_time,
                 e.created_by_user_id,
-                e.capacity,
                 e.created_at,
                 e.updated_at,
                 e.is_deleted
@@ -120,7 +118,7 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
-                validateEventState(con, event);
+                validateEventState(event);
                 long eventId = insertEvent(con, event);
                 event.setId(eventId);
                 saveTicketCategories(con, event);
@@ -149,7 +147,9 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
-                validateEventState(con, event);
+                validateEventState(event);
+                List<TicketTypeRefundImpact> refundImpacts = buildRefundImpacts(con, event);
+
                 String sql = """
                         UPDATE dbo.Events
                         SET name = ?,
@@ -159,7 +159,6 @@ public final class EventDAO implements EventRepository {
                             start_time = ?,
                             end_time = ?,
                             created_by_user_id = ?,
-                            capacity = ?,
                             updated_at = SYSDATETIME(),
                             is_deleted = ?
                         WHERE id = ?
@@ -167,7 +166,7 @@ public final class EventDAO implements EventRepository {
 
                 try (PreparedStatement stmt = con.prepareStatement(sql)) {
                     bindEvent(stmt, event);
-                    stmt.setLong(10, event.getId());
+                    stmt.setLong(9, event.getId());
                     int rows = stmt.executeUpdate();
                     if (rows == 0) {
                         throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
@@ -175,6 +174,7 @@ public final class EventDAO implements EventRepository {
                 }
 
                 saveTicketCategories(con, event);
+                applyTicketTypeRefunds(con, event.getId(), refundImpacts);
                 if (event.getCoordinatorId() != null && event.getCoordinatorId() > 0) {
                     attachCoordinatorIfNeeded(con, event.getId(), event.getCoordinatorId());
                 }
@@ -209,7 +209,7 @@ public final class EventDAO implements EventRepository {
                     throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
                 }
                 if (deleted) {
-                    refundTicketsForEvent(con, eventId);
+                    refundAllTicketsForEvent(con, eventId);
                 }
                 con.commit();
             } catch (SQLException | RuntimeException | EventException e) {
@@ -273,8 +273,8 @@ public final class EventDAO implements EventRepository {
         String sql = """
                 INSERT INTO dbo.Events
                     (name, location, location_guidance, notes, start_time, end_time,
-                     created_by_user_id, capacity, is_deleted)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     created_by_user_id, is_deleted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 """;
 
         try (PreparedStatement stmt = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -297,8 +297,7 @@ public final class EventDAO implements EventRepository {
         DaoSupport.setTimestampOrNull(stmt, 5, event.getStartTime());
         DaoSupport.setTimestampOrNull(stmt, 6, event.getEndTime());
         DaoSupport.setLongOrNull(stmt, 7, event.getCreatedByUserId());
-        stmt.setInt(8, event.getCapacity());
-        stmt.setBoolean(9, event.isDeleted());
+        stmt.setBoolean(8, event.isDeleted());
     }
 
     private void saveTicketCategories(Connection con, Event event) throws SQLException {
@@ -368,10 +367,25 @@ public final class EventDAO implements EventRepository {
     private List<TicketCategory> loadTicketCategories(Connection con, long eventId) throws SQLException {
         List<TicketCategory> categories = new ArrayList<>();
         try (PreparedStatement stmt = con.prepareStatement("""
-                SELECT id, event_id, name, price, seat_count, is_deleted, created_at
-                FROM dbo.TicketCategories
-                WHERE event_id = ?
-                ORDER BY id
+                SELECT
+                    tc.id,
+                    tc.event_id,
+                    tc.name,
+                    tc.price,
+                    tc.seat_count,
+                    tc.is_deleted,
+                    tc.created_at,
+                    COALESCE(ticket_stats.sold_count, 0) AS sold_count
+                FROM dbo.TicketCategories tc
+                OUTER APPLY (
+                    SELECT COUNT(*) AS sold_count
+                    FROM dbo.Tickets t
+                    WHERE t.event_id = tc.event_id
+                      AND t.ticket_category_id = tc.id
+                      AND t.refunded_at IS NULL
+                ) ticket_stats
+                WHERE tc.event_id = ?
+                ORDER BY tc.id
                 """)) {
             stmt.setLong(1, eventId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -383,60 +397,110 @@ public final class EventDAO implements EventRepository {
         return categories;
     }
 
-    private void validateEventState(Connection con, Event event) throws SQLException, EventException {
+    private void validateEventState(Event event) throws EventException {
         if (event == null) {
             throw new EventException("Event is required.", EventException.ErrorType.VALIDATION_ERROR);
-        }
-        if (event.getCapacity() < EventValidationRules.MIN_CAPACITY) {
-            throw new EventException("Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".",
-                    EventException.ErrorType.VALIDATION_ERROR);
         }
         if (EventValidationRules.countActiveTicketTypes(event.getTicketTypes()) == 0) {
             throw new EventException("At least one active ticket type is required.",
                     EventException.ErrorType.VALIDATION_ERROR);
         }
-
-        int activeSeatCount = EventValidationRules.countActiveSeats(event.getTicketTypes());
-        if (activeSeatCount != event.getCapacity()) {
-            throw new EventException("Ticket type seats must match capacity exactly (allocated "
-                    + activeSeatCount + " / capacity " + event.getCapacity() + ").",
-                    EventException.ErrorType.VALIDATION_ERROR);
-        }
-
-        if (event.getId() == null || event.getId() <= 0) {
+        if (event.getTicketTypes() == null) {
             return;
         }
+        for (TicketCategory category : event.getTicketTypes()) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            Integer seatCount = category.getSeatCount();
+            if (seatCount == null || seatCount < EventValidationRules.MIN_SEAT_COUNT) {
+                throw new EventException("Ticket seats must be at least "
+                        + EventValidationRules.MIN_SEAT_COUNT + ".",
+                        EventException.ErrorType.VALIDATION_ERROR);
+            }
+        }
+    }
 
-        int activeTicketsForEvent = countActiveTicketsForEvent(con, event.getId());
-        if (event.getCapacity() < activeTicketsForEvent) {
-            throw new EventException("You cannot reduce capacity below " + activeTicketsForEvent + " active tickets.",
-                    EventException.ErrorType.VALIDATION_ERROR);
+    private List<TicketTypeRefundImpact> buildRefundImpacts(Connection con, Event event) throws SQLException {
+        if (event == null || event.getId() == null || event.getId() <= 0) {
+            return List.of();
         }
 
-        List<TicketCategory> existingCategories = loadTicketCategories(con, event.getId());
-        for (TicketCategory existingCategory : existingCategories) {
+        List<TicketTypeRefundImpact> impacts = new ArrayList<>();
+        for (TicketCategory existingCategory : loadTicketCategories(con, event.getId())) {
             if (existingCategory == null || existingCategory.getId() == null || existingCategory.getId() <= 0) {
                 continue;
             }
 
-            int activeTickets = countActiveTicketsForTicketCategory(con, event.getId(), existingCategory.getId());
-            if (activeTickets <= 0) {
+            int soldCount = safeCount(existingCategory.getSoldCount());
+            if (soldCount <= 0) {
                 continue;
             }
 
             TicketCategory updatedCategory = findCategoryById(event.getTicketTypes(), existingCategory.getId());
-            String ticketTypeName = safeTicketTypeName(existingCategory);
             if (updatedCategory == null || updatedCategory.isDeleted()) {
-                throw new EventException("You cannot delete ticket type '" + ticketTypeName
-                        + "' because it already has " + activeTickets + " active tickets.",
-                        EventException.ErrorType.VALIDATION_ERROR);
+                impacts.add(new TicketTypeRefundImpact(
+                        existingCategory.getId(),
+                        safeTicketTypeName(existingCategory),
+                        soldCount
+                ));
+                continue;
             }
 
-            Integer updatedSeatCount = updatedCategory.getSeatCount();
-            if (updatedSeatCount == null || updatedSeatCount < activeTickets) {
-                throw new EventException("You cannot reduce ticket type '" + ticketTypeName
-                        + "' below " + activeTickets + " active tickets.",
-                        EventException.ErrorType.VALIDATION_ERROR);
+            int updatedSeatCount = safeSeatCount(updatedCategory);
+            if (updatedSeatCount < soldCount) {
+                impacts.add(new TicketTypeRefundImpact(
+                        existingCategory.getId(),
+                        safeTicketTypeName(existingCategory),
+                        soldCount - updatedSeatCount
+                ));
+            }
+        }
+        return impacts;
+    }
+
+    private void applyTicketTypeRefunds(Connection con,
+                                        long eventId,
+                                        List<TicketTypeRefundImpact> refundImpacts) throws SQLException {
+        if (refundImpacts == null) {
+            return;
+        }
+        for (TicketTypeRefundImpact impact : refundImpacts) {
+            if (impact == null || impact.refundCount() <= 0 || impact.ticketCategoryId() == null) {
+                continue;
+            }
+            refundLatestTicketsForCategory(con, eventId, impact.ticketCategoryId(), impact.refundCount());
+        }
+    }
+
+    private void refundLatestTicketsForCategory(Connection con,
+                                                long eventId,
+                                                long ticketCategoryId,
+                                                int refundCount) throws SQLException {
+        if (refundCount <= 0) {
+            return;
+        }
+
+        try (PreparedStatement stmt = con.prepareStatement("""
+                WITH latest_tickets AS (
+                    SELECT TOP (?) id
+                    FROM dbo.Tickets
+                    WHERE event_id = ?
+                      AND ticket_category_id = ?
+                      AND refunded_at IS NULL
+                    ORDER BY issued_at DESC, id DESC
+                )
+                UPDATE tickets
+                SET refunded_at = COALESCE(refunded_at, SYSDATETIME())
+                FROM dbo.Tickets tickets
+                INNER JOIN latest_tickets latest ON latest.id = tickets.id
+                """)) {
+            stmt.setInt(1, refundCount);
+            stmt.setLong(2, eventId);
+            stmt.setLong(3, ticketCategoryId);
+            int updatedRows = stmt.executeUpdate();
+            if (updatedRows < refundCount) {
+                throw new SQLException("Unable to refund the expected number of tickets.");
             }
         }
     }
@@ -485,17 +549,25 @@ public final class EventDAO implements EventRepository {
         }
     }
 
-    private void refundTicketsForEvent(Connection con, long eventId) throws SQLException {
+    private void refundAllTicketsForEvent(Connection con, long eventId) throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement("""
                 UPDATE dbo.Tickets
                 SET refunded_at = COALESCE(refunded_at, SYSDATETIME())
                 WHERE event_id = ?
                   AND refunded_at IS NULL
-                  AND redeemed = 0
                 """)) {
             stmt.setLong(1, eventId);
             stmt.executeUpdate();
         }
+    }
+
+    private int safeSeatCount(TicketCategory category) {
+        Integer seatCount = category == null ? null : category.getSeatCount();
+        return seatCount == null ? 0 : seatCount;
+    }
+
+    private int safeCount(Integer count) {
+        return count == null ? 0 : count;
     }
 
     private String safeTicketTypeName(TicketCategory category) {
@@ -532,7 +604,8 @@ public final class EventDAO implements EventRepository {
         }
     }
 
-    private boolean hasActiveCoordinatorAssignment(Connection con, long eventId, long coordinatorId) throws SQLException {
+    private boolean hasActiveCoordinatorAssignment(Connection con, long eventId, long coordinatorId)
+            throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement("""
                 SELECT 1
                 FROM dbo.EventCoordinators
@@ -587,5 +660,8 @@ public final class EventDAO implements EventRepository {
                 stmt.setString(i + 1, String.valueOf(param));
             }
         }
+    }
+
+    private record TicketTypeRefundImpact(Long ticketCategoryId, String ticketTypeName, int refundCount) {
     }
 }

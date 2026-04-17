@@ -5,10 +5,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
@@ -27,14 +25,13 @@ public class Event {
     private final ObjectProperty<LocalDateTime> endTime = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> createdAt = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> updatedAt = new SimpleObjectProperty<>();
-    private final IntegerProperty capacity = new SimpleIntegerProperty(1);
     private final ObjectProperty<Long> createdByUserId = new SimpleObjectProperty<>();
     private final BooleanProperty deleted = new SimpleBooleanProperty(false);
     private final ObservableList<TicketCategory> ticketTypes = FXCollections.observableArrayList();
 
     public Event() {
         this(null, null, null, null, null, null, null, null, LocalDateTime.now(), LocalDateTime.now(),
-                1, null, false, List.of());
+                null, false, List.of());
     }
 
     public Event(Long id,
@@ -47,7 +44,6 @@ public class Event {
                  LocalDateTime endTime,
                  LocalDateTime createdAt,
                  LocalDateTime updatedAt,
-                 int capacity,
                  Long createdByUserId,
                  boolean deleted,
                  List<TicketCategory> ticketTypes) {
@@ -61,7 +57,6 @@ public class Event {
         this.endTime.set(endTime);
         this.createdAt.set(createdAt);
         this.updatedAt.set(updatedAt);
-        this.capacity.set(capacity);
         this.createdByUserId.set(createdByUserId);
         this.deleted.set(deleted);
         setTicketTypes(ticketTypes);
@@ -107,10 +102,6 @@ public class Event {
     public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt.set(updatedAt); }
     public ObjectProperty<LocalDateTime> updatedAtProperty() { return updatedAt; }
 
-    public int getCapacity() { return capacity.get(); }
-    public void setCapacity(int capacity) { this.capacity.set(capacity); }
-    public IntegerProperty capacityProperty() { return capacity; }
-
     public Long getCreatedByUserId() { return createdByUserId.get(); }
     public void setCreatedByUserId(Long createdByUserId) { this.createdByUserId.set(createdByUserId); }
     public ObjectProperty<Long> createdByUserIdProperty() { return createdByUserId; }
@@ -135,6 +126,30 @@ public class Event {
         return copy;
     }
 
+    public int getTotalSeats() {
+        int total = 0;
+        for (TicketCategory category : ticketTypes) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            Integer seatCount = category.getSeatCount();
+            total += seatCount == null ? 0 : seatCount;
+        }
+        return total;
+    }
+
+    public int getTotalSold() {
+        int total = 0;
+        for (TicketCategory category : ticketTypes) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            Integer soldCount = category.getSoldCount();
+            total += soldCount == null ? 0 : soldCount;
+        }
+        return total;
+    }
+
     public Event copy() {
         return new Event(
                 getId(),
@@ -147,7 +162,6 @@ public class Event {
                 getEndTime(),
                 getCreatedAt(),
                 getUpdatedAt(),
-                getCapacity(),
                 getCreatedByUserId(),
                 isDeleted(),
                 getTicketTypesCopy()
@@ -166,7 +180,6 @@ public class Event {
         setEndTime(event.getEndTime());
         setCreatedAt(event.getCreatedAt());
         setUpdatedAt(event.getUpdatedAt());
-        setCapacity(event.getCapacity());
         setCreatedByUserId(event.getCreatedByUserId());
         setDeleted(event.isDeleted());
         setTicketTypes(event.getTicketTypesCopy());

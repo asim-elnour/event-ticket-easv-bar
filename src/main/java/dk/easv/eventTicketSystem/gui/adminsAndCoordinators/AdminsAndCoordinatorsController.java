@@ -381,7 +381,12 @@ public class AdminsAndCoordinatorsController implements ModelAware {
             detail = "Something unexpected happened while processing this request.";
         }
 
-        return new ErrorDialogDetails(type, withTechnicalDetail(detail, technicalMessage));
+        boolean preferTechnical = containsAny(normalized,
+                "required", "valid", "must", "cannot", "password", "email", "phone",
+                "last active admin", "only coordinator", "permission", "denied", "forbidden",
+                "not authorized", "unauthorized", "not found", "no longer exists", "missing",
+                "duplicate", "unique", "constraint", "already exists", "violat");
+        return new ErrorDialogDetails(type, chooseDialogDetail(detail, technicalMessage, preferTechnical));
     }
 
     private boolean isDatabaseConnectionIssue(Throwable root, String normalizedMessage) {
@@ -407,11 +412,11 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         return code == 2601 || code == 2627 || (state != null && state.startsWith("23"));
     }
 
-    private String withTechnicalDetail(String friendlyMessage, String technicalMessage) {
-        if (technicalMessage == null || technicalMessage.isBlank()) {
-            return friendlyMessage;
+    private String chooseDialogDetail(String friendlyMessage, String technicalMessage, boolean preferTechnical) {
+        if (preferTechnical && technicalMessage != null && !technicalMessage.isBlank()) {
+            return abbreviate(technicalMessage, 180);
         }
-        return friendlyMessage + " (" + abbreviate(technicalMessage, 180) + ")";
+        return friendlyMessage;
     }
 
     private String sanitizeMessage(String message) {

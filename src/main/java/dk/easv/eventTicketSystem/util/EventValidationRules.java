@@ -5,7 +5,6 @@ import dk.easv.eventTicketSystem.be.TicketCategory;
 public final class EventValidationRules {
 
     public static final int MAX_TEXT_LENGTH = 255;
-    public static final int MIN_CAPACITY = 1;
     public static final int MIN_SEAT_COUNT = 1;
 
     private EventValidationRules() {

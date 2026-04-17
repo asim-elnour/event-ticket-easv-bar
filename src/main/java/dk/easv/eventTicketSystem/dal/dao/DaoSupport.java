@@ -53,7 +53,6 @@ final class DaoSupport {
                 getLocalDateTime(rs, "end_time"),
                 getLocalDateTime(rs, "created_at"),
                 getLocalDateTime(rs, "updated_at"),
-                rs.getInt("capacity"),
                 getLongObject(rs, "created_by_user_id"),
                 rs.getBoolean("is_deleted"),
                 ticketCategories
@@ -67,6 +66,7 @@ final class DaoSupport {
                 rs.getString("name"),
                 rs.getBigDecimal("price") == null ? BigDecimal.ZERO : rs.getBigDecimal("price"),
                 rs.getObject("seat_count", Integer.class),
+                rs.getObject("sold_count", Integer.class),
                 rs.getBoolean("is_deleted"),
                 getLocalDateTime(rs, "created_at")
         );
@@ -82,7 +82,7 @@ final class DaoSupport {
     }
 
     static Ticket mapTicket(ResultSet rs) throws SQLException {
-        return new Ticket(
+        Ticket ticket = new Ticket(
                 getLongObject(rs, "id"),
                 getLongObject(rs, "event_id"),
                 getLongObject(rs, "ticket_category_id"),
@@ -96,6 +96,12 @@ final class DaoSupport {
                 getLocalDateTime(rs, "refunded_at"),
                 rs.getBoolean("redeemed")
         );
+        ticket.setEventLocation(rs.getString("event_location"));
+        ticket.setEventGuidance(rs.getString("event_guidance"));
+        ticket.setEventNotes(rs.getString("event_notes"));
+        ticket.setEventStartTime(getLocalDateTime(rs, "event_start_time"));
+        ticket.setEventEndTime(getLocalDateTime(rs, "event_end_time"));
+        return ticket;
     }
 
     static Long getLongObject(ResultSet rs, String column) throws SQLException {

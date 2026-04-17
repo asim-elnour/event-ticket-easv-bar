@@ -21,27 +21,26 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class EventLogicRulesTest {
 
     @Test
-    void shouldRejectCapacityBelowOne() {
+    void shouldRejectEventWithoutActiveTicketType() {
         FakeEventRepository repository = new FakeEventRepository();
         EventLogic logic = new EventLogic(repository);
-        Event draft = eventDraft(0, ticketType(1L, "Standard", 1, false));
+        Event draft = eventDraft(ticketType(1L, "Standard", 10, true));
 
         EventException exception = assertThrows(EventException.class, () -> logic.addEvent(draft));
 
-        assertEquals("Capacity must be at least 1.", exception.getMessage());
+        assertEquals("At least one active ticket type is required.", exception.getMessage());
         assertFalse(repository.addCalled);
     }
 
     @Test
-    void shouldRejectTicketSeatsThatDoNotMatchCapacity() {
+    void shouldRejectTicketTypeSeatsBelowOne() {
         FakeEventRepository repository = new FakeEventRepository();
         EventLogic logic = new EventLogic(repository);
-        Event draft = eventDraft(200, ticketType(1L, "Standard", 100, false));
+        Event draft = eventDraft(ticketType(1L, "Standard", 0, false));
 
         EventException exception = assertThrows(EventException.class, () -> logic.addEvent(draft));
 
-        assertEquals("Ticket type seats must match capacity exactly (allocated 100 / capacity 200).",
-                exception.getMessage());
+        assertEquals("Ticket seats must be at least 1.", exception.getMessage());
         assertFalse(repository.addCalled);
     }
 
@@ -49,7 +48,7 @@ class EventLogicRulesTest {
     void shouldRejectEndBeforeStart() {
         FakeEventRepository repository = new FakeEventRepository();
         EventLogic logic = new EventLogic(repository);
-        Event draft = eventDraft(100, ticketType(1L, "Standard", 100, false));
+        Event draft = eventDraft(ticketType(1L, "Standard", 100, false));
         draft.setEndTime(draft.getStartTime().minusHours(1));
 
         EventException exception = assertThrows(EventException.class, () -> logic.addEvent(draft));
@@ -59,83 +58,53 @@ class EventLogicRulesTest {
     }
 
     @Test
-    void shouldRejectDeletingTicketTypeWithActiveTickets() {
+    void shouldAllowReducingTypeBelowSoldBecauseRepositoryHandlesRefundFlow() throws EventException {
         FakeEventRepository repository = new FakeEventRepository();
         Event stored = storedEvent(10L,
                 ticketType(101L, "Standard", 80, false),
                 ticketType(102L, "VIP", 20, false));
         repository.store(stored);
-        repository.setActiveTicketsForEvent(10L, 20);
-        repository.setActiveTicketsForCategory(10L, 101L, 20);
-
-        EventLogic logic = new EventLogic(repository);
-        Event edited = stored.copy();
-        edited.getTicketTypes().get(0).setDeleted(true);
-        edited.getTicketTypes().get(1).setSeatCount(100);
-
-        EventException exception = assertThrows(EventException.class, () -> logic.updateEvent(edited));
-
-        assertEquals("You cannot delete ticket type 'Standard' because it already has 20 active tickets.",
-                exception.getMessage());
-        assertFalse(repository.updateCalled);
-    }
-
-    @Test
-    void shouldRejectReducingTicketTypeBelowIssuedTickets() {
-        FakeEventRepository repository = new FakeEventRepository();
-        Event stored = storedEvent(10L,
-                ticketType(101L, "Standard", 80, false),
-                ticketType(102L, "VIP", 20, false));
-        repository.store(stored);
-        repository.setActiveTicketsForEvent(10L, 20);
-        repository.setActiveTicketsForCategory(10L, 101L, 20);
 
         EventLogic logic = new EventLogic(repository);
         Event edited = stored.copy();
         edited.getTicketTypes().get(0).setSeatCount(10);
-        edited.getTicketTypes().get(1).setSeatCount(90);
 
-        EventException exception = assertThrows(EventException.class, () -> logic.updateEvent(edited));
+        logic.updateEvent(edited);
 
-        assertEquals("You cannot reduce ticket type 'Standard' below 20 active tickets.", exception.getMessage());
-        assertFalse(repository.updateCalled);
+        assertTrue(repository.updateCalled);
+        assertEquals(10, edited.getTicketTypes().get(0).getSeatCount());
     }
 
     @Test
-    void shouldAllowValidEventUpdate() throws EventException {
+    void shouldAllowDeletingSoldTicketTypeBecauseRepositoryHandlesRefundFlow() throws EventException {
         FakeEventRepository repository = new FakeEventRepository();
         Event stored = storedEvent(10L,
                 ticketType(101L, "Standard", 80, false),
                 ticketType(102L, "VIP", 20, false));
         repository.store(stored);
-        repository.setActiveTicketsForEvent(10L, 20);
-        repository.setActiveTicketsForCategory(10L, 101L, 20);
 
         EventLogic logic = new EventLogic(repository);
         Event edited = stored.copy();
-        edited.getTicketTypes().get(0).setSeatCount(60);
-        edited.getTicketTypes().get(1).setSeatCount(40);
+        edited.getTicketTypes().get(0).setDeleted(true);
 
         logic.updateEvent(edited);
 
         assertTrue(repository.updateCalled);
-        assertEquals(60, edited.getTicketTypes().get(0).getSeatCount());
-        assertEquals(40, edited.getTicketTypes().get(1).getSeatCount());
+        assertTrue(edited.getTicketTypes().get(0).isDeleted());
     }
 
-    private static Event eventDraft(int capacity, TicketCategory... categories) {
+    private static Event eventDraft(TicketCategory... categories) {
         Event event = new Event();
         event.setName("Friday Bar");
         event.setLocation("EASV");
         event.setStartTime(LocalDateTime.of(2026, 5, 1, 20, 0));
         event.setEndTime(LocalDateTime.of(2026, 5, 2, 1, 0));
-        event.setCapacity(capacity);
         event.setTicketTypes(List.of(categories));
         return event;
     }
 
     private static Event storedEvent(long eventId, TicketCategory... categories) {
-        Event event = eventDraft(100, categories);
+        Event event = eventDraft(categories);
         event.setId(eventId);
         return event;
     }
@@ -152,8 +121,6 @@ class EventLogicRulesTest {
 
     private static final class FakeEventRepository implements EventRepository {
         private final Map<Long, Event> events = new HashMap<>();
-        private final Map<Long, Integer> activeTicketsByEvent = new HashMap<>();
-        private final Map<String, Integer> activeTicketsByCategory = new HashMap<>();
 
         private boolean addCalled;
         private boolean updateCalled;
@@ -161,14 +128,6 @@ class EventLogicRulesTest {
 
         void store(Event event) {
             events.put(event.getId(), event.copy());
-        }
-
-        void setActiveTicketsForEvent(long eventId, int count) {
-            activeTicketsByEvent.put(eventId, count);
-        }
-
-        void setActiveTicketsForCategory(long eventId, long categoryId, int count) {
-            activeTicketsByCategory.put(categoryKey(eventId, categoryId), count);
         }
 
         @Override
@@ -225,12 +184,12 @@ class EventLogicRulesTest {
 
         @Override
         public int countActiveTicketsForEvent(long eventId) {
-            return activeTicketsByEvent.getOrDefault(eventId, 0);
+            return 0;
         }
 
         @Override
         public int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) {
-            return activeTicketsByCategory.getOrDefault(categoryKey(eventId, ticketCategoryId), 0);
+            return 0;
         }
 
         private List<Event> copyAll() {
@@ -239,10 +198,6 @@ class EventLogicRulesTest {
                 copies.add(event.copy());
             }
             return copies;
-        }
-
-        private String categoryKey(long eventId, long categoryId) {
-            return eventId + ":" + categoryId;
         }
     }
 }

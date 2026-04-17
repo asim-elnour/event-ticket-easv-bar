@@ -93,6 +93,10 @@ public class DetailsPanelController implements ModelAware {
     private Label eventStatusValue;
     @FXML
     private VBox eventTicketTypesBox;
+    @FXML
+    private Label eventTotalSeatsValue;
+    @FXML
+    private Label eventTotalSoldValue;
 
     @FXML
     private Label coordinatorNameValue;
@@ -110,6 +114,12 @@ public class DetailsPanelController implements ModelAware {
     @FXML
     private Label ticketEventValue;
     @FXML
+    private Label ticketLocationValue;
+    @FXML
+    private Label ticketStartValue;
+    @FXML
+    private Label ticketEndValue;
+    @FXML
     private Label ticketCodeValue;
     @FXML
     private Label ticketCustomerValue;
@@ -117,6 +127,10 @@ public class DetailsPanelController implements ModelAware {
     private Label ticketEmailValue;
     @FXML
     private Label ticketIssuedValue;
+    @FXML
+    private Label ticketGuidanceValue;
+    @FXML
+    private Label ticketNotesValue;
     @FXML
     private Label ticketLifecycleLabel;
     @FXML
@@ -229,6 +243,8 @@ public class DetailsPanelController implements ModelAware {
         eventNotesValue.setText(safeText(event.getNotes()));
         eventStatusValue.setText(formatEventStatus(event));
         renderTicketTypes(event.getTicketTypesCopy());
+        eventTotalSeatsValue.setText(formatNumber(event.getTotalSeats()));
+        eventTotalSoldValue.setText(formatNumber(event.getTotalSold()));
         showCard(eventCard);
         resetScroll(eventScroll);
     }
@@ -256,10 +272,15 @@ public class DetailsPanelController implements ModelAware {
         }
 
         ticketEventValue.setText(safeText(ticket.getEventName()));
+        ticketLocationValue.setText(safeText(ticket.getEventLocation()));
+        ticketStartValue.setText(formatDateTime(ticket.getEventStartTime()));
+        ticketEndValue.setText(formatDateTime(ticket.getEventEndTime()));
         ticketCodeValue.setText(safeText(ticket.getCode()));
         ticketCustomerValue.setText(safeText(ticket.getCustomerName()));
         ticketEmailValue.setText(safeText(ticket.getCustomerEmail()));
         ticketIssuedValue.setText(formatDateTime(ticket.getIssuedAt()));
+        ticketGuidanceValue.setText(safeText(ticket.getEventGuidance()));
+        ticketNotesValue.setText(safeText(ticket.getEventNotes()));
         applyTicketLifecycle(ticket);
         renderBarcodes(ticket.getCode());
         showCard(ticketCard);
@@ -281,6 +302,7 @@ public class DetailsPanelController implements ModelAware {
             String item = itemNumber + ". " + safeText(ticketType.getName())
                     + "\n    Price: " + formatMoney(ticketType.getPrice())
                     + "\n    Seats: " + formatNumber(ticketType.getSeatCount())
+                    + "\n    Sold: " + formatNumber(ticketType.getSoldCount())
                     + "\n    Status: " + (ticketType.isDeleted() ? "Deleted" : "Available");
             eventTicketTypesBox.getChildren().add(createListItem(item));
             itemNumber++;

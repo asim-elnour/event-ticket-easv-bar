@@ -19,10 +19,7 @@
                     <Label fx:id="headerLabel" styleClass="section-label" wrapText="true" text="Information"/>
                     <Label fx:id="contentLabel" wrapText="true"/>
                     <VBox fx:id="detailsBox" styleClass="dialog-field">
-                        <Label fx:id="typeTitleLabel" text="Type"/>
-                        <Label fx:id="typeValueLabel" wrapText="true"/>
-                        <Label fx:id="errorTitleLabel" text="Error"/>
-                        <Label fx:id="errorValueLabel" wrapText="true"/>
+                        <Label fx:id="detailLabel" wrapText="true"/>
                     </VBox>
                 </VBox>
             </content>

@@ -247,7 +247,6 @@ class TicketLogicRulesTest {
         event.setLocation("EASV");
         event.setStartTime(LocalDateTime.of(2026, 5, 1, 20, 0));
         event.setEndTime(LocalDateTime.of(2026, 5, 2, 1, 0));
-        event.setCapacity(category.getSeatCount());
         event.setDeleted(deleted);
         event.setTicketTypes(List.of(category));
         return event;

@@ -11,16 +11,11 @@ public class MessageDialogController {
     @FXML private Label headerLabel;
     @FXML private Label contentLabel;
     @FXML private VBox detailsBox;
-    @FXML private Label typeTitleLabel;
-    @FXML private Label typeValueLabel;
-    @FXML private Label errorTitleLabel;
-    @FXML private Label errorValueLabel;
+    @FXML private Label detailLabel;
     @FXML private Button okButton;
 
     @FXML
     public void initialize() {
-        typeTitleLabel.setText("Type");
-        errorTitleLabel.setText("Error");
         setDetailsVisible(false);
     }
 
@@ -37,11 +32,9 @@ public class MessageDialogController {
                 ? "OK"
                 : buttonText);
 
-        boolean hasType = type != null && !type.isBlank();
-        boolean hasError = error != null && !error.isBlank();
-        if (hasType || hasError) {
-            typeValueLabel.setText(hasType ? type : "Not available");
-            errorValueLabel.setText(hasError ? error : "Not available");
+        boolean hasDetail = error != null && !error.isBlank();
+        if (hasDetail) {
+            detailLabel.setText(error);
             setDetailsVisible(true);
             return;
         }

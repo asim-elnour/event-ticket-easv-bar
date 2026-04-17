@@ -211,10 +211,6 @@ public class EventsController implements ModelAware {
 
         Optional<Event> result = showEventDialog(selected);
         result.ifPresent(event -> {
-            if (!DialogUtils.confirmAction(ActionDialogType.EVENT_EDIT, event.getName(), resolveOwnerWindow())) {
-                return;
-            }
-
             statusBanner.showSaving();
 
             Task<Void> task = new Task<>() {
@@ -250,8 +246,7 @@ public class EventsController implements ModelAware {
         }
 
         boolean shouldDelete = !selected.isDeleted();
-        ActionDialogType dialogType = shouldDelete ? ActionDialogType.EVENT_DELETE : ActionDialogType.EVENT_RESTORE;
-        if (!DialogUtils.confirmAction(dialogType, selected.getName(), resolveOwnerWindow())) {
+        if (!confirmDeleteAction(selected, shouldDelete)) {
             return;
         }
 
@@ -277,6 +272,27 @@ public class EventsController implements ModelAware {
         });
 
         new Thread(task, (shouldDelete ? "delete" : "restore") + "-event-task").start();
+    }
+
+    private boolean confirmDeleteAction(Event selected, boolean shouldDelete) {
+        if (!shouldDelete) {
+            return DialogUtils.confirmAction(ActionDialogType.EVENT_RESTORE, selected.getName(), resolveOwnerWindow());
+        }
+
+        int refundCount = Math.max(selected.getTotalSold(), 0);
+        String message = refundCount <= 0
+                ? "This event will be marked as deleted."
+                : refundCount + (refundCount == 1
+                ? " ticket for this event will be refunded if you continue."
+                : " tickets for this event will be refunded if you continue.");
+
+        return DialogUtils.showConfirmation(
+                ActionDialogType.EVENT_DELETE.getWindowTitle(),
+                ActionDialogType.EVENT_DELETE.getHeaderText(selected.getName()),
+                message,
+                ActionDialogType.EVENT_DELETE.getConfirmButtonText(),
+                resolveOwnerWindow()
+        );
     }
 
     private void reloadCurrentEventView() {
@@ -496,7 +512,9 @@ public class EventsController implements ModelAware {
             detail = "Something unexpected happened while processing this request.";
         }
 
-        return new ErrorDialogDetails(type, withTechnicalDetail(detail, technicalMessage));
+        boolean preferTechnical = throwable instanceof EventException
+                || containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "not found");
+        return new ErrorDialogDetails(type, chooseDialogDetail(detail, technicalMessage, preferTechnical));
     }
 
     private boolean isDatabaseConnectionIssue(Throwable root, String normalizedMessage) {
@@ -510,11 +528,11 @@ public class EventsController implements ModelAware {
         return state != null && state.startsWith("08");
     }
 
-    private String withTechnicalDetail(String friendlyMessage, String technicalMessage) {
-        if (technicalMessage == null || technicalMessage.isBlank()) {
-            return friendlyMessage;
+    private String chooseDialogDetail(String friendlyMessage, String technicalMessage, boolean preferTechnical) {
+        if (preferTechnical && technicalMessage != null && !technicalMessage.isBlank()) {
+            return abbreviate(technicalMessage, 180);
         }
-        return friendlyMessage + " (" + abbreviate(technicalMessage, 180) + ")";
+        return friendlyMessage;
     }
 
     private String sanitizeMessage(String message) {

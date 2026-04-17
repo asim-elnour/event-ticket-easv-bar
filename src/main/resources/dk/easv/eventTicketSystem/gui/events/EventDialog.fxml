@@ -62,10 +62,6 @@
                                 <Label text="End time:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
                                 <TextField fx:id="txtEndTime" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                                 <Label styleClass="error-label" fx:id="errEndTime" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
-
-                                <Label text="Capacity:" GridPane.rowIndex="14" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtCapacity" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                                <Label styleClass="error-label" fx:id="errCapacity" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
                             </GridPane>
 
                             <VBox styleClass="dialog-section-card" spacing="12" maxWidth="Infinity">
@@ -78,11 +74,16 @@
                                     <columns>
                                         <TableColumn fx:id="colTicketTypeName" text="Name"/>
                                         <TableColumn fx:id="colTicketTypePrice" text="Price"/>
-                                        <TableColumn fx:id="colTicketTypeSeats" text="Seats / Number"/>
+                                        <TableColumn fx:id="colTicketTypeSeats" text="Seats"/>
+                                        <TableColumn fx:id="colTicketTypeSold" text="Sold"/>
                                         <TableColumn fx:id="colTicketTypeStatus" text="Status"/>
                                     </columns>
                                 </TableView>
                                 <Label styleClass="error-label" fx:id="errTicketTypes" visible="false" managed="true"/>
+                                <HBox alignment="CENTER_LEFT" spacing="18">
+                                    <Label fx:id="lblTotalSeats" text="Total seats: 0" styleClass="muted-text"/>
+                                    <Label fx:id="lblTotalSold" text="Total sold: 0" styleClass="muted-text"/>
+                                </HBox>
                                 <HBox styleClass="dialog-section-actions" spacing="8">
                                     <Button text="Add" onAction="#onAddTicketType"/>
                                     <Button fx:id="btnEditTicketType" text="Edit" onAction="#onEditTicketType"/>

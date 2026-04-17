@@ -31,6 +31,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -55,8 +56,6 @@ public class EventDialogController {
     @FXML
     private TextField txtEndTime;
     @FXML
-    private TextField txtCapacity;
-    @FXML
     private TableView<TicketCategory> ticketTypesTable;
     @FXML
     private TableColumn<TicketCategory, String> colTicketTypeName;
@@ -65,6 +64,8 @@ public class EventDialogController {
     @FXML
     private TableColumn<TicketCategory, Integer> colTicketTypeSeats;
     @FXML
+    private TableColumn<TicketCategory, Integer> colTicketTypeSold;
+    @FXML
     private TableColumn<TicketCategory, String> colTicketTypeStatus;
     @FXML
     private Button btnToggleDeletedTicketTypes;
@@ -72,6 +73,10 @@ public class EventDialogController {
     private Button btnEditTicketType;
     @FXML
     private Button btnDeleteTicketType;
+    @FXML
+    private Label lblTotalSeats;
+    @FXML
+    private Label lblTotalSold;
     @FXML
     private Label errName;
     @FXML
@@ -86,12 +91,11 @@ public class EventDialogController {
     private Label errEndTime;
     @FXML
     private Label errTicketTypes;
-    @FXML
-    private Label errCapacity;
 
     private final ObservableList<TicketCategory> ticketTypes = FXCollections.observableArrayList();
     private final FilteredList<TicketCategory> visibleTicketTypes = new FilteredList<>(ticketTypes, category -> true);
     private final NumberFormat currencyFormat = NumberFormat.getCurrencyInstance(Locale.getDefault());
+    private List<TicketCategory> originalTicketTypes = List.of();
 
     private Event event;
     private boolean saved;
@@ -107,6 +111,7 @@ public class EventDialogController {
         colTicketTypeName.setCellValueFactory(cd -> cd.getValue().nameProperty());
         colTicketTypePrice.setCellValueFactory(cd -> cd.getValue().priceProperty());
         colTicketTypeSeats.setCellValueFactory(cd -> cd.getValue().seatCountProperty());
+        colTicketTypeSold.setCellValueFactory(cd -> cd.getValue().soldCountProperty());
         colTicketTypeStatus.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(
                 cd.getValue().isDeleted() ? "Deleted" : "Active"
         ));
@@ -128,6 +133,7 @@ public class EventDialogController {
         updateTicketTypeButtonState(null);
         updateTicketTypeFilter();
         clearValidationMessages();
+        updateTicketTypeSummary();
 
         setupLiveValidation();
     }
@@ -157,9 +163,10 @@ public class EventDialogController {
                 txtEndTime.setText(TIME_FORMAT.format(end));
             }
 
-            txtCapacity.setText(Integer.toString(event.getCapacity()));
-            ticketTypes.setAll(loadTicketTypesForEvent(event));
+            originalTicketTypes = loadTicketTypesForEvent(event);
+            ticketTypes.setAll(copyTicketTypes(originalTicketTypes));
             updateTicketTypeFilter();
+            updateTicketTypeSummary();
             clearValidationMessages();
             return;
         }
@@ -172,9 +179,10 @@ public class EventDialogController {
         txtStartTime.clear();
         dpEndDate.setValue(null);
         txtEndTime.clear();
-        txtCapacity.setText(Integer.toString(EventValidationRules.MIN_CAPACITY));
+        originalTicketTypes = List.of();
         ticketTypes.clear();
         updateTicketTypeFilter();
+        updateTicketTypeSummary();
         clearValidationMessages();
     }
 
@@ -188,21 +196,15 @@ public class EventDialogController {
 
     @FXML
     private void onAddTicketType() {
-        if (!canOpenTicketTypeDialog("Add Ticket Type")) {
-            return;
-        }
-
         TicketCategory draft = new TicketCategory();
         draft.setPrice(BigDecimal.ZERO);
-        draft.setSeatCount(1);
+        draft.setSeatCount(EventValidationRules.MIN_SEAT_COUNT);
 
         TicketCategory created = showTicketTypeDialog(draft, false);
         if (created != null) {
             created.setDeleted(false);
-            if (!fitsWithinCapacity(created, null, "Add Ticket Type")) {
-                return;
-            }
             ticketTypes.add(created);
+            updateTicketTypeSummary();
             validateTicketTypes();
             updateTicketTypeFilter();
         }
@@ -218,11 +220,9 @@ public class EventDialogController {
 
         TicketCategory edited = showTicketTypeDialog(selected.copy(), true);
         if (edited != null) {
-            if (!fitsWithinCapacity(edited, selected, "Edit Ticket Type")) {
-                return;
-            }
             selected.restoreFrom(edited);
             ticketTypesTable.refresh();
+            updateTicketTypeSummary();
             validateTicketTypes();
             updateTicketTypeFilter();
         }
@@ -237,14 +237,6 @@ public class EventDialogController {
         }
 
         boolean shouldDelete = !selected.isDeleted();
-        if (!shouldDelete) {
-            TicketCategory restored = selected.copy();
-            restored.setDeleted(false);
-            if (!fitsWithinCapacity(restored, selected, "Restore Ticket Type")) {
-                return;
-            }
-        }
-
         ActionDialogType dialogType = shouldDelete
                 ? ActionDialogType.TICKET_CATEGORY_DELETE
                 : ActionDialogType.TICKET_CATEGORY_RESTORE;
@@ -254,6 +246,7 @@ public class EventDialogController {
 
         selected.setDeleted(shouldDelete);
         ticketTypesTable.refresh();
+        updateTicketTypeSummary();
         validateTicketTypes();
         updateTicketTypeFilter();
     }
@@ -277,6 +270,11 @@ public class EventDialogController {
             return;
         }
 
+        List<RefundImpact> refundImpacts = buildRefundImpacts();
+        if (!refundImpacts.isEmpty() && !confirmRefundImpacts(refundImpacts)) {
+            return;
+        }
+
         LocalDateTime start = parseDateTime(dpStartDate.getValue(), txtStartTime.getText());
         LocalDateTime end = hasEndInput()
                 ? parseDateTime(dpEndDate.getValue(), txtEndTime.getText())
@@ -294,7 +292,6 @@ public class EventDialogController {
         event.setNotes(EventValidationRules.normalizeOptional(txtNotes.getText()));
         event.setStartTime(start);
         event.setEndTime(end);
-        event.setCapacity(parseCapacity());
         event.setUpdatedAt(LocalDateTime.now());
         event.setTicketTypes(ticketTypes);
         saved = true;
@@ -303,6 +300,19 @@ public class EventDialogController {
 
     private List<TicketCategory> loadTicketTypesForEvent(Event event) {
         return event == null ? List.of() : event.getTicketTypesCopy();
+    }
+
+    private List<TicketCategory> copyTicketTypes(List<TicketCategory> categories) {
+        List<TicketCategory> copies = new ArrayList<>();
+        if (categories == null) {
+            return copies;
+        }
+        for (TicketCategory category : categories) {
+            if (category != null) {
+                copies.add(category.copy());
+            }
+        }
+        return copies;
     }
 
     private TicketCategory showTicketTypeDialog(TicketCategory draft, boolean isEdit) {
@@ -353,10 +363,6 @@ public class EventDialogController {
             validateEndTime();
             validateDateRange();
         });
-        txtCapacity.textProperty().addListener((obs, oldValue, newValue) -> {
-            validateCapacity();
-            validateTicketTypes();
-        });
     }
 
     private void close() {
@@ -373,7 +379,6 @@ public class EventDialogController {
         ok = validateEndDate() && ok;
         ok = validateEndTime() && ok;
         ok = validateDateRange() && ok;
-        ok = validateCapacity() && ok;
         ok = validateTicketTypes() && ok;
         return ok;
     }
@@ -477,42 +482,6 @@ public class EventDialogController {
         return true;
     }
 
-    private boolean validateCapacity() {
-        String rawValue = txtCapacity.getText();
-        if (rawValue == null || rawValue.isBlank()) {
-            showValidationMessage(errCapacity, "Capacity is required.");
-            return false;
-        }
-        Integer capacity = parseCapacityOrNull();
-        if (capacity == null) {
-            showValidationMessage(errCapacity, "Capacity must be a whole number.");
-            return false;
-        }
-        if (capacity < EventValidationRules.MIN_CAPACITY) {
-            showValidationMessage(errCapacity, "Capacity must be at least " + EventValidationRules.MIN_CAPACITY + ".");
-            return false;
-        }
-        hideValidationMessage(errCapacity);
-        return true;
-    }
-
-    private int parseCapacity() {
-        Integer capacity = parseCapacityOrNull();
-        return capacity == null ? EventValidationRules.MIN_CAPACITY : capacity;
-    }
-
-    private Integer parseCapacityOrNull() {
-        String value = txtCapacity.getText();
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        try {
-            return Integer.parseInt(value.trim());
-        } catch (NumberFormatException ex) {
-            return null;
-        }
-    }
-
     private boolean validateTicketTypes() {
         int activeTicketTypes = EventValidationRules.countActiveTicketTypes(ticketTypes);
         if (activeTicketTypes == 0) {
@@ -520,75 +489,126 @@ public class EventDialogController {
             return false;
         }
 
-        Integer capacity = parseCapacityOrNull();
-        if (capacity == null || capacity < EventValidationRules.MIN_CAPACITY) {
-            hideValidationMessage(errTicketTypes);
-            return true;
-        }
-
-        int activeSeatCount = getActiveSeatCount();
-        if (activeSeatCount != capacity) {
-            showValidationMessage(errTicketTypes, "Ticket type seats must match capacity exactly (allocated "
-                    + activeSeatCount + " / capacity " + capacity + ").");
-            return false;
+        for (TicketCategory ticketType : ticketTypes) {
+            if (ticketType == null || ticketType.isDeleted()) {
+                continue;
+            }
+            Integer seats = ticketType.getSeatCount();
+            if (seats == null || seats < EventValidationRules.MIN_SEAT_COUNT) {
+                showValidationMessage(errTicketTypes, "Every active ticket type must have at least "
+                        + EventValidationRules.MIN_SEAT_COUNT + " seat.");
+                return false;
+            }
         }
 
         hideValidationMessage(errTicketTypes);
         return true;
     }
 
-    private boolean canOpenTicketTypeDialog(String title) {
-        Integer capacity = parseCapacityOrNull();
-        if (capacity == null || capacity < EventValidationRules.MIN_CAPACITY) {
-            DialogUtils.showWarning(title, null,
-                    "Enter a valid capacity of at least " + EventValidationRules.MIN_CAPACITY + " before managing ticket types.");
-            return false;
+    private List<RefundImpact> buildRefundImpacts() {
+        if (event == null || event.getId() == null || event.getId() <= 0) {
+            return List.of();
         }
 
-        if (getRemainingSeats(null) <= 0) {
-            DialogUtils.showWarning(title, null,
-                    "No free seats are left. Increase capacity or adjust the existing ticket types first.");
-            return false;
+        List<RefundImpact> impacts = new ArrayList<>();
+        for (TicketCategory original : originalTicketTypes) {
+            if (original == null || original.getId() == null || original.getId() <= 0) {
+                continue;
+            }
+
+            int soldCount = safeCount(original.getSoldCount());
+            if (soldCount <= 0) {
+                continue;
+            }
+
+            TicketCategory updated = findTicketTypeById(ticketTypes, original.getId());
+            if (updated == null || updated.isDeleted()) {
+                impacts.add(new RefundImpact(ticketTypeName(original), soldCount));
+                continue;
+            }
+
+            int updatedSeatCount = safeSeatCount(updated);
+            if (updatedSeatCount < soldCount) {
+                impacts.add(new RefundImpact(ticketTypeName(updated), soldCount - updatedSeatCount));
+            }
         }
-        return true;
+        return impacts;
     }
 
-    private boolean fitsWithinCapacity(TicketCategory candidate,
-                                       TicketCategory currentVersion,
-                                       String title) {
-        Integer capacity = parseCapacityOrNull();
-        if (capacity == null || capacity < EventValidationRules.MIN_CAPACITY) {
-            DialogUtils.showWarning(title, null,
-                    "Enter a valid capacity of at least " + EventValidationRules.MIN_CAPACITY + " before managing ticket types.");
-            return false;
+    private boolean confirmRefundImpacts(List<RefundImpact> impacts) {
+        if (impacts == null || impacts.isEmpty()) {
+            return true;
         }
 
-        int currentSeats = currentVersion != null && !currentVersion.isDeleted() ? safeSeatCount(currentVersion) : 0;
-        int candidateSeats = candidate != null && !candidate.isDeleted() ? safeSeatCount(candidate) : 0;
-        int projectedSeats = getActiveSeatCount() - currentSeats + candidateSeats;
-        if (projectedSeats > capacity) {
-            DialogUtils.showWarning(title, null,
-                    "This ticket type would exceed event capacity. Allocated seats cannot go above " + capacity + ".");
-            return false;
+        StringBuilder message = new StringBuilder();
+        if (impacts.size() == 1) {
+            RefundImpact impact = impacts.get(0);
+            message.append(impact.refundCount())
+                    .append(" ")
+                    .append(impact.ticketTypeName())
+                    .append(impact.refundCount() == 1 ? " ticket will be refunded if you continue." : " tickets will be refunded if you continue.");
+        } else {
+            message.append("The following tickets will be refunded if you continue:\n\n");
+            for (RefundImpact impact : impacts) {
+                message.append(impact.refundCount())
+                        .append(" ")
+                        .append(impact.ticketTypeName())
+                        .append(impact.refundCount() == 1 ? " ticket" : " tickets")
+                        .append("\n");
+            }
         }
-        return true;
+
+        return DialogUtils.showConfirmation(
+                "Save Event Changes",
+                "Refund affected tickets?",
+                message.toString().trim(),
+                "Continue",
+                txtName.getScene().getWindow()
+        );
     }
 
-    private int getActiveSeatCount() {
-        return EventValidationRules.countActiveSeats(ticketTypes);
+    private void updateTicketTypeSummary() {
+        if (lblTotalSeats != null) {
+            lblTotalSeats.setText("Total seats: " + EventValidationRules.countActiveSeats(ticketTypes));
+        }
+        if (lblTotalSold != null) {
+            lblTotalSold.setText("Total sold: " + countActiveSold(ticketTypes));
+        }
     }
 
-    private int getRemainingSeats(TicketCategory categoryToIgnore) {
-        Integer capacity = parseCapacityOrNull();
-        if (capacity == null) {
-            return 0;
+    private int countActiveSold(List<TicketCategory> categories) {
+        int total = 0;
+        if (categories == null) {
+            return total;
         }
+        for (TicketCategory category : categories) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            total += safeCount(category.getSoldCount());
+        }
+        return total;
+    }
 
-        int activeSeats = getActiveSeatCount();
-        if (categoryToIgnore != null && !categoryToIgnore.isDeleted()) {
-            activeSeats -= safeSeatCount(categoryToIgnore);
+    private TicketCategory findTicketTypeById(List<TicketCategory> categories, Long id) {
+        if (categories == null || id == null) {
+            return null;
         }
-        return capacity - activeSeats;
+        for (TicketCategory category : categories) {
+            if (category != null && id.equals(category.getId())) {
+                return category;
+            }
+        }
+        return null;
+    }
+
+    private String ticketTypeName(TicketCategory category) {
+        String normalized = EventValidationRules.normalizeRequired(category == null ? null : category.getName());
+        return normalized.isEmpty() ? "selected ticket type" : normalized;
+    }
+
+    private int safeCount(Integer value) {
+        return value == null ? 0 : value;
     }
 
     private int safeSeatCount(TicketCategory category) {
@@ -654,7 +674,6 @@ public class EventDialogController {
         hideValidationMessage(errStartTime);
         hideValidationMessage(errEndDate);
         hideValidationMessage(errEndTime);
-        hideValidationMessage(errCapacity);
         hideValidationMessage(errTicketTypes);
     }
 
@@ -674,5 +693,8 @@ public class EventDialogController {
         label.setText("");
         label.setVisible(false);
         label.setManaged(false);
+    }
+
+    private record RefundImpact(String ticketTypeName, int refundCount) {
     }
 }

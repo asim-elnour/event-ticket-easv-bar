@@ -178,7 +178,6 @@ public class DatabaseInitializer {
                         start_time DATETIME2 NULL,
                         end_time DATETIME2 NULL,
                         created_by_user_id BIGINT NULL CONSTRAINT FK_Events_Users REFERENCES dbo.Users(id),
-                        capacity INT NOT NULL CONSTRAINT DF_Events_Capacity DEFAULT 0,
                         created_at DATETIME2 NOT NULL CONSTRAINT DF_Events_CreatedAt DEFAULT SYSDATETIME(),
                         updated_at DATETIME2 NOT NULL CONSTRAINT DF_Events_UpdatedAt DEFAULT SYSDATETIME(),
                         is_deleted BIT NOT NULL CONSTRAINT DF_Events_IsDeleted DEFAULT 0
@@ -440,8 +439,8 @@ public class DatabaseInitializer {
         String sql = """
                 INSERT INTO dbo.Events
                     (name, location, location_guidance, notes, start_time, end_time,
-                     created_by_user_id, capacity, is_deleted)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+                     created_by_user_id, is_deleted)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                 """;
 
         try (Connection con = conMan.getConnection();
@@ -453,7 +452,6 @@ public class DatabaseInitializer {
             stmt.setTimestamp(5, Timestamp.valueOf(start));
             stmt.setTimestamp(6, Timestamp.valueOf(end));
             stmt.setLong(7, adminId);
-            stmt.setInt(8, 120);
             stmt.executeUpdate();
 
             try (ResultSet keys = stmt.getGeneratedKeys()) {

@@ -17,11 +17,12 @@ public class TicketCategory {
     private final StringProperty name = new SimpleStringProperty();
     private final ObjectProperty<BigDecimal> price = new SimpleObjectProperty<>();
     private final ObjectProperty<Integer> seatCount = new SimpleObjectProperty<>();
+    private final ObjectProperty<Integer> soldCount = new SimpleObjectProperty<>(0);
     private final BooleanProperty deleted = new SimpleBooleanProperty(false);
     private final ObjectProperty<LocalDateTime> createdAt = new SimpleObjectProperty<>();
 
     public TicketCategory() {
-        this(null, null, null, BigDecimal.ZERO, 1, false, LocalDateTime.now());
+        this(null, null, null, BigDecimal.ZERO, 1, 0, false, LocalDateTime.now());
     }
 
     public TicketCategory(Long id,
@@ -29,6 +30,7 @@ public class TicketCategory {
                           String name,
                           BigDecimal price,
                           Integer seatCount,
+                          Integer soldCount,
                           boolean deleted,
                           LocalDateTime createdAt) {
         this.id.set(id);
@@ -36,6 +38,7 @@ public class TicketCategory {
         this.name.set(name);
         this.price.set(price);
         this.seatCount.set(seatCount);
+        this.soldCount.set(soldCount == null ? 0 : soldCount);
         this.deleted.set(deleted);
         this.createdAt.set(createdAt);
     }
@@ -100,6 +103,18 @@ public class TicketCategory {
         return seatCount;
     }
 
+    public Integer getSoldCount() {
+        return soldCount.get();
+    }
+
+    public void setSoldCount(Integer soldCount) {
+        this.soldCount.set(soldCount == null ? 0 : soldCount);
+    }
+
+    public ObjectProperty<Integer> soldCountProperty() {
+        return soldCount;
+    }
+
     public boolean isDeleted() {
         return deleted.get();
     }
@@ -131,6 +146,7 @@ public class TicketCategory {
                 getName(),
                 getPrice(),
                 getSeatCount(),
+                getSoldCount(),
                 isDeleted(),
                 getCreatedAt()
         );
@@ -145,6 +161,7 @@ public class TicketCategory {
         setName(category.getName());
         setPrice(category.getPrice());
         setSeatCount(category.getSeatCount());
+        setSoldCount(category.getSoldCount());
         setDeleted(category.isDeleted());
         setCreatedAt(category.getCreatedAt());
     }

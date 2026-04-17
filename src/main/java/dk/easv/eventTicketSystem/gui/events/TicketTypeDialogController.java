@@ -26,24 +26,29 @@ public class TicketTypeDialogController {
 
     private TicketCategory ticketType;
     private boolean saved;
+    private boolean validationFeedbackEnabled;
 
     @FXML
     public void initialize() {
         setupLiveValidation();
+        clearAllErrors();
     }
 
     public void setTicketType(TicketCategory ticketType) {
         this.ticketType = ticketType;
+        validationFeedbackEnabled = false;
         if (ticketType == null) {
             txtName.clear();
             txtPrice.clear();
             txtSeats.clear();
+            clearAllErrors();
             return;
         }
 
         txtName.setText(ticketType.getName());
         txtPrice.setText(ticketType.getPrice() == null ? "" : ticketType.getPrice().toPlainString());
         txtSeats.setText(ticketType.getSeatCount() == null ? "" : String.valueOf(ticketType.getSeatCount()));
+        clearAllErrors();
     }
 
     public boolean isSaved() {
@@ -62,6 +67,7 @@ public class TicketTypeDialogController {
 
     @FXML
     private void onSave() {
+        validationFeedbackEnabled = true;
         if (!validateAll()) {
             return;
         }
@@ -95,69 +101,85 @@ public class TicketTypeDialogController {
     private boolean validateName() {
         String value = EventValidationRules.normalizeRequired(txtName.getText());
         if (value.isEmpty()) {
-            errName.setText("Name is required.");
-            errName.setVisible(true);
+            showError(errName, "Name is required.");
             return false;
         }
 
         if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
-            errName.setText("Name too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
-            errName.setVisible(true);
+            showError(errName, "Name too long (max " + EventValidationRules.MAX_TEXT_LENGTH + ").");
             return false;
         }
 
-        errName.setVisible(false);
+        clearError(errName);
         return true;
     }
 
     private boolean validatePrice() {
         String value = txtPrice.getText();
         if (value == null || value.isBlank()) {
-            errPrice.setText("Price is required.");
-            errPrice.setVisible(true);
+            showError(errPrice, "Price is required.");
             return false;
         }
 
         try {
             BigDecimal price = new BigDecimal(value.trim());
             if (price.compareTo(BigDecimal.ZERO) < 0) {
-                errPrice.setText("Price cannot be negative.");
-                errPrice.setVisible(true);
+                showError(errPrice, "Price cannot be negative.");
                 return false;
             }
         } catch (NumberFormatException ex) {
-            errPrice.setText("Price must be a valid number.");
-            errPrice.setVisible(true);
+            showError(errPrice, "Price must be a valid number.");
             return false;
         }
 
-        errPrice.setVisible(false);
+        clearError(errPrice);
         return true;
     }
 
     private boolean validateSeats() {
         String value = txtSeats.getText();
         if (value == null || value.isBlank()) {
-            errSeats.setText("Seats / number is required.");
-            errSeats.setVisible(true);
+            showError(errSeats, "Seats is required.");
             return false;
         }
 
         try {
             int seats = Integer.parseInt(value.trim());
             if (seats < EventValidationRules.MIN_SEAT_COUNT) {
-                errSeats.setText("Seats / number must be at least " + EventValidationRules.MIN_SEAT_COUNT + ".");
-                errSeats.setVisible(true);
+                showError(errSeats, "Seats must be at least " + EventValidationRules.MIN_SEAT_COUNT + ".");
                 return false;
             }
         } catch (NumberFormatException ex) {
-            errSeats.setText("Seats / number must be a whole number.");
-            errSeats.setVisible(true);
+            showError(errSeats, "Seats must be a whole number.");
             return false;
         }
 
-        errSeats.setVisible(false);
+        clearError(errSeats);
         return true;
+    }
+
+    private void showError(Label errorLabel, String message) {
+        if (errorLabel == null) {
+            return;
+        }
+        errorLabel.setText(message);
+        errorLabel.setVisible(validationFeedbackEnabled);
+        errorLabel.setManaged(validationFeedbackEnabled);
+    }
+
+    private void clearError(Label errorLabel) {
+        if (errorLabel == null) {
+            return;
+        }
+        errorLabel.setText("");
+        errorLabel.setVisible(false);
+        errorLabel.setManaged(false);
+    }
+
+    private void clearAllErrors() {
+        clearError(errName);
+        clearError(errPrice);
+        clearError(errSeats);
     }
 
     private void close() {
