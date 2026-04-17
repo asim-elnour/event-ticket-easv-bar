@@ -88,12 +88,12 @@ class CustomerLogicRulesTest {
         }
 
         @Override
-        public List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) {
+        public List<Customer> getCustomersForEvent(long eventId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<Customer> getAllCustomers(boolean includeDeletedTickets) {
+        public List<Customer> getAllCustomers() {
             throw new UnsupportedOperationException();
         }
 

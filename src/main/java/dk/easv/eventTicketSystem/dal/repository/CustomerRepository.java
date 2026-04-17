@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface CustomerRepository {
 
-    List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) throws CustomerException;
+    List<Customer> getCustomersForEvent(long eventId) throws CustomerException;
 
-    List<Customer> getAllCustomers(boolean includeDeletedTickets) throws CustomerException;
+    List<Customer> getAllCustomers() throws CustomerException;
 
     List<Customer> getCustomerDirectory() throws CustomerException;
 

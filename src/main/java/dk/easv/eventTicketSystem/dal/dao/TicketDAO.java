@@ -33,7 +33,7 @@ public final class TicketDAO implements TicketRepository {
                 t.issued_at,
                 t.redeemed_at,
                 t.redeemed,
-                t.deleted
+                t.refunded_at
             FROM dbo.Tickets t
             JOIN dbo.Events e ON e.id = t.event_id
             JOIN dbo.Customers c ON c.id = t.customer_id
@@ -59,14 +59,14 @@ public final class TicketDAO implements TicketRepository {
     public List<Ticket> searchTicketsForEvent(long eventId,
                                               String columnKey,
                                               String query,
-                                              boolean includeDeleted) throws TicketException {
+                                              boolean includeRefunded) throws TicketException {
         StringBuilder sql = new StringBuilder(TICKET_SELECT)
                 .append(" WHERE t.event_id = ?");
         List<Object> params = new ArrayList<>();
         params.add(eventId);
 
-        if (!includeDeleted) {
-            sql.append(" AND t.deleted = 0");
+        if (!includeRefunded) {
+            sql.append(" AND t.refunded_at IS NULL");
         }
         appendSearch(sql, params, columnKey, query);
         sql.append(" ORDER BY t.issued_at DESC, t.id DESC");
@@ -75,14 +75,14 @@ public final class TicketDAO implements TicketRepository {
     }
 
     @Override
-    public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeDeleted)
+    public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeRefunded)
             throws TicketException {
         StringBuilder sql = new StringBuilder(TICKET_SELECT)
                 .append(" WHERE 1 = 1");
         List<Object> params = new ArrayList<>();
 
-        if (!includeDeleted) {
-            sql.append(" AND t.deleted = 0");
+        if (!includeRefunded) {
+            sql.append(" AND t.refunded_at IS NULL");
         }
         appendSearch(sql, params, columnKey, query);
         sql.append(" ORDER BY t.issued_at DESC, t.id DESC");
@@ -111,8 +111,8 @@ public final class TicketDAO implements TicketRepository {
 
             try (PreparedStatement stmt = con.prepareStatement("""
                     INSERT INTO dbo.Tickets
-                        (event_id, ticket_category_id, customer_id, code, redeemed, deleted)
-                    VALUES (?, ?, ?, ?, 0, 0)
+                        (event_id, ticket_category_id, customer_id, code, redeemed, refunded_at)
+                    VALUES (?, ?, ?, ?, 0, NULL)
                     """, Statement.RETURN_GENERATED_KEYS)) {
                 stmt.setLong(1, eventId);
                 DaoSupport.setLongOrNull(stmt, 2, ticketCategoryId);
@@ -154,22 +154,19 @@ public final class TicketDAO implements TicketRepository {
     }
 
     @Override
-    public Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException {
+    public Ticket refundTicketById(long ticketId) throws TicketException {
         try (Connection con = database.getConnection()) {
-            if (!deleted) {
-                ensureTicketCanBeRestored(con, ticketId);
-            }
-
             try (PreparedStatement stmt = con.prepareStatement("""
                      UPDATE dbo.Tickets
-                     SET deleted = ?
+                     SET refunded_at = COALESCE(refunded_at, SYSDATETIME())
                      WHERE id = ?
+                       AND refunded_at IS NULL
+                       AND redeemed = 0
                      """)) {
-                stmt.setBoolean(1, deleted);
-                stmt.setLong(2, ticketId);
+                stmt.setLong(1, ticketId);
                 int rows = stmt.executeUpdate();
                 if (rows == 0) {
-                    throw new TicketException("Ticket not found.", null);
+                    throw refundFailureException(ticketId);
                 }
                 return getTicketById(ticketId);
             }
@@ -188,11 +185,13 @@ public final class TicketDAO implements TicketRepository {
                      SET redeemed = 1,
                          redeemed_at = COALESCE(redeemed_at, SYSDATETIME())
                      WHERE id = ?
+                       AND refunded_at IS NULL
+                       AND redeemed = 0
                      """)) {
             stmt.setLong(1, ticketId);
             int rows = stmt.executeUpdate();
             if (rows == 0) {
-                throw new TicketException("Ticket not found.", null);
+                throw redeemFailureException(ticketId);
             }
             return getTicketById(ticketId);
         } catch (TicketException e) {
@@ -286,58 +285,12 @@ public final class TicketDAO implements TicketRepository {
                 FROM dbo.Tickets
                 WHERE event_id = ?
                   AND ticket_category_id = ?
-                  AND deleted = 0
+                  AND refunded_at IS NULL
                 """)) {
             stmt.setLong(1, eventId);
             stmt.setLong(2, ticketCategoryId);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next() ? rs.getInt(1) : 0;
-            }
-        }
-    }
-
-    private void ensureTicketCanBeRestored(Connection con, long ticketId) throws SQLException, TicketException {
-        try (PreparedStatement stmt = con.prepareStatement("""
-                SELECT
-                    t.event_id,
-                    t.ticket_category_id,
-                    t.deleted,
-                    e.is_deleted AS event_deleted,
-                    tc.id AS category_id_check,
-                    tc.is_deleted AS category_deleted,
-                    tc.seat_count
-                FROM dbo.Tickets t
-                JOIN dbo.Events e ON e.id = t.event_id
-                LEFT JOIN dbo.TicketCategories tc
-                    ON tc.id = t.ticket_category_id
-                   AND tc.event_id = t.event_id
-                WHERE t.id = ?
-                """)) {
-            stmt.setLong(1, ticketId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (!rs.next()) {
-                    throw new TicketException("Ticket not found.", null);
-                }
-                if (!rs.getBoolean("deleted")) {
-                    return;
-                }
-                if (rs.getBoolean("event_deleted")) {
-                    throw new TicketException("Cannot restore a ticket for a deleted event.", null);
-                }
-
-                Long ticketCategoryId = DaoSupport.getLongObject(rs, "ticket_category_id");
-                if (ticketCategoryId == null || ticketCategoryId <= 0) {
-                    throw new TicketException("Cannot restore a ticket without a ticket type.", null);
-                }
-
-                Long existingCategoryId = DaoSupport.getLongObject(rs, "category_id_check");
-                if (existingCategoryId == null || rs.getBoolean("category_deleted")) {
-                    throw new TicketException("Cannot restore this ticket because its ticket type is deleted.", null);
-                }
-
-                long eventId = rs.getLong("event_id");
-                int seatCount = rs.getInt("seat_count");
-                ensureCategoryHasAvailableSeats(con, eventId, ticketCategoryId, seatCount);
             }
         }
     }
@@ -359,13 +312,35 @@ public final class TicketDAO implements TicketRepository {
             case COLUMN_STATUS -> statusExpression();
             default -> "LOWER(CONCAT(t.code, N' ', COALESCE(c.name, N''), N' ', "
                     + "COALESCE(c.email, N''), N' ', e.name, N' ', "
-                    + "CASE WHEN t.deleted = 1 THEN N'Deleted' "
+                    + "CASE WHEN t.refunded_at IS NOT NULL THEN N'Refunded' "
                     + "WHEN t.redeemed = 1 THEN N'Redeemed' ELSE N'Valid' END))";
         };
     }
 
     private String statusExpression() {
-        return "LOWER(CASE WHEN t.deleted = 1 THEN N'Deleted' WHEN t.redeemed = 1 THEN N'Redeemed' ELSE N'Valid' END)";
+        return "LOWER(CASE WHEN t.refunded_at IS NOT NULL THEN N'Refunded' WHEN t.redeemed = 1 THEN N'Redeemed' ELSE N'Valid' END)";
+    }
+
+    private TicketException refundFailureException(long ticketId) throws TicketException {
+        Ticket ticket = getTicketById(ticketId);
+        if (ticket.isRefunded()) {
+            return new TicketException("This ticket is already refunded.", null);
+        }
+        if (ticket.isRedeemed()) {
+            return new TicketException("Redeemed tickets cannot be refunded.", null);
+        }
+        return new TicketException("Could not refund ticket.", null);
+    }
+
+    private TicketException redeemFailureException(long ticketId) throws TicketException {
+        Ticket ticket = getTicketById(ticketId);
+        if (ticket.isRefunded()) {
+            return new TicketException("Refunded tickets cannot be redeemed.", null);
+        }
+        if (ticket.isRedeemed()) {
+            return new TicketException("This ticket is already redeemed.", null);
+        }
+        return new TicketException("Could not redeem ticket.", null);
     }
 
     private void bindParams(PreparedStatement stmt, List<Object> params) throws SQLException {

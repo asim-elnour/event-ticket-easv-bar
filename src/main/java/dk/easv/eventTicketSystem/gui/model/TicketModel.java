@@ -19,7 +19,6 @@ public class TicketModel {
     private final SortedList<Ticket> ticketsSorted = new SortedList<>(tickets);
     private final AtomicLong ticketsRequestVersion = new AtomicLong(0);
 
-    private boolean showDeletedTickets = true;
     private SearchModel.SearchState ticketSearchState = new SearchModel.SearchState(SearchModel.COLUMN_ALL, "");
 
     public ObservableList<Ticket> tickets() {
@@ -28,14 +27,6 @@ public class TicketModel {
 
     public SortedList<Ticket> ticketsView() {
         return ticketsSorted;
-    }
-
-    public boolean isShowDeletedTickets() {
-        return showDeletedTickets;
-    }
-
-    public void setShowDeletedTickets(boolean showDeletedTickets) {
-        this.showDeletedTickets = showDeletedTickets;
     }
 
     public void applySearch(SearchModel.SearchState state) {
@@ -59,7 +50,7 @@ public class TicketModel {
                 eventId,
                 ticketSearchState.columnKey(),
                 ticketSearchState.query(),
-                showDeletedTickets
+                true
         );
         Platform.runLater(() -> {
             if (requestVersion == ticketsRequestVersion.get()) {
@@ -73,7 +64,7 @@ public class TicketModel {
         List<Ticket> loaded = ticketLogic.searchAllTickets(
                 ticketSearchState.columnKey(),
                 ticketSearchState.query(),
-                showDeletedTickets
+                true
         );
         Platform.runLater(() -> {
             if (requestVersion == ticketsRequestVersion.get()) {
@@ -98,20 +89,20 @@ public class TicketModel {
         return created;
     }
 
-    public void setTicketDeleted(Ticket ticket, boolean deleted) throws TicketException {
+    public void refundTicket(Ticket ticket) throws TicketException {
         if (ticket == null || ticket.getId() == null) {
             throw new TicketException("Please select a valid ticket first.", null);
         }
 
-        ticketLogic.setTicketDeletedState(ticket.getId(), deleted);
+        ticketLogic.refundTicketById(ticket.getId());
     }
 
     public void redeemTicket(Ticket ticket) throws TicketException {
         if (ticket == null || ticket.getId() == null) {
             throw new TicketException("Please select a valid ticket first.", null);
         }
-        if (ticket.isDeleted()) {
-            throw new TicketException("Deleted tickets cannot be redeemed.", null);
+        if (ticket.isRefunded()) {
+            throw new TicketException("Refunded tickets cannot be redeemed.", null);
         }
         ticketLogic.redeemTicketById(ticket.getId());
     }

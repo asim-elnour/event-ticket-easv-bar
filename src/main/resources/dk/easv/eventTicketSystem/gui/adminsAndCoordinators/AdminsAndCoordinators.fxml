@@ -15,7 +15,7 @@
     <VBox styleClass="page-content" spacing="0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
         
         <!-- TOP SECTION - Fixed size -->
-        <VBox style="-fx-padding: 0 0 16 0;">
+        <VBox style="-fx-padding: 0 0 0 0;">
             <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false" styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
                     <HBox styleClass="section-header">
@@ -53,7 +53,7 @@
         </VBox>
         
         <!-- BOTTOM SECTION - Fixed size -->
-        <VBox style="-fx-padding: 16 0 0 0;">
+        <VBox style="-fx-padding: 0 0 0 0;">
             <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false" styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
                     <HBox styleClass="actions-row">

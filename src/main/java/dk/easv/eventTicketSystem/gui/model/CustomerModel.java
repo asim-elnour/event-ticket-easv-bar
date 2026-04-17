@@ -20,7 +20,6 @@ public class CustomerModel {
     private final SortedList<Customer> customersSorted = new SortedList<>(customers);
     private final AtomicLong customersRequestVersion = new AtomicLong(0);
 
-    private boolean showDeletedCustomerTickets = true;
     private SearchModel.SearchState customerSearchState = new SearchModel.SearchState(SearchModel.COLUMN_ALL, "");
 
     public ObservableList<Customer> customers() {
@@ -29,14 +28,6 @@ public class CustomerModel {
 
     public SortedList<Customer> customersView() {
         return customersSorted;
-    }
-
-    public boolean isShowDeletedCustomerTickets() {
-        return showDeletedCustomerTickets;
-    }
-
-    public void setShowDeletedCustomerTickets(boolean showDeletedCustomerTickets) {
-        this.showDeletedCustomerTickets = showDeletedCustomerTickets;
     }
 
     public void applySearch(SearchModel.SearchState state) {
@@ -56,13 +47,13 @@ public class CustomerModel {
             return;
         }
 
-        List<Customer> loadedCustomers = customerLogic.getCustomersForEvent(eventId, showDeletedCustomerTickets);
+        List<Customer> loadedCustomers = customerLogic.getCustomersForEvent(eventId);
         setCustomers(requestVersion, filterAndSort(loadedCustomers));
     }
 
     public void loadAllCustomers() throws CustomerException {
         long requestVersion = customersRequestVersion.incrementAndGet();
-        List<Customer> loadedCustomers = customerLogic.getAllCustomers(showDeletedCustomerTickets);
+        List<Customer> loadedCustomers = customerLogic.getAllCustomers();
         setCustomers(requestVersion, filterAndSort(loadedCustomers));
     }
 

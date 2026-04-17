@@ -274,7 +274,7 @@ public class DatabaseInitializer {
                         issued_at DATETIME2 NOT NULL CONSTRAINT DF_Tickets_IssuedAt DEFAULT SYSDATETIME(),
                         redeemed_at DATETIME2 NULL,
                         redeemed BIT NOT NULL CONSTRAINT DF_Tickets_Redeemed DEFAULT 0,
-                        deleted BIT NOT NULL CONSTRAINT DF_Tickets_Deleted DEFAULT 0
+                        refunded_at DATETIME2 NULL
                     )
                 END
                 """);
@@ -524,10 +524,10 @@ public class DatabaseInitializer {
 
     private void createDemoTicket(long eventId, long ticketCategoryId, long customerId) throws SQLException {
         try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
+            PreparedStatement stmt = con.prepareStatement("""
                      INSERT INTO dbo.Tickets
-                         (event_id, ticket_category_id, customer_id, code, issued_at, redeemed, deleted)
-                     VALUES (?, ?, ?, ?, ?, 0, 0)
+                         (event_id, ticket_category_id, customer_id, code, issued_at, redeemed, refunded_at)
+                     VALUES (?, ?, ?, ?, ?, 0, NULL)
                      """)) {
             stmt.setLong(1, eventId);
             stmt.setLong(2, ticketCategoryId);

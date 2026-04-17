@@ -31,17 +31,11 @@ public enum ActionDialogType {
             "This event will be restored and set to planned status.",
             "Restore"
     ),
-    TICKET_DELETE(
-            "Delete Ticket",
-            "Delete %s?",
-            "This ticket will be marked as deleted and stay in the list when deleted rows are visible.",
-            "Delete"
-    ),
-    TICKET_RESTORE(
-            "Restore Ticket",
-            "Restore %s?",
-            "This ticket will be restored to active status.",
-            "Restore"
+    TICKET_REFUND(
+            "Refund Ticket",
+            "Refund %s?",
+            "This ticket will be refunded and stay visible when refunded rows are shown.",
+            "Refund"
     ),
     TICKET_CATEGORY_DELETE(
             "Delete Ticket Type",

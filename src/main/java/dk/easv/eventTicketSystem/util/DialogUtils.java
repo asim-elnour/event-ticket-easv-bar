@@ -1,6 +1,7 @@
 package dk.easv.eventTicketSystem.util;
 
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
+import dk.easv.eventTicketSystem.gui.common.ActionConfirmDialogController;
 import dk.easv.eventTicketSystem.gui.common.MessageDialogController;
 import javafx.geometry.Rectangle2D;
 import javafx.fxml.FXMLLoader;
@@ -21,30 +22,24 @@ public final class DialogUtils {
     private DialogUtils() {}
 
     public static void showWarning(String title, String header, String message) {
-        Alert alert = new Alert(Alert.AlertType.WARNING);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(message);
-        alert.getDialogPane().setGraphic(null);
-        alert.showAndWait();
+        if (showMessageDialogInternal(title, header, message, "OK", null)) {
+            return;
+        }
+        showFallbackAlert(Alert.AlertType.WARNING, title, header, message);
     }
 
     public static void showError(String title, String header, String message) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(message);
-        alert.getDialogPane().setGraphic(null);
-        alert.showAndWait();
+        if (showMessageDialogInternal(title, header, message, "OK", null)) {
+            return;
+        }
+        showFallbackAlert(Alert.AlertType.ERROR, title, header, message);
     }
 
     public static void showInfo(String title, String header, String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(header);
-        alert.setContentText(message);
-        alert.getDialogPane().setGraphic(null);
-        alert.showAndWait();
+        if (showMessageDialogInternal(title, header, message, "OK", null)) {
+            return;
+        }
+        showFallbackAlert(Alert.AlertType.INFORMATION, title, header, message);
     }
 
     public static boolean showConfirmation(String title,
@@ -52,6 +47,25 @@ public final class DialogUtils {
                                            String message,
                                            String confirmButtonText,
                                            Window owner) {
+        try {
+            FXMLLoader loader = new FXMLLoader(DialogUtils.class.getResource(ViewType.ACTION_CONFIRM_DIALOG.getFxmlPath()));
+            Parent root = loader.load();
+
+            ActionConfirmDialogController controller = loader.getController();
+            controller.configure(
+                    resolveHeaderText(title, header),
+                    safeMessage(message),
+                    confirmButtonText
+            );
+
+            Stage stage = createModalDialogStage(title, root, owner);
+            configureHalfScreenDialogStage(stage);
+            stage.showAndWait();
+            return controller.isConfirmed();
+        } catch (IOException ignored) {
+            // Fall back to JavaFX alert if custom dialog fails to load.
+        }
+
         ButtonType confirmButton = new ButtonType(
                 confirmButtonText == null || confirmButtonText.isBlank() ? "OK" : confirmButtonText,
                 ButtonBar.ButtonData.OK_DONE
@@ -94,20 +108,14 @@ public final class DialogUtils {
 
             MessageDialogController controller = loader.getController();
             controller.configureDetailed(
-                    title,
-                    message,
+                    resolveHeaderText(title, null),
+                    safeMessage(message),
                     type,
                     error,
                     "OK"
             );
 
-            Stage stage = new Stage();
-            stage.initModality(Modality.APPLICATION_MODAL);
-            if (owner != null) {
-                stage.initOwner(owner);
-            }
-            stage.setTitle(title == null || title.isBlank() ? "Information" : title);
-            stage.setScene(new Scene(root));
+            Stage stage = createModalDialogStage(title, root, owner);
             configureHalfScreenDialogStage(stage);
             stage.showAndWait();
             return;
@@ -122,32 +130,15 @@ public final class DialogUtils {
         if (error != null && !error.isBlank()) {
             fallbackMessage.append("\n").append("Error").append(": ").append(error);
         }
-        showError(title, null, fallbackMessage.toString());
+        showFallbackAlert(Alert.AlertType.ERROR, title, null, fallbackMessage.toString());
     }
 
     public static void showMessageDialog(String title, String message, String buttonText, Window owner) {
-        try {
-            FXMLLoader loader = new FXMLLoader(DialogUtils.class.getResource(ViewType.MESSAGE_DIALOG.getFxmlPath()));
-            Parent root = loader.load();
-
-            MessageDialogController controller = loader.getController();
-            controller.configure(title, message, buttonText);
-
-            Stage stage = new Stage();
-            stage.initModality(Modality.APPLICATION_MODAL);
-            if (owner != null) {
-                stage.initOwner(owner);
-            }
-            stage.setTitle(title == null || title.isBlank() ? "Information" : title);
-            stage.setScene(new Scene(root));
-            configureHalfScreenDialogStage(stage);
-            stage.showAndWait();
+        if (showMessageDialogInternal(title, title, message, buttonText, owner)) {
             return;
-        } catch (IOException ignored) {
-            // Fall back to JavaFX alert if custom dialog fails to load.
         }
 
-        showInfo(title, null, message);
+        showFallbackAlert(Alert.AlertType.INFORMATION, title, null, message);
     }
 
     public static void configureDialogStage(Stage stage) {
@@ -208,5 +199,64 @@ public final class DialogUtils {
 
     private static double clamp(double value, double min, double max) {
         return Math.min(Math.max(value, min), max);
+    }
+
+    private static boolean showMessageDialogInternal(String title,
+                                                     String header,
+                                                     String message,
+                                                     String buttonText,
+                                                     Window owner) {
+        try {
+            FXMLLoader loader = new FXMLLoader(DialogUtils.class.getResource(ViewType.MESSAGE_DIALOG.getFxmlPath()));
+            Parent root = loader.load();
+
+            MessageDialogController controller = loader.getController();
+            controller.configure(
+                    resolveHeaderText(title, header),
+                    safeMessage(message),
+                    buttonText
+            );
+
+            Stage stage = createModalDialogStage(title, root, owner);
+            configureHalfScreenDialogStage(stage);
+            stage.showAndWait();
+            return true;
+        } catch (IOException ignored) {
+            return false;
+        }
+    }
+
+    private static Stage createModalDialogStage(String title, Parent root, Window owner) {
+        Stage stage = new Stage();
+        stage.initModality(Modality.APPLICATION_MODAL);
+        if (owner != null) {
+            stage.initOwner(owner);
+        }
+        stage.setTitle(title == null || title.isBlank() ? "Information" : title);
+        stage.setScene(new Scene(root));
+        return stage;
+    }
+
+    private static String resolveHeaderText(String title, String header) {
+        if (header != null && !header.isBlank()) {
+            return header;
+        }
+        if (title != null && !title.isBlank()) {
+            return title;
+        }
+        return "Information";
+    }
+
+    private static String safeMessage(String message) {
+        return message == null ? "" : message;
+    }
+
+    private static void showFallbackAlert(Alert.AlertType type, String title, String header, String message) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(message);
+        alert.getDialogPane().setGraphic(null);
+        alert.showAndWait();
     }
 }

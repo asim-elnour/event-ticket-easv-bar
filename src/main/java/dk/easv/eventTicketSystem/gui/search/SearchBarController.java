@@ -117,7 +117,7 @@ public class SearchBarController implements ModelAware {
         restoringSearchState = false;
 
         if (model != null) {
-            model.applySearch(activeScope, state.columnKey(), state.query());
+            model.reapplySearchFilters();
         }
     }
 

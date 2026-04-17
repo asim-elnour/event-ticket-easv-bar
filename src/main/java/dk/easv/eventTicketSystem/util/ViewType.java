@@ -7,6 +7,7 @@ public enum ViewType {
     DASHBOARD("/dk/easv/eventTicketSystem/gui/dashboard/AdminDashboard.fxml"),
 
     MESSAGE_DIALOG("/dk/easv/eventTicketSystem/gui/common/MessageDialog.fxml"),
+    ACTION_CONFIRM_DIALOG("/dk/easv/eventTicketSystem/gui/common/ActionConfirmDialog.fxml"),
     SEARCH_BAR("/dk/easv/eventTicketSystem/gui/search/SearchBar.fxml"),
 
     ADMIN_COORDINATOR_DIALOG("/dk/easv/eventTicketSystem/gui/adminsAndCoordinators/AdminCoordinatorDialog.fxml"),

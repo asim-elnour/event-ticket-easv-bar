@@ -209,7 +209,7 @@ public final class EventDAO implements EventRepository {
                     throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
                 }
                 if (deleted) {
-                    setTicketsDeletedForEvent(con, eventId, true);
+                    refundTicketsForEvent(con, eventId);
                 }
                 con.commit();
             } catch (SQLException | RuntimeException | EventException e) {
@@ -459,7 +459,7 @@ public final class EventDAO implements EventRepository {
                 SELECT COUNT(*)
                 FROM dbo.Tickets
                 WHERE event_id = ?
-                  AND deleted = 0
+                  AND refunded_at IS NULL
                 """)) {
             stmt.setLong(1, eventId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -475,7 +475,7 @@ public final class EventDAO implements EventRepository {
                 FROM dbo.Tickets
                 WHERE event_id = ?
                   AND ticket_category_id = ?
-                  AND deleted = 0
+                  AND refunded_at IS NULL
                 """)) {
             stmt.setLong(1, eventId);
             stmt.setLong(2, ticketCategoryId);
@@ -485,14 +485,15 @@ public final class EventDAO implements EventRepository {
         }
     }
 
-    private void setTicketsDeletedForEvent(Connection con, long eventId, boolean deleted) throws SQLException {
+    private void refundTicketsForEvent(Connection con, long eventId) throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement("""
                 UPDATE dbo.Tickets
-                SET deleted = ?
+                SET refunded_at = COALESCE(refunded_at, SYSDATETIME())
                 WHERE event_id = ?
+                  AND refunded_at IS NULL
+                  AND redeemed = 0
                 """)) {
-            stmt.setBoolean(1, deleted);
-            stmt.setLong(2, eventId);
+            stmt.setLong(1, eventId);
             stmt.executeUpdate();
         }
     }

@@ -11,9 +11,9 @@ public interface TicketRepository {
 
     List<Ticket> getAllTickets() throws TicketException;
 
-    List<Ticket> searchTicketsForEvent(long eventId, String columnKey, String query, boolean includeDeleted) throws TicketException;
+    List<Ticket> searchTicketsForEvent(long eventId, String columnKey, String query, boolean includeRefunded) throws TicketException;
 
-    List<Ticket> searchAllTickets(String columnKey, String query, boolean includeDeleted) throws TicketException;
+    List<Ticket> searchAllTickets(String columnKey, String query, boolean includeRefunded) throws TicketException;
 
     Ticket addTicket(long eventId,
                      Long ticketCategoryId,
@@ -24,7 +24,7 @@ public interface TicketRepository {
 
     int countActiveTicketsForTicketCategory(long eventId, long ticketCategoryId) throws TicketException;
 
-    Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException;
+    Ticket refundTicketById(long ticketId) throws TicketException;
 
     Ticket redeemTicketById(long ticketId) throws TicketException;
 }

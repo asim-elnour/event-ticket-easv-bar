@@ -93,8 +93,8 @@ final class DaoSupport {
                 rs.getString("customer_email"),
                 getLocalDateTime(rs, "issued_at"),
                 getLocalDateTime(rs, "redeemed_at"),
-                rs.getBoolean("redeemed"),
-                rs.getBoolean("deleted")
+                getLocalDateTime(rs, "refunded_at"),
+                rs.getBoolean("redeemed")
         );
     }
 

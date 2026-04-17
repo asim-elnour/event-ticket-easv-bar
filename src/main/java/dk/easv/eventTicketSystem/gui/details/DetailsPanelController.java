@@ -118,9 +118,9 @@ public class DetailsPanelController implements ModelAware {
     @FXML
     private Label ticketIssuedValue;
     @FXML
-    private Label ticketRedeemedValue;
+    private Label ticketLifecycleLabel;
     @FXML
-    private Label ticketStatusValue;
+    private Label ticketLifecycleValue;
     @FXML
     private ImageView ticketBarcodeImage;
     @FXML
@@ -260,8 +260,7 @@ public class DetailsPanelController implements ModelAware {
         ticketCustomerValue.setText(safeText(ticket.getCustomerName()));
         ticketEmailValue.setText(safeText(ticket.getCustomerEmail()));
         ticketIssuedValue.setText(formatDateTime(ticket.getIssuedAt()));
-        ticketRedeemedValue.setText(formatDateTime(ticket.getRedeemedAt()));
-        ticketStatusValue.setText(ticket.getStatusLabel());
+        applyTicketLifecycle(ticket);
         renderBarcodes(ticket.getCode());
         showCard(ticketCard);
         resetScroll(ticketScroll);
@@ -302,7 +301,7 @@ public class DetailsPanelController implements ModelAware {
     }
 
     private void renderBarcodes(String code) {
-        ticketBarcodeImage.setImage(generateBarcodeImage(code, BarcodeFormat.CODE_128, 260, 90));
+        ticketBarcodeImage.setImage(generateBarcodeImage(code, BarcodeFormat.CODE_128, 320, 90));
         ticketQrImage.setImage(generateBarcodeImage(code, BarcodeFormat.QR_CODE, 140, 140));
     }
 
@@ -401,5 +400,28 @@ public class DetailsPanelController implements ModelAware {
 
     private String formatNumber(Integer value) {
         return value == null ? "0" : Integer.toString(value);
+    }
+
+    private void applyTicketLifecycle(Ticket ticket) {
+        if (ticket == null) {
+            ticketLifecycleLabel.setText("Status:");
+            ticketLifecycleValue.setText("Not set");
+            return;
+        }
+
+        if (ticket.isRefunded()) {
+            ticketLifecycleLabel.setText("Refunded at:");
+            ticketLifecycleValue.setText(formatDateTime(ticket.getRefundedAt()));
+            return;
+        }
+
+        if (ticket.isRedeemed()) {
+            ticketLifecycleLabel.setText("Redeemed at:");
+            ticketLifecycleValue.setText(formatDateTime(ticket.getRedeemedAt()));
+            return;
+        }
+
+        ticketLifecycleLabel.setText("Status:");
+        ticketLifecycleValue.setText("Valid");
     }
 }

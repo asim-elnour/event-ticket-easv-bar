@@ -4,12 +4,12 @@ import dk.easv.eventTicketSystem.be.Customer;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.DataViewMode;
+import dk.easv.eventTicketSystem.gui.model.SearchScope;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import javafx.collections.ListChangeListener;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -26,13 +26,10 @@ public class CustomersController implements ModelAware {
     @FXML
     private TableColumn<Customer, String> colCustomerTableEmail;
     @FXML
-    private Button showDeletedButton;
-    @FXML
     private ChoiceBox<DataViewMode> viewChoice;
 
     private final Label placeholderLabel = new Label("No customers found.");
     private final ListChangeListener<Customer> customersListener = change -> {
-        updateShowDeletedButtonText();
         updatePlaceholder();
         restoreSelection();
     };
@@ -40,6 +37,9 @@ public class CustomersController implements ModelAware {
     private AppModel model;
     private StatusBanner statusBanner;
     private boolean modelListenersBound;
+    private boolean suppressSelectionEvents;
+    private boolean reloadPending = true;
+    private String lastLoadKey;
 
     @FXML
     public void initialize() {
@@ -52,6 +52,9 @@ public class CustomersController implements ModelAware {
         customersTable.setPlaceholder(placeholderLabel);
         customersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
         customersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldCustomer, newCustomer) -> {
+            if (suppressSelectionEvents) {
+                return;
+            }
             if (model != null) {
                 model.setSelectedCustomer(newCustomer);
             }
@@ -63,7 +66,7 @@ public class CustomersController implements ModelAware {
                 return;
             }
             model.setCustomersViewMode(newValue);
-            reloadCustomers();
+            requestReload(true);
         });
 
         updatePlaceholder();
@@ -96,12 +99,12 @@ public class CustomersController implements ModelAware {
         if (!modelListenersBound) {
             model.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
                 if (model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT) {
-                    reloadCustomers();
+                    requestReload(false);
                 }
             });
             model.currentEventIdProperty().addListener((obs, oldValue, newValue) -> {
                 if (model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT) {
-                    reloadCustomers();
+                    requestReload(false);
                 }
             });
             model.customersViewModeProperty().addListener((obs, oldValue, newValue) -> {
@@ -109,6 +112,12 @@ public class CustomersController implements ModelAware {
                     viewChoice.setValue(newValue);
                 }
                 updatePlaceholder();
+                requestReload(false);
+            });
+            model.activeSearchScopeProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == SearchScope.CUSTOMERS) {
+                    requestReload(false);
+                }
             });
             modelListenersBound = true;
         }
@@ -117,28 +126,27 @@ public class CustomersController implements ModelAware {
             viewChoice.setValue(model.getCustomersViewMode());
         }
 
-        updateShowDeletedButtonText();
         updatePlaceholder();
-        reloadCustomers();
+        requestReload(false);
     }
 
-    @FXML
-    private void onToggleShowDeletedCustomers() {
-        if (model == null) {
-            return;
-        }
-        model.setShowDeletedCustomerTickets(!model.isShowDeletedCustomerTickets());
-        updateShowDeletedButtonText();
-        reloadCustomers();
-    }
-
-    private void reloadCustomers() {
+    private void reloadCustomers(String loadKey) {
+        suppressSelectionEvents = true;
         customersTable.getSelectionModel().clearSelection();
         if (model != null) {
             model.customers().clear();
-            model.setSelectedCustomer(null);
+            if (model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+                model.setSelectedCustomer(null);
+            }
         }
+        suppressSelectionEvents = false;
         updatePlaceholder();
+        reloadPending = false;
+        lastLoadKey = loadKey;
+
+        if (model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+            return;
+        }
 
         Task<Void> task = new Task<>() {
             @Override
@@ -154,6 +162,7 @@ public class CustomersController implements ModelAware {
 
         task.setOnFailed(workerStateEvent -> {
             statusBanner.showFailed();
+            reloadPending = true;
             DialogUtils.showError("Load Customers", null,
                     task.getException() == null ? "Unable to load customers." : task.getException().getMessage());
         });
@@ -173,21 +182,19 @@ public class CustomersController implements ModelAware {
 
         for (Customer customer : model.customersView()) {
             if (customer != null && selected.getId().equals(customer.getId())) {
+                suppressSelectionEvents = true;
                 customersTable.getSelectionModel().select(customer);
                 customersTable.scrollTo(customer);
+                suppressSelectionEvents = false;
                 model.setSelectedCustomer(customer);
                 return;
             }
         }
-    }
 
-    private void updateShowDeletedButtonText() {
-        if (showDeletedButton == null || model == null) {
-            return;
-        }
-        showDeletedButton.setText(model.isShowDeletedCustomerTickets()
-                ? "Hide Deleted Tickets"
-                : "Show Deleted Tickets");
+        suppressSelectionEvents = true;
+        customersTable.getSelectionModel().clearSelection();
+        suppressSelectionEvents = false;
+        model.setSelectedCustomer(null);
     }
 
     private void updatePlaceholder() {
@@ -199,5 +206,28 @@ public class CustomersController implements ModelAware {
             return;
         }
         placeholderLabel.setText("No customers found.");
+    }
+
+    private void requestReload(boolean force) {
+        if (model == null || customersTable == null) {
+            return;
+        }
+
+        String loadKey = buildLoadKey();
+        if (!force && !reloadPending && loadKey.equals(lastLoadKey)) {
+            return;
+        }
+
+        reloadCustomers(loadKey);
+    }
+
+    private String buildLoadKey() {
+        if (model == null) {
+            return "customers:none";
+        }
+        long eventId = model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT
+                ? model.getCurrentEventId()
+                : -1L;
+        return model.getCustomersViewMode() + "|" + eventId;
     }
 }

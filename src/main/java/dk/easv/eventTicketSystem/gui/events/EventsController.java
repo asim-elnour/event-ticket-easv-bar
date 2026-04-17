@@ -347,23 +347,25 @@ public class EventsController implements ModelAware {
 
         Event selected = eventsTable.getSelectionModel().getSelectedItem();
         if (selected != null && model.eventsView().contains(selected)) {
+            model.setSelectedEvent(selected);
+            model.setCurrentEventId(selected.getId() == null ? 0L : selected.getId());
             updateActionState(selected);
             return;
         }
 
-        Event preferred = pickRememberedEvent();
-        if (preferred == null && model.getSelectedEvent() == null) {
-            preferred = pickPreferredEvent();
-        }
-        if (preferred == null) {
-            updateActionState(null);
+        Event remembered = pickRememberedEvent();
+        if (remembered != null) {
+            eventsTable.getSelectionModel().select(remembered);
+            model.setSelectedEvent(remembered);
+            model.setCurrentEventId(remembered.getId() == null ? 0L : remembered.getId());
+            updateActionState(remembered);
             return;
         }
 
-        eventsTable.getSelectionModel().select(preferred);
-        model.setSelectedEvent(preferred);
-        model.setCurrentEventId(preferred.getId() == null ? 0L : preferred.getId());
-        updateActionState(preferred);
+        eventsTable.getSelectionModel().clearSelection();
+        model.setSelectedEvent(null);
+        model.setCurrentEventId(0L);
+        updateActionState(null);
     }
 
     private Event pickRememberedEvent() {
@@ -381,22 +383,6 @@ public class EventsController implements ModelAware {
                 return event;
             }
         }
-        return null;
-    }
-
-    private Event pickPreferredEvent() {
-        for (Event event : model.eventsView()) {
-            if (event != null && !event.isDeleted()) {
-                return event;
-            }
-        }
-
-        for (Event event : model.eventsView()) {
-            if (event != null) {
-                return event;
-            }
-        }
-
         return null;
     }
 

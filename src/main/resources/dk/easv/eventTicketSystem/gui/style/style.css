@@ -1432,3 +1432,27 @@
     -fx-border-radius: 10;
     -fx-background-radius: 10;
 }
+
+.details-ticket-top {
+    -fx-alignment: TOP_LEFT;
+}
+
+.details-ticket-data {
+    -fx-min-width: 0;
+}
+
+.details-ticket-qr-box {
+    -fx-min-width: 150;
+    -fx-pref-width: 150;
+    -fx-alignment: TOP_CENTER;
+}
+
+.details-ticket-barcode-box {
+    -fx-padding: 6 0 0 0;
+    -fx-alignment: CENTER;
+}
+
+.details-ticket-code {
+    -fx-font-size: 15px;
+    -fx-font-weight: 700;
+}

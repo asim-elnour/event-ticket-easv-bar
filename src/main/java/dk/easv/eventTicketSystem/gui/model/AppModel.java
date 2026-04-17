@@ -158,28 +158,12 @@ public class AppModel {
     }
 
 
-    public boolean isShowDeletedTickets() {
-        return ticketModel.isShowDeletedTickets();
-    }
-
-    public void setShowDeletedTickets(boolean showDeletedTickets) {
-        ticketModel.setShowDeletedTickets(showDeletedTickets);
-    }
-
     public ObservableList<Customer> customers() {
         return customerModel.customers();
     }
 
     public SortedList<Customer> customersView() {
         return customerModel.customersView();
-    }
-
-    public boolean isShowDeletedCustomerTickets() {
-        return customerModel.isShowDeletedCustomerTickets();
-    }
-
-    public void setShowDeletedCustomerTickets(boolean showDeletedCustomerTickets) {
-        customerModel.setShowDeletedCustomerTickets(showDeletedCustomerTickets);
     }
 
     public ObjectProperty<User> selectedUserProperty() {
@@ -304,6 +288,11 @@ public class AppModel {
 
     public void applySearch(SearchScope scope, String columnKey, String query) {
         searchModel.updateState(scope, columnKey, query);
+        reapplySearchFilters();
+        reloadScopeAsync(scope);
+    }
+
+    public void reapplySearchFilters() {
         userModel.applySearch(
                 searchModel.getState(SearchScope.ADMINS),
                 searchModel.getState(SearchScope.EVENT_COORDINATORS)
@@ -311,7 +300,6 @@ public class AppModel {
         eventModel.applySearch(searchModel.getState(SearchScope.EVENTS));
         ticketModel.applySearch(searchModel.getState(SearchScope.TICKETS));
         customerModel.applySearch(searchModel.getState(SearchScope.CUSTOMERS));
-        reloadScopeAsync(scope);
     }
 
     private void reloadScopeAsync(SearchScope scope) {
@@ -470,8 +458,8 @@ public class AppModel {
         return ticketModel.addTicket(event, ticketCategoryId, customerName, customerEmail, code);
     }
 
-    public void setTicketDeleted(Ticket ticket, boolean deleted) throws TicketException {
-        ticketModel.setTicketDeleted(ticket, deleted);
+    public void refundTicket(Ticket ticket) throws TicketException {
+        ticketModel.refundTicket(ticket);
     }
 
     public void redeemTicket(Ticket ticket) throws TicketException {

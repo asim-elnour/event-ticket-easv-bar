@@ -6,6 +6,7 @@ import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.DataViewMode;
+import dk.easv.eventTicketSystem.gui.model.SearchScope;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.TicketPrintService;
@@ -53,14 +54,11 @@ public class TicketsController implements ModelAware {
     @FXML
     private Button printButton;
     @FXML
-    private Button showDeletedButton;
-    @FXML
     private ChoiceBox<DataViewMode> viewChoice;
 
     private final TicketPrintService ticketPrintService = new TicketPrintService();
     private final Label placeholderLabel = new Label("No tickets found.");
     private final ListChangeListener<Ticket> ticketsListener = change -> {
-        updateShowDeletedButtonText();
         updatePlaceholder();
         restoreSelection();
     };
@@ -69,6 +67,9 @@ public class TicketsController implements ModelAware {
     private AppModel model;
     private StatusBanner statusBanner;
     private boolean modelListenersBound;
+    private boolean suppressSelectionEvents;
+    private boolean reloadPending = true;
+    private String lastLoadKey;
 
     @FXML
     public void initialize() {
@@ -82,6 +83,9 @@ public class TicketsController implements ModelAware {
 
         ticketsTable.setPlaceholder(placeholderLabel);
         ticketsTable.getSelectionModel().selectedItemProperty().addListener((obs, oldTicket, newTicket) -> {
+            if (suppressSelectionEvents) {
+                return;
+            }
             if (model != null) {
                 model.setSelectedTicket(newTicket);
             }
@@ -106,7 +110,7 @@ public class TicketsController implements ModelAware {
                 return;
             }
             model.setTicketsViewMode(newValue);
-            reloadTickets();
+            requestReload(true);
         });
 
         ticketsTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
@@ -145,13 +149,13 @@ public class TicketsController implements ModelAware {
         if (!modelListenersBound) {
             model.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
                 if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
-                    reloadTickets();
+                    requestReload(false);
                 }
                 updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
             });
             model.currentEventIdProperty().addListener((obs, oldValue, newValue) -> {
                 if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT) {
-                    reloadTickets();
+                    requestReload(false);
                 }
                 updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
             });
@@ -161,6 +165,12 @@ public class TicketsController implements ModelAware {
                 }
                 updatePlaceholder();
                 updateActionState(ticketsTable.getSelectionModel().getSelectedItem());
+                requestReload(false);
+            });
+            model.activeSearchScopeProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == SearchScope.TICKETS) {
+                    requestReload(false);
+                }
             });
             modelListenersBound = true;
         }
@@ -169,9 +179,8 @@ public class TicketsController implements ModelAware {
             viewChoice.setValue(model.getTicketsViewMode());
         }
 
-        updateShowDeletedButtonText();
         updatePlaceholder();
-        reloadTickets();
+        requestReload(false);
     }
 
     @FXML
@@ -209,7 +218,7 @@ public class TicketsController implements ModelAware {
 
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
-                reloadTickets();
+                requestReload(true);
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -236,7 +245,7 @@ public class TicketsController implements ModelAware {
                 stage.initOwner(ticketsTable.getScene().getWindow());
             }
             stage.setScene(new Scene(root));
-            stage.setResizable(true);
+            DialogUtils.configureHalfScreenDialogStage(stage);
             stage.showAndWait();
 
             if (controller.isSaved()) {
@@ -249,15 +258,22 @@ public class TicketsController implements ModelAware {
     }
 
     @FXML
-    private void onDeleteTicket() {
+    private void onRefundTicket() {
         Ticket selected = ticketsTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            DialogUtils.showWarning("Delete Ticket", null, "Please select a ticket first.");
+            DialogUtils.showWarning("Refund Ticket", null, "Please select a ticket first.");
+            return;
+        }
+        if (selected.isRefunded()) {
+            DialogUtils.showWarning("Refund Ticket", null, "This ticket is already refunded.");
+            return;
+        }
+        if (selected.isRedeemed()) {
+            DialogUtils.showWarning("Refund Ticket", null, "Redeemed tickets cannot be refunded.");
             return;
         }
 
-        boolean shouldDelete = !selected.isDeleted();
-        ActionDialogType dialogType = shouldDelete ? ActionDialogType.TICKET_DELETE : ActionDialogType.TICKET_RESTORE;
+        ActionDialogType dialogType = ActionDialogType.TICKET_REFUND;
         if (!DialogUtils.confirmAction(dialogType, selected.getCode(), resolveOwnerWindow())) {
             return;
         }
@@ -266,23 +282,23 @@ public class TicketsController implements ModelAware {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                model.setTicketDeleted(selected, shouldDelete);
+                model.refundTicket(selected);
                 return null;
             }
         };
 
         task.setOnSucceeded(workerStateEvent -> {
             statusBanner.showSaved();
-            reloadTickets();
+            requestReload(true);
         });
 
         task.setOnFailed(workerStateEvent -> {
             statusBanner.showFailed();
             DialogUtils.showError(dialogType.getWindowTitle(), null,
-                    task.getException() == null ? "Unable to update ticket state." : task.getException().getMessage());
+                    task.getException() == null ? "Unable to refund ticket." : task.getException().getMessage());
         });
 
-        new Thread(task, (shouldDelete ? "delete" : "restore") + "-ticket-task").start();
+        new Thread(task, "refund-ticket-task").start();
     }
 
     @FXML
@@ -292,8 +308,8 @@ public class TicketsController implements ModelAware {
             DialogUtils.showWarning("Redeem Ticket", null, "Please select a ticket to redeem.");
             return;
         }
-        if (selected.isDeleted()) {
-            DialogUtils.showWarning("Redeem Ticket", null, "Deleted tickets cannot be redeemed.");
+        if (selected.isRefunded()) {
+            DialogUtils.showWarning("Redeem Ticket", null, "Refunded tickets cannot be redeemed.");
             return;
         }
         if (selected.isRedeemed()) {
@@ -315,7 +331,7 @@ public class TicketsController implements ModelAware {
 
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
-                reloadTickets();
+                requestReload(true);
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -389,7 +405,7 @@ public class TicketsController implements ModelAware {
                 stage.initOwner(ticketsTable.getScene().getWindow());
             }
             stage.setScene(new Scene(root));
-            stage.setResizable(false);
+            DialogUtils.configureHalfScreenDialogStage(stage);
             stage.showAndWait();
 
             return Optional.ofNullable(controller.getSelectedAction());
@@ -418,14 +434,24 @@ public class TicketsController implements ModelAware {
         return null;
     }
 
-    private void reloadTickets() {
+    private void reloadTickets(String loadKey) {
+        suppressSelectionEvents = true;
         ticketsTable.getSelectionModel().clearSelection();
         if (model != null) {
             model.tickets().clear();
-            model.setSelectedTicket(null);
+            if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+                model.setSelectedTicket(null);
+            }
         }
+        suppressSelectionEvents = false;
         updatePlaceholder();
         updateActionState(null);
+        reloadPending = false;
+        lastLoadKey = loadKey;
+
+        if (model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+            return;
+        }
 
         Task<Void> task = new Task<>() {
             @Override
@@ -439,8 +465,11 @@ public class TicketsController implements ModelAware {
             }
         };
 
-        task.setOnFailed(workerStateEvent -> DialogUtils.showError("Load Tickets", null,
-                task.getException() == null ? "Unable to load tickets." : task.getException().getMessage()));
+        task.setOnFailed(workerStateEvent -> {
+            reloadPending = true;
+            DialogUtils.showError("Load Tickets", null,
+                    task.getException() == null ? "Unable to load tickets." : task.getException().getMessage());
+        });
 
         new Thread(task, "load-tickets-task").start();
     }
@@ -458,15 +487,19 @@ public class TicketsController implements ModelAware {
 
         for (Ticket ticket : model.ticketsView()) {
             if (ticket != null && selected.getId().equals(ticket.getId())) {
+                suppressSelectionEvents = true;
                 ticketsTable.getSelectionModel().select(ticket);
                 ticketsTable.scrollTo(ticket);
+                suppressSelectionEvents = false;
                 updateActionState(ticket);
                 model.setSelectedTicket(ticket);
                 return;
             }
         }
 
+        suppressSelectionEvents = true;
         ticketsTable.getSelectionModel().clearSelection();
+        suppressSelectionEvents = false;
         model.setSelectedTicket(null);
         updateActionState(null);
     }
@@ -474,13 +507,9 @@ public class TicketsController implements ModelAware {
     private void updateActionState(Ticket selected) {
         boolean hasSelection = selected != null;
         addButton.setDisable(!canAddTicket());
-        deleteButton.setDisable(!hasSelection);
-        if (hasSelection) {
-            deleteButton.setText(selected.isDeleted() ? "Restore Ticket" : "Delete Ticket");
-        } else {
-            deleteButton.setText("Delete Ticket");
-        }
-        redeemButton.setDisable(!hasSelection || selected.isRedeemed() || selected.isDeleted());
+        deleteButton.setDisable(!hasSelection || selected.isRedeemed() || selected.isRefunded());
+        deleteButton.setText("Refund Ticket");
+        redeemButton.setDisable(!hasSelection || selected.isRedeemed() || selected.isRefunded());
         printButton.setDisable(!hasSelection);
     }
 
@@ -493,23 +522,6 @@ public class TicketsController implements ModelAware {
                 && selectedEvent.getId() != null
                 && selectedEvent.getId() > 0
                 && !selectedEvent.isDeleted();
-    }
-
-    @FXML
-    private void onToggleShowDeletedTickets() {
-        if (model == null) {
-            return;
-        }
-        model.setShowDeletedTickets(!model.isShowDeletedTickets());
-        updateShowDeletedButtonText();
-        reloadTickets();
-    }
-
-    private void updateShowDeletedButtonText() {
-        if (showDeletedButton == null || model == null) {
-            return;
-        }
-        showDeletedButton.setText(model.isShowDeletedTickets() ? "Hide Deleted Tickets" : "Show Deleted Tickets");
     }
 
     private void updatePlaceholder() {
@@ -537,7 +549,7 @@ public class TicketsController implements ModelAware {
                 stage.initOwner(ticketsTable.getScene().getWindow());
             }
             stage.setScene(new Scene(root));
-            stage.setResizable(false);
+            DialogUtils.configureHalfScreenDialogStage(stage);
             stage.showAndWait();
 
             if (controller.isSaved()) {
@@ -553,5 +565,28 @@ public class TicketsController implements ModelAware {
         return ticketsTable != null && ticketsTable.getScene() != null
                 ? (Stage) ticketsTable.getScene().getWindow()
                 : null;
+    }
+
+    private void requestReload(boolean force) {
+        if (model == null || ticketsTable == null) {
+            return;
+        }
+
+        String loadKey = buildLoadKey();
+        if (!force && !reloadPending && loadKey.equals(lastLoadKey)) {
+            return;
+        }
+
+        reloadTickets(loadKey);
+    }
+
+    private String buildLoadKey() {
+        if (model == null) {
+            return "tickets:none";
+        }
+        long eventId = model.getTicketsViewMode() == DataViewMode.SELECTED_EVENT
+                ? model.getCurrentEventId()
+                : -1L;
+        return model.getTicketsViewMode() + "|" + eventId;
     }
 }

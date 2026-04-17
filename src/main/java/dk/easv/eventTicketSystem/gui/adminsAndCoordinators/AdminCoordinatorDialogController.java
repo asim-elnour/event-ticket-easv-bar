@@ -142,7 +142,10 @@ public class AdminCoordinatorDialogController {
         txtEmail.textProperty().addListener((obs, oldValue, newValue) -> validateEmail());
         txtPhone.textProperty().addListener((obs, oldValue, newValue) -> validatePhone());
         cmbRole.valueProperty().addListener((obs, oldValue, newValue) -> validateRole());
-        txtPassword.textProperty().addListener((obs, oldValue, newValue) -> validatePassword());
+        txtPassword.textProperty().addListener((obs, oldValue, newValue) -> {
+            validatePassword();
+            validateRepeatPassword();
+        });
         txtRepeatPassword.textProperty().addListener((obs, oldValue, newValue) -> validateRepeatPassword());
     }
 

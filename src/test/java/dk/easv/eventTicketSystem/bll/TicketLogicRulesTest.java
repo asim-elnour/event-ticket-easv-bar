@@ -13,7 +13,10 @@ import dk.easv.eventTicketSystem.exceptions.TicketException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,58 +65,140 @@ class TicketLogicRulesTest {
     }
 
     @Test
-    void shouldRejectRestoringTicketWhenEventIsDeleted() {
+    void shouldRejectRefundingRedeemedTicket() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
         FakeCustomerRepository customerRepository = new FakeCustomerRepository();
-        Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, false));
-        event.setDeleted(true);
-        eventRepository.store(event);
-        ticketRepository.store(ticket(1L, 10L, 100L, true));
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(redeemedTicket(1L, 10L, 100L));
 
         TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
-                () -> logic.setTicketDeletedState(1L, false));
+                () -> logic.refundTicketById(1L));
 
-        assertEquals("Cannot restore a ticket for a deleted event.", exception.getMessage());
-        assertFalse(ticketRepository.stateChangeCalled);
+        assertEquals("Redeemed tickets cannot be refunded.", exception.getMessage());
+        assertFalse(ticketRepository.refundCalled);
     }
 
     @Test
-    void shouldRejectRestoringTicketWhenCategoryIsDeleted() {
+    void shouldRejectRedeemingRefundedTicket() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
         FakeCustomerRepository customerRepository = new FakeCustomerRepository();
-        Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, true));
-        eventRepository.store(event);
-        ticketRepository.store(ticket(1L, 10L, 100L, true));
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(refundedTicket(1L, 10L, 100L));
 
         TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
         TicketException exception = assertThrows(TicketException.class,
-                () -> logic.setTicketDeletedState(1L, false));
+                () -> logic.redeemTicketById(1L));
 
-        assertEquals("Cannot restore this ticket because its ticket type is deleted.", exception.getMessage());
-        assertFalse(ticketRepository.stateChangeCalled);
+        assertEquals("Refunded tickets cannot be redeemed.", exception.getMessage());
+        assertFalse(ticketRepository.redeemCalled);
     }
 
     @Test
-    void shouldRestoreDeletedTicketWhenSeatsAreAvailable() throws TicketException {
+    void shouldRefundValidTicket() throws TicketException {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();
         FakeCustomerRepository customerRepository = new FakeCustomerRepository();
-        Event event = eventWithCategory(10L, false, category(100L, "Standard", 5, false));
-        eventRepository.store(event);
-        ticketRepository.store(ticket(1L, 10L, 100L, true));
-        ticketRepository.setActiveTicketsForCategory(10L, 100L, 4);
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(validTicket(1L, 10L, 100L));
 
         TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
 
-        Ticket restored = logic.setTicketDeletedState(1L, false);
+        Ticket refunded = logic.refundTicketById(1L);
 
-        assertTrue(ticketRepository.stateChangeCalled);
-        assertFalse(restored.isDeleted());
+        assertTrue(ticketRepository.refundCalled);
+        assertTrue(refunded.isRefunded());
+    }
+
+    @Test
+    void shouldRejectRefundWithinThirtyMinutesOfEventStart() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(validTicket(1L, 10L, 100L));
+
+        TicketLogic logic = new TicketLogic(
+                ticketRepository,
+                eventRepository,
+                new CustomerLogic(customerRepository),
+                fixedClock(LocalDateTime.of(2026, 5, 1, 19, 35))
+        );
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.refundTicketById(1L));
+
+        assertEquals("Tickets can only be refunded more than 30 minutes before the event starts.", exception.getMessage());
+        assertFalse(ticketRepository.refundCalled);
+    }
+
+    @Test
+    void shouldRejectRedeemEarlierThanThirtyMinutesBeforeStart() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(validTicket(1L, 10L, 100L));
+
+        TicketLogic logic = new TicketLogic(
+                ticketRepository,
+                eventRepository,
+                new CustomerLogic(customerRepository),
+                fixedClock(LocalDateTime.of(2026, 5, 1, 19, 20))
+        );
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.redeemTicketById(1L));
+
+        assertEquals("Tickets can only be redeemed from 30 minutes before the event starts.", exception.getMessage());
+        assertFalse(ticketRepository.redeemCalled);
+    }
+
+    @Test
+    void shouldRedeemTicketInsideAllowedWindow() throws TicketException {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(validTicket(1L, 10L, 100L));
+
+        TicketLogic logic = new TicketLogic(
+                ticketRepository,
+                eventRepository,
+                new CustomerLogic(customerRepository),
+                fixedClock(LocalDateTime.of(2026, 5, 1, 19, 30))
+        );
+
+        Ticket redeemed = logic.redeemTicketById(1L);
+
+        assertTrue(ticketRepository.redeemCalled);
+        assertTrue(redeemed.isRedeemed());
+    }
+
+    @Test
+    void shouldRejectRedeemAfterEventEnd() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+        ticketRepository.store(validTicket(1L, 10L, 100L));
+
+        TicketLogic logic = new TicketLogic(
+                ticketRepository,
+                eventRepository,
+                new CustomerLogic(customerRepository),
+                fixedClock(LocalDateTime.of(2026, 5, 2, 1, 5))
+        );
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.redeemTicketById(1L));
+
+        assertEquals("This event has already ended. Tickets can no longer be redeemed.", exception.getMessage());
+        assertFalse(ticketRepository.redeemCalled);
     }
 
     @Test
@@ -178,13 +263,24 @@ class TicketLogicRulesTest {
         return category;
     }
 
-    private static Ticket ticket(long ticketId, long eventId, long categoryId, boolean deleted) {
+    private static Ticket validTicket(long ticketId, long eventId, long categoryId) {
         Ticket ticket = new Ticket();
         ticket.setId(ticketId);
         ticket.setEventId(eventId);
         ticket.setTicketCategoryId(categoryId);
-        ticket.setDeleted(deleted);
         ticket.setCode("CODE-" + ticketId);
+        return ticket;
+    }
+
+    private static Ticket refundedTicket(long ticketId, long eventId, long categoryId) {
+        Ticket ticket = validTicket(ticketId, eventId, categoryId);
+        ticket.setRefundedAt(LocalDateTime.of(2026, 5, 1, 12, 0));
+        return ticket;
+    }
+
+    private static Ticket redeemedTicket(long ticketId, long eventId, long categoryId) {
+        Ticket ticket = validTicket(ticketId, eventId, categoryId);
+        ticket.setRedeemedAt(LocalDateTime.of(2026, 5, 1, 12, 0));
         return ticket;
     }
 
@@ -195,6 +291,10 @@ class TicketLogicRulesTest {
         customer.setEmail(email);
         customer.setCreatedAt(LocalDateTime.of(2026, 4, 1, 10, 0));
         return customer;
+    }
+
+    private static Clock fixedClock(LocalDateTime value) {
+        return Clock.fixed(value.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
     }
 
     private static final class FakeEventRepository implements EventRepository {
@@ -264,7 +364,8 @@ class TicketLogicRulesTest {
         private final Map<String, Integer> activeTicketsByCategory = new HashMap<>();
 
         private boolean addCalled;
-        private boolean stateChangeCalled;
+        private boolean refundCalled;
+        private boolean redeemCalled;
         private long lastCustomerId;
         private long nextId = 100L;
 
@@ -287,12 +388,12 @@ class TicketLogicRulesTest {
         }
 
         @Override
-        public List<Ticket> searchTicketsForEvent(long eventId, String columnKey, String query, boolean includeDeleted) {
+        public List<Ticket> searchTicketsForEvent(long eventId, String columnKey, String query, boolean includeRefunded) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeDeleted) {
+        public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeRefunded) {
             throw new UnsupportedOperationException();
         }
 
@@ -306,7 +407,6 @@ class TicketLogicRulesTest {
             ticket.setTicketCategoryId(ticketCategoryId);
             ticket.setCustomerId(customerId);
             ticket.setCode(code);
-            ticket.setDeleted(false);
             tickets.put(ticket.getId(), ticket.copy());
             return ticket.copy();
         }
@@ -326,20 +426,27 @@ class TicketLogicRulesTest {
         }
 
         @Override
-        public Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException {
-            stateChangeCalled = true;
+        public Ticket refundTicketById(long ticketId) throws TicketException {
+            refundCalled = true;
             Ticket ticket = tickets.get(ticketId);
             if (ticket == null) {
                 throw new TicketException("Ticket not found.", null);
             }
-            ticket.setDeleted(deleted);
+            ticket.setRefundedAt(LocalDateTime.of(2026, 5, 1, 12, 30));
             tickets.put(ticketId, ticket.copy());
             return ticket.copy();
         }
 
         @Override
-        public Ticket redeemTicketById(long ticketId) {
-            throw new UnsupportedOperationException();
+        public Ticket redeemTicketById(long ticketId) throws TicketException {
+            redeemCalled = true;
+            Ticket ticket = tickets.get(ticketId);
+            if (ticket == null) {
+                throw new TicketException("Ticket not found.", null);
+            }
+            ticket.setRedeemedAt(LocalDateTime.of(2026, 5, 1, 13, 0));
+            tickets.put(ticketId, ticket.copy());
+            return ticket.copy();
         }
 
         private String categoryKey(long eventId, long categoryId) {
@@ -357,12 +464,12 @@ class TicketLogicRulesTest {
         }
 
         @Override
-        public List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) {
+        public List<Customer> getCustomersForEvent(long eventId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public List<Customer> getAllCustomers(boolean includeDeletedTickets) {
+        public List<Customer> getAllCustomers() {
             throw new UnsupportedOperationException();
         }
 

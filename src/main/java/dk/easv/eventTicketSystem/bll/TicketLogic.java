@@ -12,6 +12,8 @@ import dk.easv.eventTicketSystem.exceptions.EventException;
 import dk.easv.eventTicketSystem.exceptions.TicketException;
 import dk.easv.eventTicketSystem.util.CustomerValidationRules;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public class TicketLogic {
@@ -19,25 +21,34 @@ public class TicketLogic {
     private final TicketRepository ticketRepository;
     private final EventRepository eventRepository;
     private final CustomerLogic customerLogic;
+    private final Clock clock;
 
     public TicketLogic() {
-        this(RepositoryProvider.tickets(), RepositoryProvider.events(), new CustomerLogic());
+        this(RepositoryProvider.tickets(), RepositoryProvider.events(), new CustomerLogic(), Clock.systemDefaultZone());
     }
 
     public TicketLogic(TicketRepository ticketRepository) {
-        this(ticketRepository, RepositoryProvider.events(), new CustomerLogic());
+        this(ticketRepository, RepositoryProvider.events(), new CustomerLogic(), Clock.systemDefaultZone());
     }
 
     public TicketLogic(TicketRepository ticketRepository, EventRepository eventRepository) {
-        this(ticketRepository, eventRepository, new CustomerLogic());
+        this(ticketRepository, eventRepository, new CustomerLogic(), Clock.systemDefaultZone());
     }
 
     public TicketLogic(TicketRepository ticketRepository,
                        EventRepository eventRepository,
                        CustomerLogic customerLogic) {
+        this(ticketRepository, eventRepository, customerLogic, Clock.systemDefaultZone());
+    }
+
+    public TicketLogic(TicketRepository ticketRepository,
+                       EventRepository eventRepository,
+                       CustomerLogic customerLogic,
+                       Clock clock) {
         this.ticketRepository = ticketRepository;
         this.eventRepository = eventRepository;
         this.customerLogic = customerLogic;
+        this.clock = clock == null ? Clock.systemDefaultZone() : clock;
     }
 
     public List<Ticket> getTicketsForEvent(long eventId) throws TicketException {
@@ -51,12 +62,12 @@ public class TicketLogic {
     public List<Ticket> searchTicketsForEvent(long eventId,
                                               String columnKey,
                                               String query,
-                                              boolean includeDeleted) throws TicketException {
-        return ticketRepository.searchTicketsForEvent(eventId, columnKey, query, includeDeleted);
+                                              boolean includeRefunded) throws TicketException {
+        return ticketRepository.searchTicketsForEvent(eventId, columnKey, query, includeRefunded);
     }
 
-    public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeDeleted) throws TicketException {
-        return ticketRepository.searchAllTickets(columnKey, query, includeDeleted);
+    public List<Ticket> searchAllTickets(String columnKey, String query, boolean includeRefunded) throws TicketException {
+        return ticketRepository.searchAllTickets(columnKey, query, includeRefunded);
     }
 
     public Ticket addTicket(long eventId,
@@ -91,41 +102,35 @@ public class TicketLogic {
         return ticketRepository.getTicketById(ticketId);
     }
 
-    public Ticket setTicketDeletedState(long ticketId, boolean deleted) throws TicketException {
+    public Ticket refundTicketById(long ticketId) throws TicketException {
         if (ticketId <= 0) {
             throw new TicketException("Please select a valid ticket first.", null);
         }
 
-        if (!deleted) {
-            validateTicketRestore(ticketId);
+        Ticket ticket = ticketRepository.getTicketById(ticketId);
+        if (ticket.isRefunded()) {
+            throw new TicketException("This ticket is already refunded.", null);
         }
-        return ticketRepository.setTicketDeletedState(ticketId, deleted);
+        if (ticket.isRedeemed()) {
+            throw new TicketException("Redeemed tickets cannot be refunded.", null);
+        }
+        validateRefundWindow(ticket);
+        return ticketRepository.refundTicketById(ticketId);
     }
 
     public Ticket redeemTicketById(long ticketId) throws TicketException {
-        return ticketRepository.redeemTicketById(ticketId);
-    }
-
-    private void validateTicketRestore(long ticketId) throws TicketException {
+        if (ticketId <= 0) {
+            throw new TicketException("Please select a valid ticket first.", null);
+        }
         Ticket ticket = ticketRepository.getTicketById(ticketId);
-        if (!ticket.isDeleted()) {
-            return;
+        if (ticket.isRefunded()) {
+            throw new TicketException("Refunded tickets cannot be redeemed.", null);
         }
-        if (ticket.getEventId() == null || ticket.getEventId() <= 0) {
-            throw new TicketException("Cannot restore a ticket without an event.", null);
+        if (ticket.isRedeemed()) {
+            throw new TicketException("This ticket is already redeemed.", null);
         }
-        if (ticket.getTicketCategoryId() == null || ticket.getTicketCategoryId() <= 0) {
-            throw new TicketException("Cannot restore a ticket without a ticket type.", null);
-        }
-
-        Event event = getEvent(ticket.getEventId());
-        if (event.isDeleted()) {
-            throw new TicketException("Cannot restore a ticket for a deleted event.", null);
-        }
-
-        TicketCategory category = requireActiveCategory(event, ticket.getTicketCategoryId(),
-                "Cannot restore this ticket because its ticket type is deleted.");
-        ensureCategoryHasSeats(ticket.getEventId(), category);
+        validateRedeemWindow(ticket);
+        return ticketRepository.redeemTicketById(ticketId);
     }
 
     private Event getEvent(long eventId) throws TicketException {
@@ -184,5 +189,51 @@ public class TicketLogic {
         } catch (CustomerException e) {
             throw new TicketException(e.getMessage(), e);
         }
+    }
+
+    private void validateRefundWindow(Ticket ticket) throws TicketException {
+        Event event = requireEventForTicketAction(ticket, "Refund");
+        LocalDateTime start = event.getStartTime();
+        if (start == null) {
+            throw new TicketException("Refund is unavailable because the event start time is missing.", null);
+        }
+        LocalDateTime cutoff = start.minusMinutes(30);
+        if (!now().isBefore(cutoff)) {
+            throw new TicketException("Tickets can only be refunded more than 30 minutes before the event starts.", null);
+        }
+    }
+
+    private void validateRedeemWindow(Ticket ticket) throws TicketException {
+        Event event = requireEventForTicketAction(ticket, "Redeem");
+        LocalDateTime start = event.getStartTime();
+        if (start == null) {
+            throw new TicketException("Redeem is unavailable because the event start time is missing.", null);
+        }
+
+        LocalDateTime now = now();
+        LocalDateTime redeemWindowStart = start.minusMinutes(30);
+        if (now.isBefore(redeemWindowStart)) {
+            throw new TicketException("Tickets can only be redeemed from 30 minutes before the event starts.", null);
+        }
+
+        LocalDateTime end = event.getEndTime();
+        if (end != null && now.isAfter(end)) {
+            throw new TicketException("This event has already ended. Tickets can no longer be redeemed.", null);
+        }
+    }
+
+    private Event requireEventForTicketAction(Ticket ticket, String actionName) throws TicketException {
+        if (ticket == null || ticket.getEventId() == null || ticket.getEventId() <= 0) {
+            throw new TicketException(actionName + " is unavailable because the event could not be resolved.", null);
+        }
+        Event event = getEvent(ticket.getEventId());
+        if (event.isDeleted()) {
+            throw new TicketException(actionName + " is unavailable because this event is deleted.", null);
+        }
+        return event;
+    }
+
+    private LocalDateTime now() {
+        return LocalDateTime.now(clock);
     }
 }

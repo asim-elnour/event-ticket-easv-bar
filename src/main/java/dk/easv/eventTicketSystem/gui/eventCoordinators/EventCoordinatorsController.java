@@ -7,6 +7,7 @@ import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.common.ActionDialogType;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.DataViewMode;
+import dk.easv.eventTicketSystem.gui.model.SearchScope;
 import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.StatusBanner;
 import dk.easv.eventTicketSystem.util.UserUiText;
@@ -49,6 +50,9 @@ public class EventCoordinatorsController implements ModelAware {
     private AppModel model;
     private StatusBanner statusBanner;
     private boolean modelListenersBound;
+    private boolean suppressSelectionEvents;
+    private boolean reloadPending = true;
+    private String lastLoadKey;
 
     @FXML
     public void initialize() {
@@ -85,6 +89,9 @@ public class EventCoordinatorsController implements ModelAware {
 
         usersTable.setPlaceholder(placeholderLabel);
         usersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldUser, newUser) -> {
+            if (suppressSelectionEvents) {
+                return;
+            }
             if (model != null) {
                 model.setSelectedEventCoordinator(newUser);
             }
@@ -109,7 +116,7 @@ public class EventCoordinatorsController implements ModelAware {
                 return;
             }
             model.setCoordinatorViewMode(newValue);
-            reloadCoordinators();
+            requestReload(true);
         });
 
         usersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
@@ -144,7 +151,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         updateShowDeletedButtonText();
         updatePlaceholder();
-        reloadCoordinators();
+        requestReload(false);
     }
 
     private void bindModelListeners() {
@@ -153,13 +160,13 @@ public class EventCoordinatorsController implements ModelAware {
         }
         model.selectedEventProperty().addListener((obs, oldValue, newValue) -> {
             if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
-                reloadCoordinators();
+                requestReload(false);
             }
             updateActionState(usersTable.getSelectionModel().getSelectedItem());
         });
         model.currentEventIdProperty().addListener((obs, oldValue, newValue) -> {
             if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT) {
-                reloadCoordinators();
+                requestReload(false);
             }
             updateActionState(usersTable.getSelectionModel().getSelectedItem());
         });
@@ -169,18 +176,34 @@ public class EventCoordinatorsController implements ModelAware {
             }
             updatePlaceholder();
             updateActionState(usersTable.getSelectionModel().getSelectedItem());
+            requestReload(false);
+        });
+        model.activeSearchScopeProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue == SearchScope.EVENT_COORDINATORS) {
+                requestReload(false);
+            }
         });
         modelListenersBound = true;
     }
 
-    private void reloadCoordinators() {
+    private void reloadCoordinators(String loadKey) {
+        suppressSelectionEvents = true;
         usersTable.getSelectionModel().clearSelection();
         if (model != null) {
             model.coordinatorUsers().clear();
-            model.setSelectedEventCoordinator(null);
+            if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+                model.setSelectedEventCoordinator(null);
+            }
         }
+        suppressSelectionEvents = false;
         updateActionState(null);
         updatePlaceholder();
+        reloadPending = false;
+        lastLoadKey = loadKey;
+
+        if (model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT && model.getCurrentEventId() <= 0) {
+            return;
+        }
 
         Task<Void> task = new Task<>() {
             @Override
@@ -194,8 +217,11 @@ public class EventCoordinatorsController implements ModelAware {
             }
         };
 
-        task.setOnFailed(event -> DialogUtils.showError("Load Coordinators", null,
-                task.getException() == null ? "Unable to load coordinators." : task.getException().getMessage()));
+        task.setOnFailed(event -> {
+            reloadPending = true;
+            DialogUtils.showError("Load Coordinators", null,
+                    task.getException() == null ? "Unable to load coordinators." : task.getException().getMessage());
+        });
 
         new Thread(task, "load-coordinators-task").start();
     }
@@ -218,15 +244,19 @@ public class EventCoordinatorsController implements ModelAware {
             }
             Long coordinatorEventId = coordinator.getEventCoordinatorEventId();
             if (selectedEventId == null || selectedEventId.equals(coordinatorEventId)) {
+                suppressSelectionEvents = true;
                 usersTable.getSelectionModel().select(coordinator);
                 usersTable.scrollTo(coordinator);
+                suppressSelectionEvents = false;
                 updateActionState(coordinator);
                 model.setSelectedEventCoordinator(coordinator);
                 return;
             }
         }
 
+        suppressSelectionEvents = true;
         usersTable.getSelectionModel().clearSelection();
+        suppressSelectionEvents = false;
         model.setSelectedEventCoordinator(null);
         updateActionState(null);
     }
@@ -238,7 +268,7 @@ public class EventCoordinatorsController implements ModelAware {
         }
         model.setShowDeletedCoordinatorUsers(!model.isShowDeletedCoordinatorUsers());
         updateShowDeletedButtonText();
-        reloadCoordinators();
+        requestReload(true);
     }
 
     private void updateShowDeletedButtonText() {
@@ -319,7 +349,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         task.setOnSucceeded(event -> {
             statusBanner.showSaved();
-            reloadCoordinators();
+            requestReload(true);
         });
 
         task.setOnFailed(event -> {
@@ -383,7 +413,7 @@ public class EventCoordinatorsController implements ModelAware {
 
         task.setOnSucceeded(event -> {
             statusBanner.showSaved();
-            reloadCoordinators();
+            requestReload(true);
         });
 
         task.setOnFailed(event -> {
@@ -582,5 +612,30 @@ public class EventCoordinatorsController implements ModelAware {
             return;
         }
         placeholderLabel.setText("No coordinators found.");
+    }
+
+    private void requestReload(boolean force) {
+        if (model == null || usersTable == null) {
+            return;
+        }
+
+        String loadKey = buildLoadKey();
+        if (!force && !reloadPending && loadKey.equals(lastLoadKey)) {
+            return;
+        }
+
+        reloadCoordinators(loadKey);
+    }
+
+    private String buildLoadKey() {
+        if (model == null) {
+            return "coordinators:none";
+        }
+        long eventId = model.getCoordinatorViewMode() == DataViewMode.SELECTED_EVENT
+                ? model.getCurrentEventId()
+                : -1L;
+        return model.getCoordinatorViewMode()
+                + "|" + eventId
+                + "|" + model.isShowDeletedCoordinatorUsers();
     }
 }

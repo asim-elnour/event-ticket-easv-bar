@@ -30,31 +30,19 @@ public final class CustomerDAO implements CustomerRepository {
     }
 
     @Override
-    public List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) throws CustomerException {
+    public List<Customer> getCustomersForEvent(long eventId) throws CustomerException {
         StringBuilder sql = new StringBuilder(CUSTOMER_SELECT).append("""
                 JOIN dbo.Tickets t ON t.customer_id = c.id
                 WHERE t.event_id = ?
                 """);
-        if (!includeDeletedTickets) {
-            sql.append(" AND t.deleted = 0");
-        }
         sql.append(" GROUP BY c.id, c.name, c.email, c.created_at");
         sql.append(" ORDER BY LOWER(c.name), LOWER(c.email), c.id");
         return queryCustomers(sql.toString(), List.of(eventId));
     }
 
     @Override
-    public List<Customer> getAllCustomers(boolean includeDeletedTickets) throws CustomerException {
-        StringBuilder sql = new StringBuilder(CUSTOMER_SELECT).append("""
-                JOIN dbo.Tickets t ON t.customer_id = c.id
-                WHERE 1 = 1
-                """);
-        if (!includeDeletedTickets) {
-            sql.append(" AND t.deleted = 0");
-        }
-        sql.append(" GROUP BY c.id, c.name, c.email, c.created_at");
-        sql.append(" ORDER BY LOWER(c.name), LOWER(c.email), c.id");
-        return queryCustomers(sql.toString(), List.of());
+    public List<Customer> getAllCustomers() throws CustomerException {
+        return queryCustomers(CUSTOMER_SELECT + " ORDER BY LOWER(c.name), LOWER(c.email), c.id", List.of());
     }
 
     @Override

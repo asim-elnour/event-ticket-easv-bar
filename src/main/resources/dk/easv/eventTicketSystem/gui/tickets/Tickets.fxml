@@ -14,7 +14,7 @@
           AnchorPane.bottomAnchor="0.0"
           AnchorPane.leftAnchor="0.0">
 
-        <VBox style="-fx-padding: 0 0 16 0;">
+        <VBox style="-fx-padding: 0 0 0 0;">
             <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="84" prefHeight="84" pannable="false"
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
@@ -28,8 +28,6 @@
                         </VBox>
                         <Label fx:id="statusLabel" text="" visible="false" styleClass="status-label" minWidth="-Infinity"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button fx:id="showDeletedButton" text="Hide Deleted Tickets" minWidth="-Infinity"
-                                onAction="#onToggleShowDeletedTickets"/>
                     </HBox>
                 </content>
             </ScrollPane>
@@ -57,7 +55,7 @@
             </ScrollPane>
         </VBox>
 
-        <VBox style="-fx-padding: 16 0 0 0;">
+        <VBox style="-fx-padding: 0 0 0 0;">
             <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
@@ -65,8 +63,8 @@
                         <Button fx:id="addButton" text="Add Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS" onAction="#onAddTicket"/>
                         <Button fx:id="redeemButton" text="Redeem Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS"
                                 onAction="#onRedeemTicket"/>
-                        <Button fx:id="deleteButton" text="Delete Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS"
-                                onAction="#onDeleteTicket"/>
+                        <Button fx:id="deleteButton" text="Refund Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS"
+                                onAction="#onRefundTicket"/>
                         <Region HBox.hgrow="ALWAYS"/>
                         <Button fx:id="printButton" text="Print Ticket" minWidth="-Infinity" HBox.hgrow="ALWAYS"
                                 onAction="#onPrintTicket"/>

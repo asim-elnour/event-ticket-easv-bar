@@ -225,41 +225,47 @@
                         minHeight="0"
                         VBox.vgrow="ALWAYS">
                 <content>
-                    <VBox styleClass="details-content" spacing="10">
-                        <VBox styleClass="details-row">
-                            <Label text="Event" styleClass="details-label"/>
-                            <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Code" styleClass="details-label"/>
-                            <Label fx:id="ticketCodeValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Customer" styleClass="details-label"/>
-                            <Label fx:id="ticketCustomerValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Email" styleClass="details-label"/>
-                            <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Issued" styleClass="details-label"/>
-                            <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Redeemed at" styleClass="details-label"/>
-                            <Label fx:id="ticketRedeemedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Status" styleClass="details-label"/>
-                            <Label fx:id="ticketStatusValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
-                        </VBox>
-                        <VBox styleClass="details-row">
-                            <Label text="Barcode" styleClass="details-label"/>
-                            <VBox styleClass="details-image-box" spacing="10">
-                                <ImageView fx:id="ticketBarcodeImage" fitWidth="260" fitHeight="90" preserveRatio="false" smooth="true"/>
+                    <VBox styleClass="details-content details-ticket-content" spacing="18">
+                        <HBox styleClass="details-ticket-top" spacing="20">
+                            <VBox styleClass="details-ticket-data" spacing="10" HBox.hgrow="ALWAYS">
+                                <HBox styleClass="details-row">
+                                    <Label text="Event:" styleClass="details-label"/>
+                                    <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Customer:" styleClass="details-label"/>
+                                    <Label fx:id="ticketCustomerValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Email:" styleClass="details-label"/>
+                                    <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label text="Issued:" styleClass="details-label"/>
+                                    <Label fx:id="ticketIssuedValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
+                                    <Label fx:id="ticketLifecycleLabel" text="Status:" styleClass="details-label"/>
+                                    <Label fx:id="ticketLifecycleValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                            </VBox>
+                            <VBox styleClass="details-ticket-qr-box" spacing="10" alignment="TOP_CENTER">
                                 <ImageView fx:id="ticketQrImage" fitWidth="140" fitHeight="140" preserveRatio="false" smooth="true"/>
                             </VBox>
+                        </HBox>
+                        <VBox styleClass="details-ticket-barcode-box" spacing="10" alignment="CENTER">
+                            <ImageView fx:id="ticketBarcodeImage" fitWidth="320" fitHeight="90" preserveRatio="false" smooth="true"/>
+                            <Label fx:id="ticketCodeValue"
+                                   text="Not set"
+                                   styleClass="details-value details-ticket-code"
+                                   style="-fx-text-fill: #ffffff;"
+                                   wrapText="false"
+                                   textOverrun="CLIP"
+                                   minWidth="-Infinity"
+                                   maxWidth="-Infinity"
+                                   alignment="CENTER"
+                                   textAlignment="CENTER"
+                                   maxHeight="-Infinity"/>
                         </VBox>
                     </VBox>
                 </content>

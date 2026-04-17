@@ -20,15 +20,15 @@ public class CustomerLogic {
         this.customerRepository = customerRepository;
     }
 
-    public List<Customer> getCustomersForEvent(long eventId, boolean includeDeletedTickets) throws CustomerException {
+    public List<Customer> getCustomersForEvent(long eventId) throws CustomerException {
         if (eventId <= 0) {
             return List.of();
         }
-        return customerRepository.getCustomersForEvent(eventId, includeDeletedTickets);
+        return customerRepository.getCustomersForEvent(eventId);
     }
 
-    public List<Customer> getAllCustomers(boolean includeDeletedTickets) throws CustomerException {
-        return customerRepository.getAllCustomers(includeDeletedTickets);
+    public List<Customer> getAllCustomers() throws CustomerException {
+        return customerRepository.getAllCustomers();
     }
 
     public List<Customer> getCustomerDirectory() throws CustomerException {

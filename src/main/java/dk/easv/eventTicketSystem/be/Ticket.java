@@ -22,11 +22,11 @@ public class Ticket {
     private final StringProperty customerEmail = new SimpleStringProperty();
     private final ObjectProperty<LocalDateTime> issuedAt = new SimpleObjectProperty<>();
     private final ObjectProperty<LocalDateTime> redeemedAt = new SimpleObjectProperty<>();
+    private final ObjectProperty<LocalDateTime> refundedAt = new SimpleObjectProperty<>();
     private final BooleanProperty redeemed = new SimpleBooleanProperty(false);
-    private final BooleanProperty deleted = new SimpleBooleanProperty(false);
 
     public Ticket() {
-        this(null, null, null, null, null, generateCode(), null, null, LocalDateTime.now(), null, false, false);
+        this(null, null, null, null, null, generateCode(), null, null, LocalDateTime.now(), null, null, false);
     }
 
     public Ticket(Long id,
@@ -39,8 +39,8 @@ public class Ticket {
                   String customerEmail,
                   LocalDateTime issuedAt,
                   LocalDateTime redeemedAt,
-                  boolean redeemed,
-                  boolean deleted) {
+                  LocalDateTime refundedAt,
+                  boolean redeemed) {
         this.id.set(id);
         this.eventId.set(eventId);
         this.ticketCategoryId.set(ticketCategoryId);
@@ -51,8 +51,8 @@ public class Ticket {
         this.customerEmail.set(customerEmail);
         this.issuedAt.set(issuedAt);
         this.redeemedAt.set(redeemedAt);
+        this.refundedAt.set(refundedAt);
         this.redeemed.set(redeemed);
-        this.deleted.set(deleted);
     }
 
     public static String generateCode() {
@@ -173,6 +173,9 @@ public class Ticket {
 
     public void setRedeemedAt(LocalDateTime redeemedAt) {
         this.redeemedAt.set(redeemedAt);
+        if (redeemedAt != null) {
+            this.redeemed.set(true);
+        }
     }
 
     public ObjectProperty<LocalDateTime> redeemedAtProperty() {
@@ -180,7 +183,7 @@ public class Ticket {
     }
 
     public boolean isRedeemed() {
-        return redeemed.get();
+        return redeemed.get() || redeemedAt.get() != null;
     }
 
     public void setRedeemed(boolean redeemed) {
@@ -191,21 +194,25 @@ public class Ticket {
         return redeemed;
     }
 
-    public boolean isDeleted() {
-        return deleted.get();
+    public LocalDateTime getRefundedAt() {
+        return refundedAt.get();
     }
 
-    public void setDeleted(boolean deleted) {
-        this.deleted.set(deleted);
+    public void setRefundedAt(LocalDateTime refundedAt) {
+        this.refundedAt.set(refundedAt);
     }
 
-    public BooleanProperty deletedProperty() {
-        return deleted;
+    public ObjectProperty<LocalDateTime> refundedAtProperty() {
+        return refundedAt;
+    }
+
+    public boolean isRefunded() {
+        return refundedAt.get() != null;
     }
 
     public String getStatusLabel() {
-        if (isDeleted()) {
-            return "Deleted";
+        if (isRefunded()) {
+            return "Refunded";
         }
         if (isRedeemed()) {
             return "Redeemed";
@@ -225,8 +232,8 @@ public class Ticket {
                 getCustomerEmail(),
                 getIssuedAt(),
                 getRedeemedAt(),
-                isRedeemed(),
-                isDeleted()
+                getRefundedAt(),
+                isRedeemed()
         );
     }
 
@@ -244,7 +251,7 @@ public class Ticket {
         setCustomerEmail(ticket.getCustomerEmail());
         setIssuedAt(ticket.getIssuedAt());
         setRedeemedAt(ticket.getRedeemedAt());
+        setRefundedAt(ticket.getRefundedAt());
         setRedeemed(ticket.isRedeemed());
-        setDeleted(ticket.isDeleted());
     }
 }
