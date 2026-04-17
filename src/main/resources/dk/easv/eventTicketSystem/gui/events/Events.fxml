@@ -11,10 +11,10 @@
           AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
 
         <VBox style="-fx-padding: 0 0 0 0;">
-            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="50" pannable="false"
+            <ScrollPane fitToHeight="false" fitToWidth="true" hbarPolicy="AS_NEEDED" minHeight="63" prefHeight="63" pannable="false"
                         styleClass="row-scroll" vbarPolicy="NEVER">
                 <content>
-                    <HBox styleClass="section-header">
+                    <HBox styleClass="section-header" style="-fx-min-height: 58; -fx-padding: 2 0;">
                         <Label fx:id="sectionTitleLabel" minWidth="-Infinity" styleClass="section-label" text="Events"/>
                         <Label fx:id="statusLabel" minWidth="-Infinity" styleClass="status-label" text="" visible="false"/>
                         <Region HBox.hgrow="ALWAYS"/>
