@@ -47,8 +47,8 @@
                                minWidth="460"
                                styleClass="data-view">
                         <columns>
-                            <TableColumn fx:id="colCustomerTableName" minWidth="180" text="Name"/>
-                            <TableColumn fx:id="colCustomerTableEmail" minWidth="220" text="Email"/>
+                            <TableColumn fx:id="colCustomerTableName" minWidth="230" text="Name"/>
+                            <TableColumn fx:id="colCustomerTableEmail" minWidth="230" text="Email"/>
                         </columns>
                     </TableView>
                 </content>

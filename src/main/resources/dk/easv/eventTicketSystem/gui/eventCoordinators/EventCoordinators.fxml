@@ -42,7 +42,7 @@
                         styleClass="table-scroll-container">
                 <content>
                     <TableView fx:id="usersTable"
-                               minWidth="460"
+                               minWidth="540"
                                styleClass="data-view">
                         <columns>
                             <TableColumn fx:id="colFullName" minWidth="140" text="Name"/>

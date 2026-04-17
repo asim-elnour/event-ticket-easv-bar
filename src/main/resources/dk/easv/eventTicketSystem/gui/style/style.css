@@ -902,6 +902,14 @@
     -fx-border-width: 0 1 1 0;
 }
 
+.table-view .column-header:last-visible {
+    -fx-border-width: 0 0 1 0; /* remove right border */
+}
+
+.table-scroll-container{
+    -fx-background-color: transparent;
+}
+
 .table-view .column-header .label {
     -fx-text-fill: -fx-text-primary;
     -fx-font-weight: 700;
@@ -1455,4 +1463,8 @@
 .details-ticket-code {
     -fx-font-size: 15px;
     -fx-font-weight: 700;
+}
+
+.table-view .column-header {
+    -fx-background-color: transparent;
 }

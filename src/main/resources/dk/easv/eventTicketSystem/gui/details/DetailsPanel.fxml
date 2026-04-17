@@ -235,7 +235,7 @@
                 <content>
                     <VBox styleClass="details-content details-ticket-content" spacing="18">
                         <HBox styleClass="details-ticket-top" spacing="20">
-                            <VBox styleClass="details-ticket-data" spacing="10" HBox.hgrow="ALWAYS">
+                            <VBox style="-fx-padding: 0 0 0 20;" styleClass="details-ticket-data" spacing="10" HBox.hgrow="ALWAYS">
                                 <HBox styleClass="details-row">
                                     <Label text="Event:" styleClass="details-label"/>
                                     <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>

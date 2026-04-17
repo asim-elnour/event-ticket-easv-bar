@@ -33,8 +33,9 @@
                         vbarPolicy="AS_NEEDED"
                         styleClass="table-scroll-container">
                 <content>
-                    <TableView fx:id="eventsTable"
-                               minWidth="460"
+ 
+                     <TableView fx:id="eventsTable"
+                               minWidth="610" 
                                styleClass="data-view">
                         <columns>
                             <TableColumn fx:id="colName" minWidth="170" text="Name"/>
