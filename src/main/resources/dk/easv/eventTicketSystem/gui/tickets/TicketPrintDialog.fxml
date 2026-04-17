@@ -3,6 +3,8 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -12,12 +14,34 @@
             fx:controller="dk.easv.eventTicketSystem.gui.tickets.TicketPrintDialogController">
 
     <center>
-        <VBox styleClass="dialog-content ticket-print-dialog" spacing="8">
+        <VBox style="-fx-padding: 20 0 0 20;" styleClass="dialog-content ticket-print-dialog" spacing="12" VBox.vgrow="NEVER">
             <Label text="Print Ticket" styleClass="section-label"/>
-            <Label text="Choose how you want to deliver this ticket." styleClass="muted-text"/>
-            <Label text="Ticket code:" style="-fx-font-weight: bold;"/>
-            <Label fx:id="lblTicketCode"/>
-            <Label fx:id="lblCustomer" styleClass="muted-text"/>
+            <!-- <Label text="Choose how you want to deliver this ticket."
+                   styleClass="muted-text"
+                   wrapText="true"/> -->
+
+            <GridPane styleClass="dialog-grid ticket-print-grid" alignment="CENTER_LEFT">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="110" prefWidth="110"/>
+                    <ColumnConstraints hgrow="ALWAYS" fillWidth="true"/>
+                </columnConstraints>
+
+                <Label text="Ticket code:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <Label fx:id="lblTicketCode"
+                       styleClass="ticket-print-value"
+                       wrapText="true"
+                       maxWidth="Infinity"
+                       GridPane.rowIndex="0"
+                       GridPane.columnIndex="1"/>
+
+                <Label text="Customer:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <Label fx:id="lblCustomer"
+                       styleClass="ticket-print-value"
+                       wrapText="true"
+                       maxWidth="Infinity"
+                       GridPane.rowIndex="1"
+                       GridPane.columnIndex="1"/>
+            </GridPane>
         </VBox>
     </center>
 

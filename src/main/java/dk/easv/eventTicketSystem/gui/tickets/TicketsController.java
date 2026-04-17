@@ -352,13 +352,13 @@ public class TicketsController implements ModelAware {
             return;
         }
 
-        Optional<TicketPrintDialogController.TicketAction> action = showPrintTicketDialog(selected);
+        Event selectedEvent = resolveCurrentEvent();
+        Optional<TicketPrintDialogController.TicketAction> action = showPrintTicketDialog(selected, selectedEvent);
         if (action.isEmpty()) {
             return;
         }
 
         statusBanner.showPreparingTicket();
-        Event selectedEvent = resolveCurrentEvent();
 
         Task<Path> task = new Task<>() {
             @Override
@@ -391,12 +391,12 @@ public class TicketsController implements ModelAware {
         new Thread(task, "print-ticket-task").start();
     }
 
-    private Optional<TicketPrintDialogController.TicketAction> showPrintTicketDialog(Ticket ticket) {
+    private Optional<TicketPrintDialogController.TicketAction> showPrintTicketDialog(Ticket ticket, Event event) {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(ViewType.TICKET_PRINT_DIALOG.getFxmlPath()));
         try {
             Parent root = loader.load();
             TicketPrintDialogController controller = loader.getController();
-            controller.setTicket(ticket);
+            controller.setTicket(ticket, event);
 
             Stage stage = new Stage();
             stage.setTitle("Print Ticket");

@@ -225,7 +225,7 @@
               managed="false">
             <Label text="Ticket" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="ticketScroll"
-                        fitToWidth="false"
+                        fitToWidth="true"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"
@@ -238,7 +238,7 @@
                             <VBox style="-fx-padding: 0 0 0 20;" styleClass="details-ticket-data" spacing="10" HBox.hgrow="ALWAYS">
                                 <HBox styleClass="details-row">
                                     <Label text="Event:" styleClass="details-label"/>
-                                    <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                    <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
                                 </HBox>
                                 <HBox styleClass="details-row">
                                     <Label text="Location:" styleClass="details-label"/>
@@ -258,7 +258,7 @@
                                 </HBox>
                                 <HBox styleClass="details-row">
                                     <Label text="Email:" styleClass="details-label"/>
-                                    <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                                    <Label fx:id="ticketEmailValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                                 </HBox>
                                 <HBox styleClass="details-row">
                                     <Label text="Issued:" styleClass="details-label"/>

@@ -1,5 +1,6 @@
 package dk.easv.eventTicketSystem.gui.tickets;
 
+import dk.easv.eventTicketSystem.be.Event;
 import dk.easv.eventTicketSystem.be.Ticket;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
@@ -21,16 +22,17 @@ public class TicketPrintDialogController {
 
     public void setTicket(Ticket ticket) {
         if (ticket == null) {
-            lblTicketCode.setText("N/A");
-            lblCustomer.setText("Customer: N/A");
+            lblTicketCode.setText("Not set");
+            lblCustomer.setText("Not set");
             return;
         }
 
-        lblTicketCode.setText(ticket.getCode() == null || ticket.getCode().isBlank() ? "N/A" : ticket.getCode());
-        String customer = ticket.getCustomerName() == null || ticket.getCustomerName().isBlank()
-                ? "N/A"
-                : ticket.getCustomerName();
-        lblCustomer.setText("Customer: " + customer);
+        lblTicketCode.setText(resolveText(ticket.getCode()));
+        lblCustomer.setText(resolveText(ticket.getCustomerName()));
+    }
+
+    public void setTicket(Ticket ticket, Event event) {
+        setTicket(ticket);
     }
 
     public TicketAction getSelectedAction() {
@@ -58,5 +60,9 @@ public class TicketPrintDialogController {
     private void close() {
         Stage stage = (Stage) lblTicketCode.getScene().getWindow();
         stage.close();
+    }
+
+    private String resolveText(String value) {
+        return value == null || value.isBlank() ? "Not set" : value.trim();
     }
 }

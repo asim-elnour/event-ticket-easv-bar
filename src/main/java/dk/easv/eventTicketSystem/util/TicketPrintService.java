@@ -40,22 +40,29 @@ public class TicketPrintService {
     private static final Color VALUE_COLOR = Color.WHITE;
     private static final Color MUTED_COLOR = new Color(188, 173, 219);
     private static final Color CODE_PANEL = new Color(250, 248, 252);
+    private static final Color SECTION_BACKGROUND = new Color(31, 19, 46);
+    private static final Color SECTION_BORDER = new Color(79, 56, 116);
+    private static final Color DARK_TEXT = new Color(41, 31, 57);
+    private static final Color LIGHT_BORDER = new Color(216, 211, 224);
+    private static final Color SECTION_TITLE_COLOR = new Color(225, 214, 245);
     private static final Color STATUS_VALID = new Color(52, 168, 83);
     private static final Color STATUS_REDEEMED = new Color(255, 179, 71);
     private static final Color STATUS_REFUNDED = new Color(229, 83, 83);
     private static final float CARD_MARGIN = 40f;
     private static final float CARD_PADDING = 28f;
     private static final float HEADER_HEIGHT = 78f;
-    private static final float DETAIL_LABEL_WIDTH = 92f;
-    private static final float DETAIL_FONT_SIZE = 13f;
-    private static final float DETAIL_LINE_HEIGHT = 18f;
-    private static final float DETAIL_ROW_GAP = 10f;
-    private static final float DETAILS_QR_GAP = 26f;
+    private static final float SECTION_GAP = 16f;
+    private static final float DETAIL_LABEL_WIDTH = 82f;
+    private static final float DETAIL_FONT_SIZE = 11.5f;
+    private static final float DETAIL_LINE_HEIGHT = 16f;
+    private static final float DETAIL_ROW_GAP = 7f;
+    private static final float DETAILS_QR_GAP = 20f;
     private static final float QR_BOX_SIZE = 164f;
-    private static final float QR_IMAGE_SIZE = 136f;
-    private static final float BARCODE_BOX_HEIGHT = 176f;
-    private static final float BARCODE_IMAGE_WIDTH = 360f;
-    private static final float BARCODE_IMAGE_HEIGHT = 82f;
+    private static final float QR_IMAGE_SIZE = 132f;
+    private static final float TEXT_SECTION_HEIGHT = 78f;
+    private static final float BARCODE_BOX_HEIGHT = 156f;
+    private static final float BARCODE_IMAGE_WIDTH = 348f;
+    private static final float BARCODE_IMAGE_HEIGHT = 80f;
 
     public Path createTicketPdf(Ticket ticket, Event event) throws IOException {
         Path output = Files.createTempFile("event-ticket-", ".pdf");
@@ -161,22 +168,33 @@ public class TicketPrintService {
         float cardTop = cardY + cardHeight;
         float contentLeft = cardX + CARD_PADDING;
         float contentRight = cardX + cardWidth - CARD_PADDING;
+        float contentWidth = contentRight - contentLeft;
         float headerBottom = cardTop - HEADER_HEIGHT;
         float bodyTop = headerBottom - CARD_PADDING;
         float barcodeBoxY = cardY + CARD_PADDING;
-        float barcodeBoxWidth = cardWidth - (2f * CARD_PADDING);
-        float barcodeBoxTop = barcodeBoxY + BARCODE_BOX_HEIGHT;
+        float notesBoxY = barcodeBoxY + BARCODE_BOX_HEIGHT + SECTION_GAP;
+        float guidanceBoxY = notesBoxY + TEXT_SECTION_HEIGHT + SECTION_GAP;
+        float topSectionY = guidanceBoxY + TEXT_SECTION_HEIGHT + SECTION_GAP;
+        float topSectionHeight = bodyTop - topSectionY;
+        float barcodeBoxWidth = contentWidth;
         float qrBoxX = contentRight - QR_BOX_SIZE;
-        float qrBoxY = bodyTop - QR_BOX_SIZE;
-        float detailsWidth = qrBoxX - contentLeft - DETAILS_QR_GAP;
+        float qrBoxY = topSectionY + ((topSectionHeight - QR_BOX_SIZE) / 2f);
+        float detailsWidth = qrBoxX - contentLeft - DETAILS_QR_GAP - 16f;
 
-        String eventName = safeText(event == null ? ticket.getEventName() : event.getName());
+        String eventName = safeText(resolveText(event == null ? null : event.getName(), ticket.getEventName()));
+        String eventLocation = safeText(resolveText(event == null ? null : event.getLocation(), ticket.getEventLocation()));
+        String eventGuidance = safeText(resolveText(event == null ? null : event.getLocationGuidance(), ticket.getEventGuidance()));
+        String eventNotes = safeText(resolveText(event == null ? null : event.getNotes(), ticket.getEventNotes()));
+        String eventStart = formatDateTime(resolveDateTime(event == null ? null : event.getStartTime(), ticket.getEventStartTime()));
+        String eventEnd = formatDateTime(resolveDateTime(event == null ? null : event.getEndTime(), ticket.getEventEndTime()));
         String customerName = safeText(ticket.getCustomerName());
         String customerEmail = safeText(ticket.getCustomerEmail());
         String issuedAt = formatDateTime(ticket.getIssuedAt());
         String status = safeText(ticket.getStatusLabel());
         String lifecycleLabel = resolveLifecycleLabel(ticket);
         String lifecycleValue = resolveLifecycleValue(ticket);
+        String ticketCode = safeText(ticket.getCode());
+        String rawCode = ticket.getCode() == null || ticket.getCode().isBlank() ? null : ticket.getCode().trim();
 
         try (PDPageContentStream cs = new PDPageContentStream(document, page)) {
             fillRect(cs, 0f, 0f, pageWidth, pageHeight, PAGE_BACKGROUND);
@@ -189,31 +207,66 @@ public class TicketPrintService {
                     PDType1Font.HELVETICA, 11f, MUTED_COLOR);
             drawStatusPill(cs, status, contentRight, cardTop - 32f);
 
-            float detailY = bodyTop;
-            detailY = writeDetailRow(cs, "Event:", eventName, contentLeft, detailY, detailsWidth, true);
-            detailY = writeDetailRow(cs, "Customer:", customerName, contentLeft, detailY, detailsWidth, true);
-            detailY = writeDetailRow(cs, "Email:", customerEmail, contentLeft, detailY, detailsWidth, false);
-            detailY = writeDetailRow(cs, "Issued:", issuedAt, contentLeft, detailY, detailsWidth, false);
-            writeDetailRow(cs, lifecycleLabel, lifecycleValue, contentLeft, detailY, detailsWidth, true);
+            fillRect(cs, contentLeft, topSectionY, contentWidth, topSectionHeight, SECTION_BACKGROUND);
+            strokeRect(cs, contentLeft, topSectionY, contentWidth, topSectionHeight, SECTION_BORDER, 1f);
 
-            BufferedImage barcodeImage = generateBarcode(safeText(ticket.getCode()), BarcodeFormat.CODE_128, 420, 95);
-            BufferedImage qrImage = generateBarcode(safeText(ticket.getCode()), BarcodeFormat.QR_CODE, 140, 140);
-
-            PDImageXObject barcode = LosslessFactory.createFromImage(document, barcodeImage);
-            PDImageXObject qr = LosslessFactory.createFromImage(document, qrImage);
+            float detailY = topSectionY + topSectionHeight - 24f;
+            detailY = writeDetailRow(cs, "Event:", eventName, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Location:", eventLocation, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Start:", eventStart, contentLeft + 18f, detailY, detailsWidth, false);
+            detailY = writeDetailRow(cs, "End:", eventEnd, contentLeft + 18f, detailY, detailsWidth, false);
+            detailY = writeDetailRow(cs, "Customer:", customerName, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Email:", customerEmail, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Issued:", issuedAt, contentLeft + 18f, detailY, detailsWidth, false);
+            writeDetailRow(cs, lifecycleLabel, lifecycleValue, contentLeft + 18f, detailY, detailsWidth, true, 2);
 
             fillRect(cs, qrBoxX, qrBoxY, QR_BOX_SIZE, QR_BOX_SIZE, CODE_PANEL);
-            strokeRect(cs, qrBoxX, qrBoxY, QR_BOX_SIZE, QR_BOX_SIZE, new Color(216, 211, 224), 1f);
+            strokeRect(cs, qrBoxX, qrBoxY, QR_BOX_SIZE, QR_BOX_SIZE, LIGHT_BORDER, 1f);
             drawText(cs, "QR", qrBoxX + 12f, qrBoxY + QR_BOX_SIZE - 18f, PDType1Font.HELVETICA_BOLD, 10f, new Color(86, 77, 109));
-            cs.drawImage(qr, qrBoxX + ((QR_BOX_SIZE - QR_IMAGE_SIZE) / 2f), qrBoxY + 12f, QR_IMAGE_SIZE, QR_IMAGE_SIZE);
+            if (rawCode != null) {
+                BufferedImage qrImage = generateBarcode(rawCode, BarcodeFormat.QR_CODE, 140, 140);
+                PDImageXObject qr = LosslessFactory.createFromImage(document, qrImage);
+                cs.drawImage(qr, qrBoxX + ((QR_BOX_SIZE - QR_IMAGE_SIZE) / 2f), qrBoxY + 12f, QR_IMAGE_SIZE, QR_IMAGE_SIZE);
+            } else {
+                drawCenteredText(cs, "Code unavailable", qrBoxX + (QR_BOX_SIZE / 2f), qrBoxY + (QR_BOX_SIZE / 2f),
+                        PDType1Font.HELVETICA_BOLD, 11f, DARK_TEXT);
+            }
+
+            drawTextSection(cs, "Guidance", eventGuidance, contentLeft, guidanceBoxY, contentWidth, TEXT_SECTION_HEIGHT);
+            drawTextSection(cs, "Notes", eventNotes, contentLeft, notesBoxY, contentWidth, TEXT_SECTION_HEIGHT);
 
             fillRect(cs, contentLeft, barcodeBoxY, barcodeBoxWidth, BARCODE_BOX_HEIGHT, CODE_PANEL);
-            strokeRect(cs, contentLeft, barcodeBoxY, barcodeBoxWidth, BARCODE_BOX_HEIGHT, new Color(216, 211, 224), 1f);
-            float barcodeX = contentLeft + ((barcodeBoxWidth - BARCODE_IMAGE_WIDTH) / 2f);
-            float barcodeY = barcodeBoxTop - 102f;
-            cs.drawImage(barcode, barcodeX, barcodeY, BARCODE_IMAGE_WIDTH, BARCODE_IMAGE_HEIGHT);
-            drawCenteredText(cs, safeText(ticket.getCode()), contentLeft + (barcodeBoxWidth / 2f), barcodeBoxY + 26f,
-                    PDType1Font.HELVETICA_BOLD, 14f, new Color(41, 31, 57));
+            strokeRect(cs, contentLeft, barcodeBoxY, barcodeBoxWidth, BARCODE_BOX_HEIGHT, LIGHT_BORDER, 1f);
+            drawText(cs, "Barcode", contentLeft + 16f, barcodeBoxY + BARCODE_BOX_HEIGHT - 22f,
+                    PDType1Font.HELVETICA_BOLD, 10f, new Color(86, 77, 109));
+            if (rawCode != null) {
+                BufferedImage barcodeImage = generateBarcode(rawCode, BarcodeFormat.CODE_128, 420, 95);
+                PDImageXObject barcode = LosslessFactory.createFromImage(document, barcodeImage);
+                float barcodeX = contentLeft + ((barcodeBoxWidth - BARCODE_IMAGE_WIDTH) / 2f);
+                float barcodeY = barcodeBoxY + 44f;
+                cs.drawImage(barcode, barcodeX, barcodeY, BARCODE_IMAGE_WIDTH, BARCODE_IMAGE_HEIGHT);
+            }
+            drawCenteredText(cs, ticketCode, contentLeft + (barcodeBoxWidth / 2f), barcodeBoxY + 20f,
+                    PDType1Font.HELVETICA_BOLD, 14f, DARK_TEXT);
+        }
+    }
+
+    private void drawTextSection(PDPageContentStream cs,
+                                 String title,
+                                 String value,
+                                 float x,
+                                 float y,
+                                 float width,
+                                 float height) throws IOException {
+        fillRect(cs, x, y, width, height, SECTION_BACKGROUND);
+        strokeRect(cs, x, y, width, height, SECTION_BORDER, 1f);
+        drawText(cs, title, x + 16f, y + height - 22f, PDType1Font.HELVETICA_BOLD, 10.5f, SECTION_TITLE_COLOR);
+
+        List<String> lines = wrapText(value, PDType1Font.HELVETICA, 11f, width - 32f, 3);
+        float lineY = y + height - 40f;
+        for (String line : lines) {
+            drawText(cs, line, x + 16f, lineY, PDType1Font.HELVETICA, 11f, VALUE_COLOR);
+            lineY -= 14f;
         }
     }
 
@@ -224,13 +277,26 @@ public class TicketPrintService {
                                  float y,
                                  float width,
                                  boolean wrapValue) throws IOException {
+        return writeDetailRow(cs, label, value, x, y, width, wrapValue, 0);
+    }
+
+    private float writeDetailRow(PDPageContentStream cs,
+                                 String label,
+                                 String value,
+                                 float x,
+                                 float y,
+                                 float width,
+                                 boolean wrapValue,
+                                 int maxLines) throws IOException {
         float valueX = x + DETAIL_LABEL_WIDTH;
         float valueWidth = Math.max(120f, width - DETAIL_LABEL_WIDTH);
 
         drawText(cs, label, x, y, PDType1Font.HELVETICA_BOLD, 12f, LABEL_COLOR);
 
         if (wrapValue) {
-            List<String> lines = wrapText(value, PDType1Font.HELVETICA, DETAIL_FONT_SIZE, valueWidth);
+            List<String> lines = maxLines > 0
+                    ? wrapText(value, PDType1Font.HELVETICA, DETAIL_FONT_SIZE, valueWidth, maxLines)
+                    : wrapText(value, PDType1Font.HELVETICA, DETAIL_FONT_SIZE, valueWidth);
             float lineY = y;
             for (String line : lines) {
                 drawText(cs, line, valueX, lineY, PDType1Font.HELVETICA, DETAIL_FONT_SIZE, VALUE_COLOR);
@@ -355,6 +421,28 @@ public class TicketPrintService {
         java.util.ArrayList<String> lines = new java.util.ArrayList<>();
 
         for (String word : words) {
+            if (word == null || word.isBlank()) {
+                continue;
+            }
+
+            if (textWidth(font, fontSize, word) > maxWidth) {
+                if (!line.isEmpty()) {
+                    lines.add(line.toString());
+                    line.setLength(0);
+                }
+
+                List<String> chunks = splitTokenToFit(word, font, fontSize, maxWidth);
+                for (int i = 0; i < chunks.size(); i++) {
+                    String chunk = chunks.get(i);
+                    if (i == chunks.size() - 1) {
+                        line.append(chunk);
+                    } else {
+                        lines.add(chunk);
+                    }
+                }
+                continue;
+            }
+
             String candidate = line.isEmpty() ? word : line + " " + word;
             if (textWidth(font, fontSize, candidate) <= maxWidth) {
                 line.setLength(0);
@@ -379,6 +467,79 @@ public class TicketPrintService {
         return lines.isEmpty() ? List.of(safe) : lines;
     }
 
+    private List<String> splitTokenToFit(String token,
+                                         PDType1Font font,
+                                         float fontSize,
+                                         float maxWidth) throws IOException {
+        java.util.ArrayList<String> chunks = new java.util.ArrayList<>();
+        int start = 0;
+
+        while (start < token.length()) {
+            int end = findTokenBreakIndex(token, start, font, fontSize, maxWidth);
+            if (end <= start) {
+                end = Math.min(start + 1, token.length());
+            }
+            chunks.add(token.substring(start, end));
+            start = end;
+        }
+
+        return chunks.isEmpty() ? List.of(token) : chunks;
+    }
+
+    private int findTokenBreakIndex(String token,
+                                    int start,
+                                    PDType1Font font,
+                                    float fontSize,
+                                    float maxWidth) throws IOException {
+        StringBuilder builder = new StringBuilder();
+        int preferredBreak = -1;
+
+        for (int index = start; index < token.length(); index++) {
+            char current = token.charAt(index);
+            builder.append(current);
+
+            if (isPreferredBreakCharacter(current)) {
+                preferredBreak = index + 1;
+            }
+
+            if (textWidth(font, fontSize, builder.toString()) > maxWidth) {
+                if (preferredBreak > start) {
+                    return preferredBreak;
+                }
+                return Math.max(start + 1, index);
+            }
+        }
+
+        return token.length();
+    }
+
+    private boolean isPreferredBreakCharacter(char value) {
+        return switch (value) {
+            case '-', '_', '/', '\\', '.', '@', ':', ',', ';', '#', '=' -> true;
+            default -> false;
+        };
+    }
+
+    private List<String> wrapText(String text,
+                                  PDType1Font font,
+                                  float fontSize,
+                                  float maxWidth,
+                                  int maxLines) throws IOException {
+        List<String> lines = wrapText(text, font, fontSize, maxWidth);
+        if (maxLines <= 0 || lines.size() <= maxLines) {
+            return lines;
+        }
+
+        java.util.ArrayList<String> limited = new java.util.ArrayList<>(lines.subList(0, maxLines));
+        String lastLine = limited.get(maxLines - 1);
+        String ellipsis = "...";
+        while (!lastLine.isEmpty() && textWidth(font, fontSize, lastLine + ellipsis) > maxWidth) {
+            lastLine = lastLine.substring(0, lastLine.length() - 1).trim();
+        }
+        limited.set(maxLines - 1, lastLine.isEmpty() ? ellipsis : lastLine + ellipsis);
+        return limited;
+    }
+
     private String formatDateTime(LocalDateTime value) {
         if (value == null) {
             return "Not set";
@@ -388,6 +549,20 @@ public class TicketPrintService {
 
     private String safeText(String value) {
         return value == null || value.isBlank() ? "Not set" : value.trim();
+    }
+
+    private String resolveText(String primary, String fallback) {
+        if (primary != null && !primary.isBlank()) {
+            return primary.trim();
+        }
+        if (fallback != null && !fallback.isBlank()) {
+            return fallback.trim();
+        }
+        return null;
+    }
+
+    private LocalDateTime resolveDateTime(LocalDateTime primary, LocalDateTime fallback) {
+        return primary != null ? primary : fallback;
     }
 
     private String resolveLifecycleLabel(Ticket ticket) {

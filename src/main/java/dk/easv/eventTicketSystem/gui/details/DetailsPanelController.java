@@ -271,16 +271,16 @@ public class DetailsPanelController implements ModelAware {
             return;
         }
 
-        ticketEventValue.setText(safeText(ticket.getEventName()));
-        ticketLocationValue.setText(safeText(ticket.getEventLocation()));
+        ticketEventValue.setText(wrapTicketText(ticket.getEventName()));
+        ticketLocationValue.setText(wrapTicketText(ticket.getEventLocation()));
         ticketStartValue.setText(formatDateTime(ticket.getEventStartTime()));
         ticketEndValue.setText(formatDateTime(ticket.getEventEndTime()));
         ticketCodeValue.setText(safeText(ticket.getCode()));
-        ticketCustomerValue.setText(safeText(ticket.getCustomerName()));
-        ticketEmailValue.setText(safeText(ticket.getCustomerEmail()));
+        ticketCustomerValue.setText(wrapTicketText(ticket.getCustomerName()));
+        ticketEmailValue.setText(wrapTicketText(ticket.getCustomerEmail()));
         ticketIssuedValue.setText(formatDateTime(ticket.getIssuedAt()));
-        ticketGuidanceValue.setText(safeText(ticket.getEventGuidance()));
-        ticketNotesValue.setText(safeText(ticket.getEventNotes()));
+        ticketGuidanceValue.setText(wrapTicketText(ticket.getEventGuidance()));
+        ticketNotesValue.setText(wrapTicketText(ticket.getEventNotes()));
         applyTicketLifecycle(ticket);
         renderBarcodes(ticket.getCode());
         showCard(ticketCard);
@@ -385,6 +385,41 @@ public class DetailsPanelController implements ModelAware {
         return value.trim();
     }
 
+    private String wrapTicketText(String value) {
+        String safe = safeText(value);
+        if ("Not set".equals(safe)) {
+            return safe;
+        }
+
+        StringBuilder wrapped = new StringBuilder(safe.length() + Math.max(4, safe.length() / 6));
+        int unbrokenRun = 0;
+
+        for (int i = 0; i < safe.length(); i++) {
+            char current = safe.charAt(i);
+            wrapped.append(current);
+
+            if (Character.isWhitespace(current)) {
+                unbrokenRun = 0;
+                continue;
+            }
+
+            unbrokenRun++;
+            if (isTicketWrapBoundary(current) || unbrokenRun >= 18) {
+                wrapped.append('\u200B');
+                unbrokenRun = 0;
+            }
+        }
+
+        return wrapped.toString();
+    }
+
+    private boolean isTicketWrapBoundary(char value) {
+        return switch (value) {
+            case '-', '_', '/', '\\', '.', '@', ':', ',', ';', '#', '=' -> true;
+            default -> false;
+        };
+    }
+
     private String formatDateTime(LocalDateTime value) {
         if (value == null) {
             return "Not set";
@@ -433,17 +468,17 @@ public class DetailsPanelController implements ModelAware {
 
         if (ticket.isRefunded()) {
             ticketLifecycleLabel.setText("Refunded at:");
-            ticketLifecycleValue.setText(formatDateTime(ticket.getRefundedAt()));
+            ticketLifecycleValue.setText(wrapTicketText(formatDateTime(ticket.getRefundedAt())));
             return;
         }
 
         if (ticket.isRedeemed()) {
             ticketLifecycleLabel.setText("Redeemed at:");
-            ticketLifecycleValue.setText(formatDateTime(ticket.getRedeemedAt()));
+            ticketLifecycleValue.setText(wrapTicketText(formatDateTime(ticket.getRedeemedAt())));
             return;
         }
 
         ticketLifecycleLabel.setText("Status:");
-        ticketLifecycleValue.setText("Valid");
+        ticketLifecycleValue.setText(wrapTicketText("Valid"));
     }
 }

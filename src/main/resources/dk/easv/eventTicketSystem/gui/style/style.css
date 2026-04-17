@@ -1263,7 +1263,18 @@
     -fx-font-size: 11px;
 }
 .ticket-print-dialog {
-    -fx-min-width: 360;
+    -fx-min-width: 380;
+}
+
+.ticket-print-grid {
+    -fx-hgap: 12;
+    -fx-vgap: 12;
+}
+
+.ticket-print-value {
+    -fx-text-fill: -fx-text-primary;
+    -fx-font-size: 12px;
+    -fx-line-spacing: 1px;
 }
 
 .dialog-pane.dialog-root > .button-bar > .container {
@@ -1447,6 +1458,8 @@
 
 .details-ticket-data {
     -fx-min-width: 0;
+    -fx-pref-width: 0;
+    -fx-max-width: Infinity;
 }
 
 .details-ticket-qr-box {
