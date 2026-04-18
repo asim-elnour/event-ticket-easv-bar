@@ -52,7 +52,7 @@ public class CustomerLogic {
         }
         if (!CustomerValidationRules.namesMatch(existing.getName(), normalizedName)) {
             throw new CustomerException(
-                    "This email already belongs to an existing customer. Please select Existing Customer."
+                    "This email already belongs to an existing customer. Search and select that customer above."
             );
         }
         return existing;

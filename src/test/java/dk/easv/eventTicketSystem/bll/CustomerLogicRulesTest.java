@@ -51,7 +51,7 @@ class CustomerLogicRulesTest {
                 () -> logic.resolveOrCreateCustomer("Alice Changed", "alice@example.com"));
 
         assertEquals(
-                "This email already belongs to an existing customer. Please select Existing Customer.",
+                "This email already belongs to an existing customer. Search and select that customer above.",
                 exception.getMessage()
         );
         assertFalse(repository.createCalled);

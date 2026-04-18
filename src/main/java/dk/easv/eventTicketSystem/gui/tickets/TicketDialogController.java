@@ -12,7 +12,6 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
-import javafx.scene.control.ChoiceBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -25,8 +24,6 @@ import java.math.RoundingMode;
 
 public class TicketDialogController {
 
-    @FXML
-    private ChoiceBox<CustomerMode> customerModeChoice;
     @FXML
     private TextField txtCustomerName;
     @FXML
@@ -64,19 +61,14 @@ public class TicketDialogController {
     private TicketDraft draft;
     private boolean saved;
     private boolean customerDirectoryLoading;
+    private boolean customerDirectoryLoaded;
     private String customerDirectoryErrorMessage = "";
+    private final Label existingCustomersPlaceholder = new Label("Type to search customers.");
 
     @FXML
     public void initialize() {
         txtCode.setText(Ticket.generateCode());
         txtCode.setEditable(false);
-
-        customerModeChoice.getItems().setAll(CustomerMode.values());
-        customerModeChoice.getSelectionModel().select(CustomerMode.NEW_CUSTOMER);
-        customerModeChoice.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
-            updateCustomerModeState();
-            validateCurrentCustomerState();
-        });
 
         cmbTicketType.setCellFactory(list -> new javafx.scene.control.ListCell<>() {
             @Override
@@ -97,27 +89,28 @@ public class TicketDialogController {
         colExistingCustomerEmail.setCellValueFactory(cd -> cd.getValue().emailProperty());
         existingCustomersTable.setItems(filteredCustomers);
         existingCustomersTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN);
-        existingCustomersTable.setPlaceholder(new Label("No customers found."));
+        existingCustomersPlaceholder.getStyleClass().add("muted-text");
+        existingCustomersTable.setPlaceholder(existingCustomersPlaceholder);
         existingCustomersTable.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
             if (newValue != null) {
                 txtCustomerName.setText(newValue.getName());
                 txtCustomerEmail.setText(newValue.getEmail());
                 errExistingCustomer.setVisible(false);
             }
-            validateCurrentCustomerState();
         });
 
-        txtExistingCustomerSearch.textProperty().addListener((obs, oldValue, newValue) -> applyCustomerDirectoryFilter());
+        txtExistingCustomerSearch.textProperty().addListener((obs, oldValue, newValue) -> handleExistingCustomerSearchChanged());
 
         setupLiveValidation();
-        updateCustomerModeState();
+        filteredCustomers.setPredicate(customer -> false);
+        updateExistingCustomersPlaceholder();
         updatePrice();
     }
 
     public void setEvent(Event event) {
         this.event = event;
         populateTicketTypes();
-        loadCustomerDirectory();
+        resetCustomerDirectoryState();
         updatePrice();
     }
 
@@ -158,16 +151,8 @@ public class TicketDialogController {
     }
 
     private void setupLiveValidation() {
-        txtCustomerName.textProperty().addListener((obs, oldValue, newValue) -> {
-            if (isNewCustomerMode()) {
-                validateCustomerName();
-            }
-        });
-        txtCustomerEmail.textProperty().addListener((obs, oldValue, newValue) -> {
-            if (isNewCustomerMode()) {
-                validateCustomerEmail();
-            }
-        });
+        txtCustomerName.textProperty().addListener((obs, oldValue, newValue) -> validateCustomerName());
+        txtCustomerEmail.textProperty().addListener((obs, oldValue, newValue) -> validateCustomerEmail());
         cmbTicketType.valueProperty().addListener((obs, oldValue, newValue) -> {
             validateTicketCategoryId();
             updatePrice();
@@ -176,22 +161,10 @@ public class TicketDialogController {
 
     private boolean validateAll() {
         boolean ok = true;
-        ok = validateCurrentCustomerState() && ok;
+        ok = validateCustomerName() && ok;
+        ok = validateCustomerEmail() && ok;
         ok = validateTicketCategoryId() && ok;
         return ok;
-    }
-
-    private boolean validateCurrentCustomerState() {
-        if (isNewCustomerMode()) {
-            errExistingCustomer.setVisible(false);
-            return validateCustomerName() & validateCustomerEmail();
-        }
-        boolean validSelection = validateExistingCustomerSelection();
-        if (validSelection) {
-            errCustomerName.setVisible(false);
-            errCustomerEmail.setVisible(false);
-        }
-        return validSelection;
     }
 
     private boolean validateCustomerName() {
@@ -223,29 +196,6 @@ public class TicketDialogController {
             return false;
         }
         errCustomerEmail.setVisible(false);
-        return true;
-    }
-
-    private boolean validateExistingCustomerSelection() {
-        if (!customerDirectoryErrorMessage.isBlank()) {
-            errExistingCustomer.setText(customerDirectoryErrorMessage);
-            errExistingCustomer.setVisible(true);
-            return false;
-        }
-        if (customerDirectoryLoading) {
-            errExistingCustomer.setText("Customers are still loading.");
-            errExistingCustomer.setVisible(true);
-            return false;
-        }
-        Customer selectedCustomer = existingCustomersTable.getSelectionModel().getSelectedItem();
-        if (selectedCustomer == null) {
-            errExistingCustomer.setText("Please select an existing customer.");
-            errExistingCustomer.setVisible(true);
-            return false;
-        }
-        txtCustomerName.setText(selectedCustomer.getName());
-        txtCustomerEmail.setText(selectedCustomer.getEmail());
-        errExistingCustomer.setVisible(false);
         return true;
     }
 
@@ -292,7 +242,9 @@ public class TicketDialogController {
     private void loadCustomerDirectory() {
         customerDirectoryLoading = true;
         customerDirectoryErrorMessage = "";
+        customerDirectoryLoaded = false;
         errExistingCustomer.setVisible(false);
+        updateExistingCustomersPlaceholder();
 
         Task<java.util.List<Customer>> task = new Task<>() {
             @Override
@@ -303,6 +255,7 @@ public class TicketDialogController {
 
         task.setOnSucceeded(event -> {
             customerDirectoryLoading = false;
+            customerDirectoryLoaded = true;
             customerDirectoryErrorMessage = "";
             customerDirectory.setAll(task.getValue());
             applyCustomerDirectoryFilter();
@@ -310,66 +263,85 @@ public class TicketDialogController {
 
         task.setOnFailed(event -> {
             customerDirectoryLoading = false;
+            customerDirectoryLoaded = false;
             customerDirectoryErrorMessage = task.getException() instanceof CustomerException
                     ? task.getException().getMessage()
                     : "Unable to load existing customers.";
+            customerDirectory.clear();
+            filteredCustomers.setPredicate(customer -> false);
             errExistingCustomer.setText(customerDirectoryErrorMessage);
-            errExistingCustomer.setVisible(isExistingCustomerMode());
+            errExistingCustomer.setVisible(true);
+            updateExistingCustomersPlaceholder();
         });
 
         new Thread(task, "load-customer-directory-task").start();
     }
 
+    private void handleExistingCustomerSearchChanged() {
+        String query = normalizeSearchQuery();
+        if (query.isEmpty()) {
+            filteredCustomers.setPredicate(customer -> false);
+            existingCustomersTable.getSelectionModel().clearSelection();
+            errExistingCustomer.setVisible(false);
+            updateExistingCustomersPlaceholder();
+            return;
+        }
+
+        if (!customerDirectoryLoaded) {
+            if (!customerDirectoryLoading) {
+                loadCustomerDirectory();
+            } else {
+                updateExistingCustomersPlaceholder();
+            }
+            return;
+        }
+
+        applyCustomerDirectoryFilter();
+    }
+
     private void applyCustomerDirectoryFilter() {
-        String query = txtExistingCustomerSearch.getText();
+        String query = normalizeSearchQuery();
+        if (query.isEmpty()) {
+            filteredCustomers.setPredicate(customer -> false);
+            updateExistingCustomersPlaceholder();
+            return;
+        }
         filteredCustomers.setPredicate(customer ->
                 customer != null
                         && CustomerValidationRules.matchesSearch(query, customer.getName(), customer.getEmail()));
+        updateExistingCustomersPlaceholder();
     }
 
-    private void updateCustomerModeState() {
-        boolean existingMode = isExistingCustomerMode();
-        existingCustomerSection.setVisible(existingMode);
-        existingCustomerSection.setManaged(existingMode);
-        txtExistingCustomerSearch.setDisable(!existingMode);
-        existingCustomersTable.setDisable(!existingMode);
-        txtCustomerName.setEditable(!existingMode);
-        txtCustomerEmail.setEditable(!existingMode);
-        if (existingMode) {
-            txtCustomerName.clear();
-            txtCustomerEmail.clear();
-            existingCustomersTable.getSelectionModel().clearSelection();
-            errExistingCustomer.setVisible(!customerDirectoryErrorMessage.isBlank());
-            if (!customerDirectoryErrorMessage.isBlank()) {
-                errExistingCustomer.setText(customerDirectoryErrorMessage);
-            }
-        } else {
-            errExistingCustomer.setVisible(false);
+    private void resetCustomerDirectoryState() {
+        customerDirectoryLoading = false;
+        customerDirectoryLoaded = false;
+        customerDirectoryErrorMessage = "";
+        customerDirectory.clear();
+        filteredCustomers.setPredicate(customer -> false);
+        existingCustomersTable.getSelectionModel().clearSelection();
+        errExistingCustomer.setVisible(false);
+        updateExistingCustomersPlaceholder();
+    }
+
+    private void updateExistingCustomersPlaceholder() {
+        if (customerDirectoryLoading) {
+            existingCustomersPlaceholder.setText("Loading customers...");
+            return;
         }
-    }
-
-    private boolean isNewCustomerMode() {
-        return customerModeChoice.getValue() != CustomerMode.EXISTING_CUSTOMER;
-    }
-
-    private boolean isExistingCustomerMode() {
-        return customerModeChoice.getValue() == CustomerMode.EXISTING_CUSTOMER;
-    }
-
-    public enum CustomerMode {
-        NEW_CUSTOMER("New Customer"),
-        EXISTING_CUSTOMER("Existing Customer");
-
-        private final String label;
-
-        CustomerMode(String label) {
-            this.label = label;
+        if (!customerDirectoryErrorMessage.isBlank()) {
+            existingCustomersPlaceholder.setText("Could not load customers.");
+            return;
         }
-
-        @Override
-        public String toString() {
-            return label;
+        if (normalizeSearchQuery().isEmpty()) {
+            existingCustomersPlaceholder.setText("Type to search customers.");
+            return;
         }
+        existingCustomersPlaceholder.setText("No customers found.");
+    }
+
+    private String normalizeSearchQuery() {
+        String query = txtExistingCustomerSearch == null ? "" : txtExistingCustomerSearch.getText();
+        return query == null ? "" : query.trim();
     }
 
     public record TicketDraft(String customerName,

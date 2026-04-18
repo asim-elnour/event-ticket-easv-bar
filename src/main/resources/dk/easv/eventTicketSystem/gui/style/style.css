@@ -987,6 +987,7 @@
 }
 
 .text-field,
+.password-field,
 .text-area,
 .date-picker {
     -fx-background-color: -fx-bg-input;
@@ -995,9 +996,11 @@
     -fx-border-width: 1;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
+    -fx-prompt-text-fill: -fx-text-muted;
 }
 
 .text-field:focused,
+.password-field:focused,
 .text-area:focused,
 .date-picker:focused {
     -fx-border-color: -fx-accent-primary;
@@ -1048,17 +1051,13 @@
 #loginTitle {
     -fx-font-size: 24px;
     -fx-font-weight: 700;
+    -fx-text-fill: white;
 }
 
 #emailField,
 #passwordField,
 #loginButton {
     -fx-max-width: 320;
-}
-
-#emailField,
-#passwordField {
-    -fx-prompt-text-fill: #e5e7eb;
 }
 
 #errorLabel {

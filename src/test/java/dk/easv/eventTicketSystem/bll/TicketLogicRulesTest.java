@@ -234,7 +234,7 @@ class TicketLogicRulesTest {
                 () -> logic.addTicket(10L, 100L, "Alice Changed", "alice@example.com", "CODE-8"));
 
         assertEquals(
-                "This email already belongs to an existing customer. Please select Existing Customer.",
+                "This email already belongs to an existing customer. Search and select that customer above.",
                 exception.getMessage()
         );
         assertFalse(ticketRepository.addCalled);
