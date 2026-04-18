@@ -58,6 +58,32 @@ class EventLogicRulesTest {
     }
 
     @Test
+    void shouldRejectMissingStartDateTime() {
+        FakeEventRepository repository = new FakeEventRepository();
+        EventLogic logic = new EventLogic(repository);
+        Event draft = eventDraft(ticketType(1L, "Standard", 100, false));
+        draft.setStartTime(null);
+
+        EventException exception = assertThrows(EventException.class, () -> logic.addEvent(draft));
+
+        assertEquals("Start date and time are required.", exception.getMessage());
+        assertFalse(repository.addCalled);
+    }
+
+    @Test
+    void shouldRejectNegativeTicketPrice() {
+        FakeEventRepository repository = new FakeEventRepository();
+        EventLogic logic = new EventLogic(repository);
+        Event draft = eventDraft(ticketType(1L, "Standard", 100, false));
+        draft.getTicketTypes().get(0).setPrice(new BigDecimal("-1.00"));
+
+        EventException exception = assertThrows(EventException.class, () -> logic.addEvent(draft));
+
+        assertEquals("Ticket price must be zero or higher.", exception.getMessage());
+        assertFalse(repository.addCalled);
+    }
+
+    @Test
     void shouldAllowReducingTypeBelowSoldBecauseRepositoryHandlesRefundFlow() throws EventException {
         FakeEventRepository repository = new FakeEventRepository();
         Event stored = storedEvent(10L,

@@ -15,8 +15,8 @@ class UserLogicTest {
     private final UserLogic userLogic = new UserLogic();
 
     @Test
-    void shouldAuthenticateSeededAdminByEmail() throws UserException {
-        assumeSeededDatabaseAvailable();
+    void shouldAuthenticateDefaultAdminByEmail() throws UserException {
+        assumeDefaultAdminDatabaseAvailable();
         User user = userLogic.authenticate("admin@easv.com", "12345678");
 
         assertEquals("admin", user.getUsername());
@@ -26,20 +26,20 @@ class UserLogicTest {
 
     @Test
     void shouldRejectWrongPassword() {
-        assumeSeededDatabaseAvailable();
+        assumeDefaultAdminDatabaseAvailable();
         UserException exception = assertThrows(UserException.class,
                 () -> userLogic.authenticate("admin@easv.com", "wrong-password"));
 
         assertEquals("Invalid username or password.", exception.getMessage());
     }
 
-    private void assumeSeededDatabaseAvailable() {
+    private void assumeDefaultAdminDatabaseAvailable() {
         try {
             userLogic.authenticate("admin@easv.com", "12345678");
         } catch (UserException ex) {
             Assumptions.assumeFalse(
                     "Could not authenticate against the database.".equals(ex.getMessage()),
-                    "Seeded authentication database is not available in this environment."
+                    "Default admin authentication database is not available in this environment."
             );
         }
     }

@@ -65,6 +65,37 @@ class TicketLogicRulesTest {
     }
 
     @Test
+    void shouldRejectAddingTicketWithoutCustomerName() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+        eventRepository.store(eventWithCategory(10L, false, category(100L, "Standard", 5, false)));
+
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.addTicket(10L, 100L, "   ", "alice@example.com", "CODE-0"));
+
+        assertEquals("Customer name is required.", exception.getMessage());
+        assertFalse(ticketRepository.addCalled);
+    }
+
+    @Test
+    void shouldRejectAddingTicketWithoutTicketType() {
+        FakeEventRepository eventRepository = new FakeEventRepository();
+        FakeTicketRepository ticketRepository = new FakeTicketRepository();
+        FakeCustomerRepository customerRepository = new FakeCustomerRepository();
+
+        TicketLogic logic = new TicketLogic(ticketRepository, eventRepository, new CustomerLogic(customerRepository));
+
+        TicketException exception = assertThrows(TicketException.class,
+                () -> logic.addTicket(10L, null, "Alice", "alice@example.com", "CODE-0"));
+
+        assertEquals("Ticket type is required.", exception.getMessage());
+        assertFalse(ticketRepository.addCalled);
+    }
+
+    @Test
     void shouldRejectRefundingRedeemedTicket() {
         FakeEventRepository eventRepository = new FakeEventRepository();
         FakeTicketRepository ticketRepository = new FakeTicketRepository();

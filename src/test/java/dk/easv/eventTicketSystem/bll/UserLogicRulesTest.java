@@ -79,6 +79,32 @@ class UserLogicRulesTest {
     }
 
     @Test
+    void shouldRejectDuplicateUsernameWhenCreatingUser() {
+        FakeUserRepository repository = adminRepository();
+        repository.store(storedUser(2L, "coord", Role.COORDINATOR));
+        UserLogic logic = new UserLogic(repository);
+        User draft = draftUser("coord", "new@example.com", "12345678", "password123", Role.COORDINATOR);
+
+        UserException exception = assertThrows(UserException.class, () -> logic.createUser(draft));
+
+        assertEquals("Username already exists.", exception.getMessage());
+        assertFalse(repository.createCalled);
+    }
+
+    @Test
+    void shouldRejectDuplicateEmailWhenCreatingUser() {
+        FakeUserRepository repository = adminRepository();
+        repository.store(storedUser(2L, "coord", Role.COORDINATOR));
+        UserLogic logic = new UserLogic(repository);
+        User draft = draftUser("new-user", "coord@example.com", "12345678", "password123", Role.COORDINATOR);
+
+        UserException exception = assertThrows(UserException.class, () -> logic.createUser(draft));
+
+        assertEquals("Email already exists.", exception.getMessage());
+        assertFalse(repository.createCalled);
+    }
+
+    @Test
     void shouldRejectDeletingLastActiveAdmin() {
         FakeUserRepository repository = adminRepository();
         UserLogic logic = new UserLogic(repository);
