@@ -26,35 +26,35 @@
                             </columnConstraints>
 
                             <Label text="Username:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtUsername" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <TextField fx:id="txtUsername" promptText="Enter username" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errUsername" visible="false" managed="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                             <Label text="First Name:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtFirstName" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <TextField fx:id="txtFirstName" promptText="Enter first name" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errFirstName" visible="false" managed="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
                             <Label text="Last Name:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtLastName" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <TextField fx:id="txtLastName" promptText="Enter last name" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errLastName" visible="false" managed="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
                             <Label text="Email:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtEmail" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <TextField fx:id="txtEmail" promptText="Enter email address" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errEmail" visible="false" managed="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
 
                             <Label text="Phone:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtPhone" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <TextField fx:id="txtPhone" promptText="Enter phone number" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errPhone" visible="false" managed="true" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
 
                             <Label text="Role:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="cmbRole" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <ComboBox fx:id="cmbRole" promptText="Select role" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errRole" visible="false" managed="true" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
 
                             <Label text="Password:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
-                            <PasswordField fx:id="txtPassword" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <PasswordField fx:id="txtPassword" promptText="Enter password" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errPassword" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
 
                             <Label text="Repeat Password:" GridPane.rowIndex="14" GridPane.columnIndex="0"/>
-                            <PasswordField fx:id="txtRepeatPassword" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                            <PasswordField fx:id="txtRepeatPassword" promptText="Repeat password" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                             <Label styleClass="error-label" fx:id="errRepeatPassword" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
                         </GridPane>
                     </HBox>

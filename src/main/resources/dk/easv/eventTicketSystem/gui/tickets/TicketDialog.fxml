@@ -33,7 +33,7 @@
                                 <Label text="Search for an existing customer. If the customer is new, just type name and email below."
                                        styleClass="muted-text"
                                        wrapText="true"/>
-                                <TextField fx:id="txtExistingCustomerSearch" promptText="Search name or email"/>
+                                <TextField fx:id="txtExistingCustomerSearch" promptText="Search customer name or email"/>
                                 <TableView fx:id="existingCustomersTable" minHeight="220" prefHeight="220">
                                     <columns>
                                         <TableColumn fx:id="colExistingCustomerName" text="Name" minWidth="190"/>
@@ -50,19 +50,19 @@
                                 </columnConstraints>
 
                                 <Label text="Customer name:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtCustomerName" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <TextField fx:id="txtCustomerName" promptText="Enter customer name" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                                 <Label styleClass="error-label" fx:id="errCustomerName" visible="false" managed="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
                                 <Label text="Customer email:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtCustomerEmail" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <TextField fx:id="txtCustomerEmail" promptText="Enter customer email" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                                 <Label styleClass="error-label" fx:id="errCustomerEmail" visible="false" managed="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
                                 <Label text="Ticket type:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                                <ComboBox fx:id="cmbTicketType" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <ComboBox fx:id="cmbTicketType" promptText="Select ticket type" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
                                 <Label styleClass="error-label" fx:id="errTicketCategoryId" visible="false" managed="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
                                 <Label text="Code:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtCode" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <TextField fx:id="txtCode" promptText="Ticket code is generated automatically" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
 
                                 <Label text="Price:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
                                 <Label fx:id="lblPrice" text="0.00" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
