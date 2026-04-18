@@ -203,6 +203,7 @@ public class TicketsController implements ModelAware {
             statusBanner.showSaved();
             requestReload(true);
             refreshEventData();
+            refreshCustomerData();
         }
     }
 
@@ -577,6 +578,28 @@ public class TicketsController implements ModelAware {
         };
 
         Thread thread = new Thread(task, "refresh-events-after-ticket-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void refreshCustomerData() {
+        if (model == null) {
+            return;
+        }
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                if (model.getCustomersViewMode() == DataViewMode.SELECTED_EVENT) {
+                    model.loadCustomersForEvent(model.getCurrentEventId());
+                } else {
+                    model.loadAllCustomers();
+                }
+                return null;
+            }
+        };
+
+        Thread thread = new Thread(task, "refresh-customers-after-ticket-task");
         thread.setDaemon(true);
         thread.start();
     }

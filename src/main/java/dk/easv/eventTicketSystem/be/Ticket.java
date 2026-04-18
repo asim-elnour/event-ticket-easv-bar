@@ -17,6 +17,7 @@ public class Ticket {
     private final ObjectProperty<Long> ticketCategoryId = new SimpleObjectProperty<>();
     private final ObjectProperty<Long> customerId = new SimpleObjectProperty<>();
     private final StringProperty eventName = new SimpleStringProperty();
+    private final StringProperty ticketCategoryName = new SimpleStringProperty();
     private final StringProperty eventLocation = new SimpleStringProperty();
     private final StringProperty eventGuidance = new SimpleStringProperty();
     private final StringProperty eventNotes = new SimpleStringProperty();
@@ -122,6 +123,18 @@ public class Ticket {
 
     public StringProperty eventNameProperty() {
         return eventName;
+    }
+
+    public String getTicketCategoryName() {
+        return ticketCategoryName.get();
+    }
+
+    public void setTicketCategoryName(String ticketCategoryName) {
+        this.ticketCategoryName.set(ticketCategoryName);
+    }
+
+    public StringProperty ticketCategoryNameProperty() {
+        return ticketCategoryName;
     }
 
     public String getEventLocation() {
@@ -300,6 +313,7 @@ public class Ticket {
                 getRefundedAt(),
                 isRedeemed()
         );
+        copy.setTicketCategoryName(getTicketCategoryName());
         copy.setEventLocation(getEventLocation());
         copy.setEventGuidance(getEventGuidance());
         copy.setEventNotes(getEventNotes());
@@ -317,6 +331,7 @@ public class Ticket {
         setTicketCategoryId(ticket.getTicketCategoryId());
         setCustomerId(ticket.getCustomerId());
         setEventName(ticket.getEventName());
+        setTicketCategoryName(ticket.getTicketCategoryName());
         setEventLocation(ticket.getEventLocation());
         setEventGuidance(ticket.getEventGuidance());
         setEventNotes(ticket.getEventNotes());

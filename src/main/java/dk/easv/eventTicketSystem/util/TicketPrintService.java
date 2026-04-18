@@ -101,10 +101,12 @@ public class TicketPrintService {
         String subject = "Your ticket for " + (event == null ? "the event" : event.getName());
         String lifecycleLabel = resolveLifecycleLabel(ticket);
         String lifecycleValue = resolveLifecycleValue(ticket);
+        String ticketType = safeText(ticket.getTicketCategoryName());
         String body = "Hello " + safeText(ticket.getCustomerName()) + ",\n\n"
                 + "Your ticket is ready.\n"
                 + "Ticket code: " + safeText(ticket.getCode()) + "\n"
                 + "Event: " + safeText(event == null ? ticket.getEventName() : event.getName()) + "\n"
+                + "Ticket type: " + ticketType + "\n"
                 + lifecycleLabel + " " + lifecycleValue + "\n\n"
                 + "Best regards,\nEvent Ticket System";
 
@@ -182,6 +184,7 @@ public class TicketPrintService {
         float detailsWidth = qrBoxX - contentLeft - DETAILS_QR_GAP - 16f;
 
         String eventName = safeText(resolveText(event == null ? null : event.getName(), ticket.getEventName()));
+        String ticketType = safeText(ticket.getTicketCategoryName());
         String eventLocation = safeText(resolveText(event == null ? null : event.getLocation(), ticket.getEventLocation()));
         String eventGuidance = safeText(resolveText(event == null ? null : event.getLocationGuidance(), ticket.getEventGuidance()));
         String eventNotes = safeText(resolveText(event == null ? null : event.getNotes(), ticket.getEventNotes()));
@@ -212,6 +215,7 @@ public class TicketPrintService {
 
             float detailY = topSectionY + topSectionHeight - 24f;
             detailY = writeDetailRow(cs, "Event:", eventName, contentLeft + 18f, detailY, detailsWidth, true);
+            detailY = writeDetailRow(cs, "Ticket type:", ticketType, contentLeft + 18f, detailY, detailsWidth, true);
             detailY = writeDetailRow(cs, "Location:", eventLocation, contentLeft + 18f, detailY, detailsWidth, true);
             detailY = writeDetailRow(cs, "Start:", eventStart, contentLeft + 18f, detailY, detailsWidth, false);
             detailY = writeDetailRow(cs, "End:", eventEnd, contentLeft + 18f, detailY, detailsWidth, false);

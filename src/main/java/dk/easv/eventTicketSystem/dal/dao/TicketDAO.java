@@ -27,6 +27,7 @@ public final class TicketDAO implements TicketRepository {
                 t.ticket_category_id,
                 t.customer_id,
                 e.name AS event_name,
+                tc.name AS ticket_category_name,
                 e.location AS event_location,
                 e.location_guidance AS event_guidance,
                 e.notes AS event_notes,
@@ -42,6 +43,7 @@ public final class TicketDAO implements TicketRepository {
             FROM dbo.Tickets t
             JOIN dbo.Events e ON e.id = t.event_id
             JOIN dbo.Customers c ON c.id = t.customer_id
+            LEFT JOIN dbo.TicketCategories tc ON tc.id = t.ticket_category_id
             """;
 
     private final Database database;

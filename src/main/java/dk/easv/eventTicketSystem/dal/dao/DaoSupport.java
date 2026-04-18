@@ -99,6 +99,7 @@ final class DaoSupport {
                 getLocalDateTime(rs, "refunded_at"),
                 rs.getBoolean("redeemed")
         );
+        ticket.setTicketCategoryName(rs.getString("ticket_category_name"));
         ticket.setEventLocation(rs.getString("event_location"));
         ticket.setEventGuidance(rs.getString("event_guidance"));
         ticket.setEventNotes(rs.getString("event_notes"));

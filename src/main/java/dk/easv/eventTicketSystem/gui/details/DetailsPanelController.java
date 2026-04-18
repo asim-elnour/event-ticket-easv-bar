@@ -121,6 +121,8 @@ public class DetailsPanelController implements ModelAware {
     @FXML
     private Label ticketEventValue;
     @FXML
+    private Label ticketTypeValue;
+    @FXML
     private Label ticketLocationValue;
     @FXML
     private Label ticketStartValue;
@@ -283,6 +285,7 @@ public class DetailsPanelController implements ModelAware {
         }
 
         ticketEventValue.setText(wrapTicketText(ticket.getEventName()));
+        ticketTypeValue.setText(wrapTicketText(ticket.getTicketCategoryName()));
         ticketLocationValue.setText(wrapTicketText(ticket.getEventLocation()));
         ticketStartValue.setText(formatDateTime(ticket.getEventStartTime()));
         ticketEndValue.setText(formatDateTime(ticket.getEventEndTime()));

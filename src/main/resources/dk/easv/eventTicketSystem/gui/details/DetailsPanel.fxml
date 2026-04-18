@@ -253,6 +253,10 @@
                                     <Label fx:id="ticketEventValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS" />
                                 </HBox>
                                 <HBox styleClass="details-row">
+                                    <Label text="Ticket type:" styleClass="details-label"/>
+                                    <Label fx:id="ticketTypeValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                                </HBox>
+                                <HBox styleClass="details-row">
                                     <Label text="Location:" styleClass="details-label"/>
                                     <Label fx:id="ticketLocationValue" text="Not set" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="true" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
                                 </HBox>
