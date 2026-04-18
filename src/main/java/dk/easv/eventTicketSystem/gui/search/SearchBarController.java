@@ -1,5 +1,6 @@
 package dk.easv.eventTicketSystem.gui.search;
 
+import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.SearchModel;
@@ -12,6 +13,7 @@ import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.input.ScrollEvent;
@@ -32,6 +34,8 @@ public class SearchBarController implements ModelAware {
     @FXML
     private Button logoutButton;
     @FXML
+    private Label currentUserLabel;
+    @FXML
     private ScrollPane topBarScroll;
 
     private AppModel model;
@@ -42,6 +46,7 @@ public class SearchBarController implements ModelAware {
     public void initialize() {
         setupSearchControls();
         configureHorizontalOnlyScroll();
+        refreshCurrentUserLabel();
     }
 
     @Override
@@ -50,6 +55,7 @@ public class SearchBarController implements ModelAware {
         if (this.model == null) {
             return;
         }
+        refreshCurrentUserLabel();
         this.model.activeSearchScopeProperty().addListener((obs, oldValue, newValue) -> restoreSearchStateForScope(newValue));
         restoreSearchStateForScope(this.model.getActiveSearchScope());
     }
@@ -155,6 +161,26 @@ public class SearchBarController implements ModelAware {
                     "Could not return to login page: " + e.getMessage()
             );
         }
+    }
+
+    private void refreshCurrentUserLabel() {
+        if (currentUserLabel == null) {
+            return;
+        }
+
+        User currentUser = SessionManager.getCurrentUser();
+        String displayName = "";
+        if (currentUser != null) {
+            String fullName = currentUser.getFullName();
+            displayName = fullName == null || fullName.isBlank()
+                    ? currentUser.getUsername()
+                    : fullName;
+        }
+
+        boolean hasName = displayName != null && !displayName.isBlank();
+        currentUserLabel.setText(hasName ? displayName.trim() : "");
+        currentUserLabel.setVisible(hasName);
+        currentUserLabel.setManaged(hasName);
     }
 
     private void configureHorizontalOnlyScroll() {

@@ -31,6 +31,11 @@
                 <Region HBox.hgrow="ALWAYS"/>
 
                 <HBox fx:id="rightControls" alignment="CENTER_RIGHT" styleClass="top-bar-right">
+                    <Label fx:id="currentUserLabel"
+                           managed="false"
+                           visible="false"
+                           wrapText="false"
+                           style="-fx-text-fill: #F6EEDD; -fx-font-size: 14px; -fx-font-weight: 600;"/>
                     <Button fx:id="logoutButton" styleClass="top-bar-action" text="Log Out"/>
                 </HBox>
 
