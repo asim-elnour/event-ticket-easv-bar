@@ -19,17 +19,14 @@ public class DatabaseInitializer {
 
     public void initializeAllTables() throws SQLException {
         createRolesTable();
-        seedRoles();
         createUsersTable();
-        ensureUsersRoleColumn();
         createEventsTable();
-        ensureEventsUpdatedAtColumn();
         createEventCoordinatorsTable();
         createTicketCategoriesTable();
         createCustomersTable();
         createTicketsTable();
         createIndexes();
-        ensureDefaultAdminUser();
+        createDefaultAdminIfMissing();
     }
 
     private void createRolesTable() throws SQLException {
@@ -42,22 +39,16 @@ public class DatabaseInitializer {
                         role_code NVARCHAR(20) NOT NULL CONSTRAINT UQ_Roles_RoleCode UNIQUE
                     )
                 END
-                """);
-    }
-
-    private void seedRoles() throws SQLException {
-        execute("""
-                MERGE dbo.Roles AS target
-                USING (VALUES
-                    (1, N'Admin', N'A'),
-                    (2, N'Event Coordinator', N'EC')
-                ) AS source (id, role_name, role_code)
-                ON target.id = source.id
-                WHEN MATCHED THEN
-                    UPDATE SET role_name = source.role_name, role_code = source.role_code
-                WHEN NOT MATCHED THEN
-                    INSERT (id, role_name, role_code)
-                    VALUES (source.id, source.role_name, source.role_code);
+                IF NOT EXISTS (SELECT 1 FROM dbo.Roles WHERE id = 1)
+                BEGIN
+                    INSERT INTO dbo.Roles (id, role_name, role_code)
+                    VALUES (1, N'Admin', N'A')
+                END
+                IF NOT EXISTS (SELECT 1 FROM dbo.Roles WHERE id = 2)
+                BEGIN
+                    INSERT INTO dbo.Roles (id, role_name, role_code)
+                    VALUES (2, N'Event Coordinator', N'EC')
+                END
                 """);
     }
 
@@ -82,67 +73,6 @@ public class DatabaseInitializer {
                 """);
     }
 
-    private void ensureUsersRoleColumn() throws SQLException {
-        execute("""
-                IF COL_LENGTH('dbo.Users', 'role_id') IS NULL
-                BEGIN
-                    ALTER TABLE dbo.Users ADD role_id INT NULL
-                END
-                """);
-
-        execute("""
-                IF OBJECT_ID(N'dbo.UserRoles', N'U') IS NOT NULL
-                BEGIN
-                    UPDATE users
-                    SET role_id = active_roles.role_id
-                    FROM dbo.Users users
-                    CROSS APPLY (
-                        SELECT TOP 1 user_roles.role_id
-                        FROM dbo.UserRoles user_roles
-                        WHERE user_roles.user_id = users.id
-                          AND user_roles.removed_at IS NULL
-                        ORDER BY user_roles.assigned_at DESC
-                    ) active_roles
-                    WHERE users.role_id IS NULL
-                END
-                """);
-
-        execute("""
-                UPDATE dbo.Users
-                SET role_id = CASE
-                    WHEN LOWER(username) = N'admin' THEN 1
-                    ELSE 2
-                END
-                WHERE role_id IS NULL
-                """);
-
-        execute("""
-                IF EXISTS (
-                    SELECT 1
-                    FROM sys.columns
-                    WHERE object_id = OBJECT_ID(N'dbo.Users')
-                      AND name = N'role_id'
-                      AND is_nullable = 1
-                )
-                BEGIN
-                    ALTER TABLE dbo.Users ALTER COLUMN role_id INT NOT NULL
-                END
-                """);
-
-        execute("""
-                IF NOT EXISTS (
-                    SELECT 1
-                    FROM sys.foreign_keys
-                    WHERE name = N'FK_Users_Roles'
-                      AND parent_object_id = OBJECT_ID(N'dbo.Users')
-                )
-                BEGIN
-                    ALTER TABLE dbo.Users
-                    ADD CONSTRAINT FK_Users_Roles FOREIGN KEY (role_id) REFERENCES dbo.Roles(id)
-                END
-                """);
-    }
-
     private void createEventsTable() throws SQLException {
         execute("""
                 IF OBJECT_ID(N'dbo.Events', N'U') IS NULL
@@ -160,34 +90,6 @@ public class DatabaseInitializer {
                         updated_at DATETIME2 NOT NULL CONSTRAINT DF_Events_UpdatedAt DEFAULT SYSDATETIME(),
                         is_deleted BIT NOT NULL CONSTRAINT DF_Events_IsDeleted DEFAULT 0
                     )
-                END
-                """);
-    }
-
-    private void ensureEventsUpdatedAtColumn() throws SQLException {
-        execute("""
-                IF COL_LENGTH('dbo.Events', 'updated_at') IS NULL
-                BEGIN
-                    ALTER TABLE dbo.Events ADD updated_at DATETIME2 NULL
-                END
-                """);
-
-        execute("""
-                UPDATE dbo.Events
-                SET updated_at = COALESCE(CAST(created_at AS DATETIME2), SYSDATETIME())
-                WHERE updated_at IS NULL
-                """);
-
-        execute("""
-                IF EXISTS (
-                    SELECT 1
-                    FROM sys.columns
-                    WHERE object_id = OBJECT_ID(N'dbo.Events')
-                      AND name = N'updated_at'
-                      AND is_nullable = 1
-                )
-                BEGIN
-                    ALTER TABLE dbo.Events ALTER COLUMN updated_at DATETIME2 NOT NULL
                 END
                 """);
     }
@@ -311,26 +213,14 @@ public class DatabaseInitializer {
                 """);
     }
 
-    private void ensureDefaultAdminUser() throws SQLException {
+    private void createDefaultAdminIfMissing() throws SQLException {
         String sql = """
-                IF EXISTS (
+                IF NOT EXISTS (
                     SELECT 1
                     FROM dbo.Users
                     WHERE LOWER(username) = LOWER(?)
+                       OR LOWER(email) = LOWER(?)
                 )
-                BEGIN
-                    UPDATE dbo.Users
-                    SET first_name = ?,
-                        last_name = ?,
-                        email = ?,
-                        phone = ?,
-                        password = ?,
-                        role_id = ?,
-                        is_deleted = 0,
-                        is_locked = 0
-                    WHERE LOWER(username) = LOWER(?)
-                END
-                ELSE
                 BEGIN
                     INSERT INTO dbo.Users
                         (username, first_name, last_name, email, phone, password, role_id, is_deleted, is_locked)
@@ -349,20 +239,14 @@ public class DatabaseInitializer {
             String passwordHash = PasswordHasher.hash("12345678");
 
             stmt.setString(1, username);
-            stmt.setString(2, firstName);
-            stmt.setString(3, lastName);
-            stmt.setString(4, email);
-            stmt.setString(5, phone);
-            stmt.setString(6, passwordHash);
-            stmt.setInt(7, Role.ADMIN.getId());
-            stmt.setString(8, username);
-            stmt.setString(9, username);
-            stmt.setString(10, firstName);
-            stmt.setString(11, lastName);
-            stmt.setString(12, email);
-            stmt.setString(13, phone);
-            stmt.setString(14, passwordHash);
-            stmt.setInt(15, Role.ADMIN.getId());
+            stmt.setString(2, email);
+            stmt.setString(3, username);
+            stmt.setString(4, firstName);
+            stmt.setString(5, lastName);
+            stmt.setString(6, email);
+            stmt.setString(7, phone);
+            stmt.setString(8, passwordHash);
+            stmt.setInt(9, Role.ADMIN.getId());
             stmt.executeUpdate();
         }
     }
