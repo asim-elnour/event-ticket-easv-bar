@@ -202,6 +202,7 @@ public class TicketsController implements ModelAware {
         if (showTicketDialog(selectedEvent)) {
             statusBanner.showSaved();
             requestReload(true);
+            refreshEventData();
         }
     }
 
@@ -263,6 +264,7 @@ public class TicketsController implements ModelAware {
         task.setOnSucceeded(workerStateEvent -> {
             statusBanner.showSaved();
             requestReload(true);
+            refreshEventData();
         });
 
         task.setOnFailed(workerStateEvent -> {
@@ -305,6 +307,7 @@ public class TicketsController implements ModelAware {
             task.setOnSucceeded(workerStateEvent -> {
                 statusBanner.showSaved();
                 requestReload(true);
+                refreshEventData();
             });
 
             task.setOnFailed(workerStateEvent -> {
@@ -551,6 +554,31 @@ public class TicketsController implements ModelAware {
         }
 
         reloadTickets(loadKey);
+    }
+
+    private void refreshEventData() {
+        if (model == null) {
+            return;
+        }
+
+        Task<Void> task = new Task<>() {
+            @Override
+            protected Void call() throws Exception {
+                if (model.isAdmin()) {
+                    model.loadAllEvents();
+                } else {
+                    long coordinatorId = model.getCurrentCoordinatorId();
+                    if (coordinatorId > 0) {
+                        model.loadEventsForCoordinator(coordinatorId);
+                    }
+                }
+                return null;
+            }
+        };
+
+        Thread thread = new Thread(task, "refresh-events-after-ticket-task");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private String buildLoadKey() {

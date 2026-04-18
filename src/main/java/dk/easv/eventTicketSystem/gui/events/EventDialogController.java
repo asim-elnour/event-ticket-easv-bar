@@ -559,13 +559,18 @@ public class EventDialogController {
 
             TicketCategory updated = findTicketTypeById(ticketTypes, original.getId());
             if (updated == null || updated.isDeleted()) {
-                impacts.add(new RefundImpact(ticketTypeName(original), soldCount));
+                impacts.add(new RefundImpact(ticketTypeName(original), soldCount, "the ticket type was deleted"));
+                continue;
+            }
+
+            if (pricesDiffer(original, updated)) {
+                impacts.add(new RefundImpact(ticketTypeName(updated), soldCount, "the price changed"));
                 continue;
             }
 
             int updatedSeatCount = safeSeatCount(updated);
             if (updatedSeatCount < soldCount) {
-                impacts.add(new RefundImpact(ticketTypeName(updated), soldCount - updatedSeatCount));
+                impacts.add(new RefundImpact(ticketTypeName(updated), soldCount - updatedSeatCount, "available seats were reduced"));
             }
         }
         return impacts;
@@ -582,7 +587,9 @@ public class EventDialogController {
             message.append(impact.refundCount())
                     .append(" ")
                     .append(impact.ticketTypeName())
-                    .append(impact.refundCount() == 1 ? " ticket will be refunded if you continue." : " tickets will be refunded if you continue.");
+                    .append(impact.refundCount() == 1 ? " ticket will be refunded because " : " tickets will be refunded because ")
+                    .append(impact.reason())
+                    .append(" if you continue.");
         } else {
             message.append("The following tickets will be refunded if you continue:\n\n");
             for (RefundImpact impact : impacts) {
@@ -590,6 +597,8 @@ public class EventDialogController {
                         .append(" ")
                         .append(impact.ticketTypeName())
                         .append(impact.refundCount() == 1 ? " ticket" : " tickets")
+                        .append(" because ")
+                        .append(impact.reason())
                         .append("\n");
             }
         }
@@ -650,6 +659,16 @@ public class EventDialogController {
     private int safeSeatCount(TicketCategory category) {
         Integer seatCount = category == null ? null : category.getSeatCount();
         return seatCount == null ? 0 : seatCount;
+    }
+
+    private boolean pricesDiffer(TicketCategory original, TicketCategory updated) {
+        BigDecimal originalPrice = original == null || original.getPrice() == null
+                ? BigDecimal.ZERO
+                : original.getPrice();
+        BigDecimal updatedPrice = updated == null || updated.getPrice() == null
+                ? BigDecimal.ZERO
+                : updated.getPrice();
+        return originalPrice.compareTo(updatedPrice) != 0;
     }
 
     private boolean isValidTime(String value) {
@@ -731,7 +750,7 @@ public class EventDialogController {
         label.setManaged(false);
     }
 
-    private record RefundImpact(String ticketTypeName, int refundCount) {
+    private record RefundImpact(String ticketTypeName, int refundCount, String reason) {
     }
 
     private void persistEvent() {

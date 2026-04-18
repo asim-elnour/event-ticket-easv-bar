@@ -18,6 +18,8 @@ public class TicketCategory {
     private final ObjectProperty<BigDecimal> price = new SimpleObjectProperty<>();
     private final ObjectProperty<Integer> seatCount = new SimpleObjectProperty<>();
     private final ObjectProperty<Integer> soldCount = new SimpleObjectProperty<>(0);
+    private final ObjectProperty<Integer> refundedCount = new SimpleObjectProperty<>(0);
+    private final ObjectProperty<Integer> redeemedCount = new SimpleObjectProperty<>(0);
     private final BooleanProperty deleted = new SimpleBooleanProperty(false);
     private final ObjectProperty<LocalDateTime> createdAt = new SimpleObjectProperty<>();
 
@@ -115,6 +117,36 @@ public class TicketCategory {
         return soldCount;
     }
 
+    public Integer getRefundedCount() {
+        return refundedCount.get();
+    }
+
+    public void setRefundedCount(Integer refundedCount) {
+        this.refundedCount.set(refundedCount == null ? 0 : refundedCount);
+    }
+
+    public ObjectProperty<Integer> refundedCountProperty() {
+        return refundedCount;
+    }
+
+    public Integer getRedeemedCount() {
+        return redeemedCount.get();
+    }
+
+    public void setRedeemedCount(Integer redeemedCount) {
+        this.redeemedCount.set(redeemedCount == null ? 0 : redeemedCount);
+    }
+
+    public ObjectProperty<Integer> redeemedCountProperty() {
+        return redeemedCount;
+    }
+
+    public int getAvailableCount() {
+        int seats = getSeatCount() == null ? 0 : getSeatCount();
+        int sold = getSoldCount() == null ? 0 : getSoldCount();
+        return Math.max(0, seats - sold);
+    }
+
     public boolean isDeleted() {
         return deleted.get();
     }
@@ -140,7 +172,7 @@ public class TicketCategory {
     }
 
     public TicketCategory copy() {
-        return new TicketCategory(
+        TicketCategory copy = new TicketCategory(
                 getId(),
                 getEventId(),
                 getName(),
@@ -150,6 +182,9 @@ public class TicketCategory {
                 isDeleted(),
                 getCreatedAt()
         );
+        copy.setRefundedCount(getRefundedCount());
+        copy.setRedeemedCount(getRedeemedCount());
+        return copy;
     }
 
     public void restoreFrom(TicketCategory category) {
@@ -162,6 +197,8 @@ public class TicketCategory {
         setPrice(category.getPrice());
         setSeatCount(category.getSeatCount());
         setSoldCount(category.getSoldCount());
+        setRefundedCount(category.getRefundedCount());
+        setRedeemedCount(category.getRedeemedCount());
         setDeleted(category.isDeleted());
         setCreatedAt(category.getCreatedAt());
     }

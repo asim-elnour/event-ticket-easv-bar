@@ -13,6 +13,7 @@ import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.SearchScope;
+import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
@@ -97,6 +98,12 @@ public class DetailsPanelController implements ModelAware {
     private Label eventTotalSeatsValue;
     @FXML
     private Label eventTotalSoldValue;
+    @FXML
+    private Label eventTotalRefundedValue;
+    @FXML
+    private Label eventTotalRedeemedValue;
+    @FXML
+    private Label eventTotalAvailableValue;
 
     @FXML
     private Label coordinatorNameValue;
@@ -175,6 +182,7 @@ public class DetailsPanelController implements ModelAware {
             model.selectedEventProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedEventCoordinatorProperty().addListener((obs, oldValue, newValue) -> refreshView());
             model.selectedTicketProperty().addListener((obs, oldValue, newValue) -> refreshView());
+            model.eventsView().addListener((ListChangeListener<Event>) change -> refreshView());
         }
 
         refreshView();
@@ -194,7 +202,7 @@ public class DetailsPanelController implements ModelAware {
         switch (activeScope) {
             case ADMINS -> showUser(model.getSelectedUser());
             case CUSTOMERS -> showCustomer(model.getSelectedCustomer());
-            case EVENTS -> showEvent(model.getSelectedEvent());
+            case EVENTS -> showEvent(resolveSelectedEvent());
             case EVENT_COORDINATORS -> showCoordinator(model.getSelectedEventCoordinator());
             case TICKETS -> showTicket(model.getSelectedTicket());
         }
@@ -245,6 +253,9 @@ public class DetailsPanelController implements ModelAware {
         renderTicketTypes(event.getTicketTypesCopy());
         eventTotalSeatsValue.setText(formatNumber(event.getTotalSeats()));
         eventTotalSoldValue.setText(formatNumber(event.getTotalSold()));
+        eventTotalRefundedValue.setText(formatNumber(event.getTotalRefunded()));
+        eventTotalRedeemedValue.setText(formatNumber(event.getTotalRedeemed()));
+        eventTotalAvailableValue.setText(formatNumber(event.getTotalAvailable()));
         showCard(eventCard);
         resetScroll(eventScroll);
     }
@@ -303,6 +314,9 @@ public class DetailsPanelController implements ModelAware {
                     + "\n    Price: " + formatMoney(ticketType.getPrice())
                     + "\n    Seats: " + formatNumber(ticketType.getSeatCount())
                     + "\n    Sold: " + formatNumber(ticketType.getSoldCount())
+                    + "\n    Refunded: " + formatNumber(ticketType.getRefundedCount())
+                    + "\n    Redeemed: " + formatNumber(ticketType.getRedeemedCount())
+                    + "\n    Available: " + formatNumber(ticketType.getAvailableCount())
                     + "\n    Status: " + (ticketType.isDeleted() ? "Deleted" : "Available");
             eventTicketTypesBox.getChildren().add(createListItem(item));
             itemNumber++;
@@ -376,6 +390,24 @@ public class DetailsPanelController implements ModelAware {
         }
         scrollPane.setVvalue(0);
         scrollPane.setHvalue(0);
+    }
+
+    private Event resolveSelectedEvent() {
+        if (model == null) {
+            return null;
+        }
+
+        Event selected = model.getSelectedEvent();
+        if (selected == null || selected.getId() == null) {
+            return selected;
+        }
+
+        for (Event candidate : model.eventsView()) {
+            if (candidate != null && selected.getId().equals(candidate.getId())) {
+                return candidate;
+            }
+        }
+        return selected;
     }
 
     private String safeText(String value) {

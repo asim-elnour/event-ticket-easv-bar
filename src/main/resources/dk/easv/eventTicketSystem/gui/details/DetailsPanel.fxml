@@ -168,6 +168,18 @@
                             <Label text="Total sold:" styleClass="details-label"/>
                             <Label fx:id="eventTotalSoldValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
                         </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Total refunded:" styleClass="details-label"/>
+                            <Label fx:id="eventTotalRefundedValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Total redeemed:" styleClass="details-label"/>
+                            <Label fx:id="eventTotalRedeemedValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                        </HBox>
+                        <HBox styleClass="details-row">
+                            <Label text="Total available:" styleClass="details-label"/>
+                            <Label fx:id="eventTotalAvailableValue" text="0" styleClass="details-value" style="-fx-text-fill: #ffffff;" wrapText="false" textOverrun="CLIP" minWidth="-Infinity" maxWidth="-Infinity"/>
+                        </HBox>
                     </VBox>
                 </content>
             </ScrollPane>

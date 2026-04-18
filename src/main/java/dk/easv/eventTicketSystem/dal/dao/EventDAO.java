@@ -375,14 +375,18 @@ public final class EventDAO implements EventRepository {
                     tc.seat_count,
                     tc.is_deleted,
                     tc.created_at,
-                    COALESCE(ticket_stats.sold_count, 0) AS sold_count
+                    COALESCE(ticket_stats.sold_count, 0) AS sold_count,
+                    COALESCE(ticket_stats.refunded_count, 0) AS refunded_count,
+                    COALESCE(ticket_stats.redeemed_count, 0) AS redeemed_count
                 FROM dbo.TicketCategories tc
                 OUTER APPLY (
-                    SELECT COUNT(*) AS sold_count
+                    SELECT
+                        SUM(CASE WHEN t.refunded_at IS NULL THEN 1 ELSE 0 END) AS sold_count,
+                        SUM(CASE WHEN t.refunded_at IS NOT NULL THEN 1 ELSE 0 END) AS refunded_count,
+                        SUM(CASE WHEN t.refunded_at IS NULL AND t.redeemed = 1 THEN 1 ELSE 0 END) AS redeemed_count
                     FROM dbo.Tickets t
                     WHERE t.event_id = tc.event_id
                       AND t.ticket_category_id = tc.id
-                      AND t.refunded_at IS NULL
                 ) ticket_stats
                 WHERE tc.event_id = ?
                 ORDER BY tc.id
@@ -439,6 +443,15 @@ public final class EventDAO implements EventRepository {
 
             TicketCategory updatedCategory = findCategoryById(event.getTicketTypes(), existingCategory.getId());
             if (updatedCategory == null || updatedCategory.isDeleted()) {
+                impacts.add(new TicketTypeRefundImpact(
+                        existingCategory.getId(),
+                        safeTicketTypeName(existingCategory),
+                        soldCount
+                ));
+                continue;
+            }
+
+            if (pricesDiffer(existingCategory, updatedCategory)) {
                 impacts.add(new TicketTypeRefundImpact(
                         existingCategory.getId(),
                         safeTicketTypeName(existingCategory),
@@ -568,6 +581,16 @@ public final class EventDAO implements EventRepository {
 
     private int safeCount(Integer count) {
         return count == null ? 0 : count;
+    }
+
+    private boolean pricesDiffer(TicketCategory existingCategory, TicketCategory updatedCategory) {
+        BigDecimal existingPrice = existingCategory == null || existingCategory.getPrice() == null
+                ? BigDecimal.ZERO
+                : existingCategory.getPrice();
+        BigDecimal updatedPrice = updatedCategory == null || updatedCategory.getPrice() == null
+                ? BigDecimal.ZERO
+                : updatedCategory.getPrice();
+        return existingPrice.compareTo(updatedPrice) != 0;
     }
 
     private String safeTicketTypeName(TicketCategory category) {

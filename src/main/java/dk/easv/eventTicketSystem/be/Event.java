@@ -150,6 +150,41 @@ public class Event {
         return total;
     }
 
+    public int getTotalRefunded() {
+        int total = 0;
+        for (TicketCategory category : ticketTypes) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            Integer refundedCount = category.getRefundedCount();
+            total += refundedCount == null ? 0 : refundedCount;
+        }
+        return total;
+    }
+
+    public int getTotalRedeemed() {
+        int total = 0;
+        for (TicketCategory category : ticketTypes) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            Integer redeemedCount = category.getRedeemedCount();
+            total += redeemedCount == null ? 0 : redeemedCount;
+        }
+        return total;
+    }
+
+    public int getTotalAvailable() {
+        int total = 0;
+        for (TicketCategory category : ticketTypes) {
+            if (category == null || category.isDeleted()) {
+                continue;
+            }
+            total += category.getAvailableCount();
+        }
+        return total;
+    }
+
     public Event copy() {
         return new Event(
                 getId(),

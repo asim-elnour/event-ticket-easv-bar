@@ -60,7 +60,7 @@ final class DaoSupport {
     }
 
     static TicketCategory mapTicketCategory(ResultSet rs) throws SQLException {
-        return new TicketCategory(
+        TicketCategory category = new TicketCategory(
                 getLongObject(rs, "id"),
                 getLongObject(rs, "event_id"),
                 rs.getString("name"),
@@ -70,6 +70,9 @@ final class DaoSupport {
                 rs.getBoolean("is_deleted"),
                 getLocalDateTime(rs, "created_at")
         );
+        category.setRefundedCount(rs.getObject("refunded_count", Integer.class));
+        category.setRedeemedCount(rs.getObject("redeemed_count", Integer.class));
+        return category;
     }
 
     static Customer mapCustomer(ResultSet rs) throws SQLException {
