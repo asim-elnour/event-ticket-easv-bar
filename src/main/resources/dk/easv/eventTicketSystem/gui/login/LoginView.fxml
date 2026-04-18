@@ -10,6 +10,7 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/24.0.1"
             xmlns:fx="http://javafx.com/fxml/1"
+            fx:id="loginRoot"
             fx:controller="dk.easv.eventTicketSystem.gui.login.LoginController"
             stylesheets="@../style/style.css">
 

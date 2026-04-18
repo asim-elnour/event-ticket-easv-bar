@@ -2,17 +2,35 @@ package dk.easv.eventTicketSystem.gui.adminsAndCoordinators;
 
 import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.User;
+import dk.easv.eventTicketSystem.exceptions.UserException;
+import dk.easv.eventTicketSystem.gui.model.AppModel;
+import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.UserUiText;
 import dk.easv.eventTicketSystem.util.UserValidationRules;
+import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.Cursor;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 
+import java.sql.SQLException;
+import java.util.Locale;
+
 public class AdminCoordinatorDialogController {
+    @FXML private BorderPane dialogPane;
+    @FXML private ScrollPane dialogScrollPane;
+    @FXML private VBox loadingOverlay;
+    @FXML private Button btnCancel;
+    @FXML private Button btnSave;
     @FXML private TextField txtUsername;
     @FXML private TextField txtFirstName;
     @FXML private TextField txtLastName;
@@ -30,8 +48,10 @@ public class AdminCoordinatorDialogController {
     @FXML private Label errPassword;
     @FXML private Label errRepeatPassword;
 
+    private AppModel model;
     private User user;
     private boolean saved;
+    private boolean saving;
     private boolean isEdit;
 
     @FXML
@@ -50,6 +70,12 @@ public class AdminCoordinatorDialogController {
         });
         setupLiveValidation();
         clearAllErrors();
+        updateSavingState(false);
+        installCloseGuard();
+    }
+
+    public void setModel(AppModel model) {
+        this.model = model;
     }
 
     public void setUser(User user) {
@@ -91,13 +117,23 @@ public class AdminCoordinatorDialogController {
 
     @FXML
     private void onCancel() {
+        if (saving) {
+            return;
+        }
         saved = false;
         close();
     }
 
     @FXML
     private void onSave() {
+        if (saving) {
+            return;
+        }
         if (!validateAll()) {
+            return;
+        }
+        if (model == null) {
+            DialogUtils.showError("User Dialog", null, "User dialog is missing the application model.");
             return;
         }
 
@@ -126,8 +162,7 @@ public class AdminCoordinatorDialogController {
             user.setEventCoordinatorRemoved(false);
         }
 
-        saved = true;
-        close();
+        persistUser();
     }
 
     private void close() {
@@ -321,5 +356,225 @@ public class AdminCoordinatorDialogController {
         clearError(errRole);
         clearError(errPassword);
         clearError(errRepeatPassword);
+    }
+
+    private void persistUser() {
+        updateSavingState(true);
+
+        Task<User> task = new Task<>() {
+            @Override
+            protected User call() throws Exception {
+                if (isEdit) {
+                    model.updateAdminOrCoordinator(user);
+                    return user;
+                }
+                return model.addAdminOrCoordinator(user);
+            }
+        };
+
+        task.setOnSucceeded(event -> {
+            User persistedUser = task.getValue();
+            if (persistedUser != null) {
+                user = persistedUser;
+            }
+            saved = true;
+            updateSavingState(false);
+            close();
+        });
+
+        task.setOnFailed(event -> {
+            updateSavingState(false);
+            showUserActionErrorDialog(
+                    isEdit ? "Edit User Failed" : "Add User Failed",
+                    isEdit
+                            ? "We couldn't save changes for this user."
+                            : "We couldn't add this user right now.",
+                    task.getException()
+            );
+        });
+
+        Thread thread = new Thread(task, isEdit ? "edit-user-task" : "add-user-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void updateSavingState(boolean saving) {
+        this.saving = saving;
+        if (dialogPane != null) {
+            dialogPane.setDisable(saving);
+        }
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisible(saving);
+            loadingOverlay.setManaged(saving);
+        }
+        if (btnSave != null) {
+            btnSave.setDisable(saving);
+        }
+        if (btnCancel != null) {
+            btnCancel.setDisable(saving);
+        }
+        if (txtUsername != null && txtUsername.getScene() != null) {
+            txtUsername.getScene().setCursor(saving ? Cursor.WAIT : Cursor.DEFAULT);
+        } else if (dialogScrollPane != null) {
+            dialogScrollPane.setCursor(saving ? Cursor.WAIT : Cursor.DEFAULT);
+        }
+    }
+
+    private void installCloseGuard() {
+        txtUsername.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                return;
+            }
+
+            if (newScene.getWindow() instanceof Stage stage) {
+                stage.setOnCloseRequest(event -> {
+                    if (saving) {
+                        event.consume();
+                    }
+                });
+            }
+
+            newScene.windowProperty().addListener((windowObs, oldWindow, newWindow) -> {
+                if (newWindow instanceof Stage stage) {
+                    stage.setOnCloseRequest(event -> {
+                        if (saving) {
+                            event.consume();
+                        }
+                    });
+                }
+            });
+        });
+    }
+
+    private record ErrorDialogDetails(String type, String error) {}
+
+    private void showUserActionErrorDialog(String title, String message, Throwable throwable) {
+        ErrorDialogDetails details = mapUserActionError(throwable);
+        DialogUtils.showDetailedError(
+                title,
+                message,
+                details.type(),
+                details.error(),
+                resolveOwnerWindow()
+        );
+    }
+
+    private Window resolveOwnerWindow() {
+        return txtUsername != null && txtUsername.getScene() != null
+                ? txtUsername.getScene().getWindow()
+                : null;
+    }
+
+    private ErrorDialogDetails mapUserActionError(Throwable throwable) {
+        Throwable root = rootCause(throwable);
+        String technicalMessage = sanitizeMessage(root == null ? null : root.getMessage());
+        if (technicalMessage == null) {
+            technicalMessage = sanitizeMessage(throwable == null ? null : throwable.getMessage());
+        }
+        String normalized = technicalMessage == null ? "" : technicalMessage.toLowerCase(Locale.ROOT);
+
+        String type;
+        String detail;
+
+        if (isDatabaseConnectionIssue(root, normalized)) {
+            type = "Database Connection";
+            detail = "Could not connect to the database.";
+        } else if (isDataConflictIssue(root, normalized)) {
+            type = "Data Conflict";
+            detail = "The data conflicts with existing records.";
+        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "only admins")) {
+            type = "Permission";
+            detail = "You do not have permission to perform this action.";
+        } else if (containsAny(normalized, "required", "valid", "must", "cannot", "password", "email", "phone", "last active admin", "only coordinator")) {
+            type = "Validation";
+            detail = "The request violates a validation or business rule.";
+        } else if (containsAny(normalized, "not found", "no longer exists", "missing")) {
+            type = "User Not Found";
+            detail = "The selected user record no longer exists.";
+        } else if (root instanceof SQLException) {
+            type = "Database Error";
+            detail = "The database could not process this request.";
+        } else {
+            type = "Unexpected Error";
+            detail = "Something unexpected happened while processing this request.";
+        }
+
+        boolean preferTechnical = throwable instanceof UserException
+                || containsAny(normalized,
+                "required", "valid", "must", "cannot", "password", "email", "phone",
+                "last active admin", "only coordinator", "permission", "denied", "forbidden",
+                "not authorized", "unauthorized", "not found", "no longer exists", "missing",
+                "duplicate", "unique", "constraint", "already exists", "violat");
+        return new ErrorDialogDetails(type, chooseDialogDetail(detail, technicalMessage, preferTechnical));
+    }
+
+    private boolean isDatabaseConnectionIssue(Throwable root, String normalizedMessage) {
+        if (containsAny(normalizedMessage, "connect", "connection", "timeout", "timed out", "socket", "network")) {
+            return true;
+        }
+        if (!(root instanceof SQLException sqlException)) {
+            return false;
+        }
+        String state = sqlException.getSQLState();
+        return state != null && state.startsWith("08");
+    }
+
+    private boolean isDataConflictIssue(Throwable root, String normalizedMessage) {
+        if (containsAny(normalizedMessage, "duplicate", "unique", "constraint", "already exists", "violat")) {
+            return true;
+        }
+        if (!(root instanceof SQLException sqlException)) {
+            return false;
+        }
+        String state = sqlException.getSQLState();
+        int code = sqlException.getErrorCode();
+        return code == 2601 || code == 2627 || (state != null && state.startsWith("23"));
+    }
+
+    private String chooseDialogDetail(String friendlyMessage, String technicalMessage, boolean preferTechnical) {
+        if (preferTechnical && technicalMessage != null && !technicalMessage.isBlank()) {
+            return abbreviate(technicalMessage, 180);
+        }
+        return friendlyMessage;
+    }
+
+    private String sanitizeMessage(String message) {
+        if (message == null) {
+            return null;
+        }
+        String cleaned = message.replaceAll("\\s+", " ").trim();
+        return cleaned.isBlank() ? null : cleaned;
+    }
+
+    private String abbreviate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, Math.max(0, maxLength - 3)) + "...";
+    }
+
+    private boolean containsAny(String text, String... keywords) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        for (String keyword : keywords) {
+            if (keyword != null && !keyword.isBlank() && text.contains(keyword)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Throwable rootCause(Throwable throwable) {
+        if (throwable == null) {
+            return null;
+        }
+        Throwable current = throwable;
+        int guard = 0;
+        while (current.getCause() != null && current.getCause() != current && guard < 20) {
+            current = current.getCause();
+            guard++;
+        }
+        return current;
     }
 }

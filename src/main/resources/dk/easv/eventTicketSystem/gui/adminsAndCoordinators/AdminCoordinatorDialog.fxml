@@ -4,70 +4,90 @@
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TextField?>
-<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            stylesheets="@../style/style.css"
-            styleClass="dialog-root"
-            fx:controller="dk.easv.eventTicketSystem.gui.adminsAndCoordinators.AdminCoordinatorDialogController">
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           stylesheets="@../style/style.css"
+           styleClass="dialog-root"
+           fx:controller="dk.easv.eventTicketSystem.gui.adminsAndCoordinators.AdminCoordinatorDialogController">
 
-    <center>
-        <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="AS_NEEDED"
-                    vbarPolicy="AS_NEEDED"  styleClass="scrollable">
-            <content>
-                <VBox styleClass="dialog-content" VBox.vgrow="NEVER">
-                    <HBox alignment="TOP_CENTER" fillHeight="false">
-                        <GridPane styleClass="dialog-grid" alignment="CENTER_LEFT" prefWidth="760" maxWidth="760" minWidth="560" style="-fx-vgap: 6;">
-                            <columnConstraints>
-                                <ColumnConstraints minWidth="120" prefWidth="140" hgrow="NEVER" halignment="LEFT"/>
-                                <ColumnConstraints hgrow="ALWAYS" fillWidth="true"/>
-                            </columnConstraints>
+    <BorderPane fx:id="dialogPane">
+        <center>
+            <ScrollPane fx:id="dialogScrollPane" fitToWidth="true" fitToHeight="true" hbarPolicy="AS_NEEDED"
+                        vbarPolicy="AS_NEEDED" styleClass="scrollable">
+                <content>
+                    <VBox styleClass="dialog-content" VBox.vgrow="NEVER">
+                        <HBox alignment="TOP_CENTER" fillHeight="false">
+                            <GridPane styleClass="dialog-grid" alignment="CENTER_LEFT" prefWidth="760" maxWidth="760" minWidth="560" style="-fx-vgap: 6;">
+                                <columnConstraints>
+                                    <ColumnConstraints minWidth="120" prefWidth="140" hgrow="NEVER" halignment="LEFT"/>
+                                    <ColumnConstraints hgrow="ALWAYS" fillWidth="true"/>
+                                </columnConstraints>
 
-                            <Label text="Username:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtUsername" promptText="Enter username" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errUsername" visible="false" managed="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                                <Label text="Username:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtUsername" promptText="Enter username" maxWidth="Infinity" GridPane.rowIndex="0" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errUsername" visible="false" managed="true" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
 
-                            <Label text="First Name:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtFirstName" promptText="Enter first name" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errFirstName" visible="false" managed="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+                                <Label text="First Name:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtFirstName" promptText="Enter first name" maxWidth="Infinity" GridPane.rowIndex="2" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errFirstName" visible="false" managed="true" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-                            <Label text="Last Name:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtLastName" promptText="Enter last name" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errLastName" visible="false" managed="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+                                <Label text="Last Name:" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtLastName" promptText="Enter last name" maxWidth="Infinity" GridPane.rowIndex="4" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errLastName" visible="false" managed="true" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
 
-                            <Label text="Email:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtEmail" promptText="Enter email address" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errEmail" visible="false" managed="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+                                <Label text="Email:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtEmail" promptText="Enter email address" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errEmail" visible="false" managed="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
 
-                            <Label text="Phone:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-                            <TextField fx:id="txtPhone" promptText="Enter phone number" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errPhone" visible="false" managed="true" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
+                                <Label text="Phone:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtPhone" promptText="Enter phone number" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errPhone" visible="false" managed="true" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
 
-                            <Label text="Role:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
-                            <ComboBox fx:id="cmbRole" promptText="Select role" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errRole" visible="false" managed="true" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
+                                <Label text="Role:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
+                                <ComboBox fx:id="cmbRole" promptText="Select role" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errRole" visible="false" managed="true" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
 
-                            <Label text="Password:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
-                            <PasswordField fx:id="txtPassword" promptText="Enter password" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errPassword" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
+                                <Label text="Password:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
+                                <PasswordField fx:id="txtPassword" promptText="Enter password" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errPassword" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
 
-                            <Label text="Repeat Password:" GridPane.rowIndex="14" GridPane.columnIndex="0"/>
-                            <PasswordField fx:id="txtRepeatPassword" promptText="Repeat password" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                            <Label styleClass="error-label" fx:id="errRepeatPassword" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
-                        </GridPane>
-                    </HBox>
-                </VBox>
-            </content>
-        </ScrollPane>
-    </center>
+                                <Label text="Repeat Password:" GridPane.rowIndex="14" GridPane.columnIndex="0"/>
+                                <PasswordField fx:id="txtRepeatPassword" promptText="Repeat password" maxWidth="Infinity" GridPane.rowIndex="14" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errRepeatPassword" visible="false" managed="true" GridPane.rowIndex="15" GridPane.columnIndex="1"/>
+                            </GridPane>
+                        </HBox>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </center>
 
-    <bottom>
-        <HBox styleClass="dialog-actions">
-            <Button text="Cancel" onAction="#onCancel"/>
-            <Button text="Save" onAction="#onSave"/>
-        </HBox>
-    </bottom>
+        <bottom>
+            <HBox styleClass="dialog-actions">
+                <Button fx:id="btnCancel" text="Cancel" onAction="#onCancel"/>
+                <Button fx:id="btnSave" text="Save" onAction="#onSave"/>
+            </HBox>
+        </bottom>
+    </BorderPane>
 
-</BorderPane>
+    <VBox fx:id="loadingOverlay"
+          alignment="CENTER"
+          managed="false"
+          maxHeight="Infinity"
+          maxWidth="Infinity"
+          spacing="12"
+          styleClass="dialog-loading-overlay"
+          visible="false">
+        <ProgressIndicator maxHeight="56" maxWidth="56" prefHeight="56" prefWidth="56"/>
+        <Label text="Saving user..." styleClass="dialog-loading-message"/>
+    </VBox>
+
+</StackPane>

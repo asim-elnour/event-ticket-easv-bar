@@ -152,22 +152,8 @@ public class AdminsAndCoordinatorsController implements ModelAware {
 
         Optional<User> result = showUserDialog(null);
         result.ifPresent(user -> {
-            statusBanner.showSaving();
-            Task<User> task = new Task<>() {
-                @Override
-                protected User call() throws Exception {
-                    return model.addAdminOrCoordinator(user);
-                }
-            };
-            task.setOnSucceeded(event -> {
-                statusBanner.showSaved();
-                reloadUsers();
-            });
-            task.setOnFailed(event -> {
-                statusBanner.showFailed();
-                showUserActionErrorDialog("Add User Failed", "We couldn't add this user right now.", task.getException());
-            });
-            new Thread(task, "add-user-task").start();
+            statusBanner.showSaved();
+            reloadUsers();
         });
     }
 
@@ -188,27 +174,12 @@ public class AdminsAndCoordinatorsController implements ModelAware {
         result.ifPresent(user -> {
             boolean shouldForceLogout = isCurrentSessionUser(user)
                     && (user.isDeleted() || !user.hasRole(Role.ADMIN));
-            statusBanner.showSaving();
-            Task<Void> task = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    model.updateAdminOrCoordinator(user);
-                    return null;
-                }
-            };
-            task.setOnSucceeded(event -> {
-                statusBanner.showSaved();
-                if (shouldForceLogout) {
-                    forceLogout("Your account permissions changed. Please log in again.");
-                    return;
-                }
-                reloadUsers();
-            });
-            task.setOnFailed(event -> {
-                statusBanner.showFailed();
-                showUserActionErrorDialog("Edit User Failed", "We couldn't save changes for this user.", task.getException());
-            });
-            new Thread(task, "edit-user-task").start();
+            statusBanner.showSaved();
+            if (shouldForceLogout) {
+                forceLogout("Your account permissions changed. Please log in again.");
+                return;
+            }
+            reloadUsers();
         });
     }
 
@@ -303,6 +274,7 @@ public class AdminsAndCoordinatorsController implements ModelAware {
             Parent root = loader.load();
 
             AdminCoordinatorDialogController controller = loader.getController();
+            controller.setModel(model);
             controller.setUser(user == null ? null : user.copy());
 
             Stage stage = new Stage();

@@ -3,6 +3,7 @@
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -13,19 +14,21 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
-<BorderPane xmlns:fx="http://javafx.com/fxml"
-            stylesheets="@../style/style.css"
-            styleClass="dialog-root"
-            fx:controller="dk.easv.eventTicketSystem.gui.events.EventDialogController">
+<StackPane xmlns:fx="http://javafx.com/fxml"
+           stylesheets="@../style/style.css"
+           styleClass="dialog-root"
+           fx:controller="dk.easv.eventTicketSystem.gui.events.EventDialogController">
 
-    <center>
-        <ScrollPane fitToWidth="true" fitToHeight="false" 
-        hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
-         styleClass="scrollable">
-            <content>
-                <VBox alignment="TOP_CENTER" styleClass="dialog-content" spacing="14" VBox.vgrow="NEVER">
+    <BorderPane fx:id="dialogPane">
+        <center>
+            <ScrollPane fx:id="dialogScrollPane" fitToWidth="true" fitToHeight="false"
+                        hbarPolicy="AS_NEEDED" vbarPolicy="AS_NEEDED"
+                        styleClass="scrollable">
+                <content>
+                    <VBox alignment="TOP_CENTER" styleClass="dialog-content" spacing="14" VBox.vgrow="NEVER">
                         <VBox spacing="14" prefWidth="820" maxWidth="820" minWidth="620">
                             <GridPane styleClass="dialog-grid dialog-form-grid" alignment="CENTER_LEFT" maxWidth="Infinity" style="-fx-vgap: 6;">
                                 <columnConstraints>
@@ -92,16 +95,29 @@
                                 </HBox>
                             </VBox>
                         </VBox>
-                </VBox>
-            </content>
-        </ScrollPane>
-    </center>
+                    </VBox>
+                </content>
+            </ScrollPane>
+        </center>
 
-    <bottom>
-        <HBox styleClass="dialog-actions">
-            <Button text="Cancel" onAction="#onCancel"/>
-            <Button text="Save" onAction="#onSave"/>
-        </HBox>
-    </bottom>
+        <bottom>
+            <HBox styleClass="dialog-actions">
+                <Button fx:id="btnCancel" text="Cancel" onAction="#onCancel"/>
+                <Button fx:id="btnSave" text="Save" onAction="#onSave"/>
+            </HBox>
+        </bottom>
+    </BorderPane>
 
-</BorderPane>
+    <VBox fx:id="loadingOverlay"
+          alignment="CENTER"
+          managed="false"
+          maxHeight="Infinity"
+          maxWidth="Infinity"
+          spacing="12"
+          styleClass="dialog-loading-overlay"
+          visible="false">
+        <ProgressIndicator maxHeight="56" maxWidth="56" prefHeight="56" prefWidth="56"/>
+        <Label text="Saving event..." styleClass="dialog-loading-message"/>
+    </VBox>
+
+</StackPane>

@@ -7,6 +7,8 @@ import dk.easv.eventTicketSystem.util.SceneNavigator;
 import dk.easv.eventTicketSystem.util.SessionManager;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.Cursor;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
@@ -15,6 +17,8 @@ import javafx.stage.Stage;
 
 public class LoginController {
 
+    @FXML
+    private BorderPane loginRoot;
     @FXML
     private Label loginTitle;
     @FXML
@@ -36,6 +40,7 @@ public class LoginController {
         loginButton.setText("Login");
         emailField.setOnAction(event -> passwordField.requestFocus());
         passwordField.setOnAction(event -> onLogin());
+        updateAuthenticatingState(false);
     }
 
     @FXML
@@ -48,7 +53,12 @@ public class LoginController {
             return;
         }
 
-        loginButton.setDisable(true);
+        if (loginRoot != null) {
+            loginRoot.requestFocus();
+        }
+        emailField.deselect();
+        passwordField.deselect();
+        updateAuthenticatingState(true);
         errorLabel.setText("");
 
         Task<User> task = new Task<>() {
@@ -59,7 +69,7 @@ public class LoginController {
         };
 
         task.setOnSucceeded(event -> {
-            loginButton.setDisable(false);
+            updateAuthenticatingState(false);
             User user = task.getValue();
             if (user == null) {
                 errorLabel.setText("Invalid credentials.");
@@ -75,7 +85,7 @@ public class LoginController {
         });
 
         task.setOnFailed(event -> {
-            loginButton.setDisable(false);
+            updateAuthenticatingState(false);
             Throwable throwable = task.getException();
             if (throwable instanceof UserException) {
                 String exceptionMessage = throwable.getMessage();
@@ -92,11 +102,31 @@ public class LoginController {
             errorLabel.setText("Login failed: " + message);
         });
 
-        new Thread(task, "login-task").start();
+        Thread thread = new Thread(task, "login-task");
+        thread.setDaemon(true);
+        thread.start();
     }
 
     private void openMainView() throws Exception {
         Stage stage = (Stage) emailField.getScene().getWindow();
         SceneNavigator.openMain(stage);
+    }
+
+    private void updateAuthenticatingState(boolean authenticating) {
+        if (emailField != null) {
+            emailField.setDisable(authenticating);
+        }
+        if (passwordField != null) {
+            passwordField.setDisable(authenticating);
+        }
+        if (loginButton != null) {
+            loginButton.setDisable(authenticating);
+        }
+        if (loginRoot != null) {
+            loginRoot.setCursor(authenticating ? Cursor.WAIT : Cursor.DEFAULT);
+        }
+        if (emailField != null && emailField.getScene() != null) {
+            emailField.getScene().setCursor(authenticating ? Cursor.WAIT : Cursor.DEFAULT);
+        }
     }
 }

@@ -177,27 +177,9 @@ public class EventsController implements ModelAware {
     private void onAddEvent() {
         Optional<Event> result = showEventDialog(null);
         result.ifPresent(event -> {
-            statusBanner.showSaving();
-
-            Task<Event> task = new Task<>() {
-                @Override
-                protected Event call() throws Exception {
-                    return model.addEvent(event);
-                }
-            };
-
-            task.setOnSucceeded(workerStateEvent -> {
-                statusBanner.showSaved();
-                reloadCurrentEventView();
-                reloadAllTickets();
-            });
-
-            task.setOnFailed(workerStateEvent -> {
-                statusBanner.showFailed();
-                showEventActionErrorDialog("Add Event Failed", "We couldn't add this event right now.", task.getException());
-            });
-
-            new Thread(task, "add-event-task").start();
+            statusBanner.showSaved();
+            reloadCurrentEventView();
+            reloadAllTickets();
         });
     }
 
@@ -211,29 +193,10 @@ public class EventsController implements ModelAware {
 
         Optional<Event> result = showEventDialog(selected);
         result.ifPresent(event -> {
-            statusBanner.showSaving();
-
-            Task<Void> task = new Task<>() {
-                @Override
-                protected Void call() throws Exception {
-                    model.updateEvent(event);
-                    return null;
-                }
-            };
-
-            task.setOnSucceeded(workerStateEvent -> {
-                statusBanner.showSaved();
-                updateActionState(selected);
-                reloadCurrentEventView();
-                reloadAllTickets();
-            });
-
-            task.setOnFailed(workerStateEvent -> {
-                statusBanner.showFailed();
-                showEventActionErrorDialog("Edit Event Failed", "We couldn't save changes for this event.", task.getException());
-            });
-
-            new Thread(task, "edit-event-task").start();
+            statusBanner.showSaved();
+            updateActionState(selected);
+            reloadCurrentEventView();
+            reloadAllTickets();
         });
     }
 
@@ -422,8 +385,9 @@ public class EventsController implements ModelAware {
         try {
             Parent root = loader.load();
             EventDialogController controller = loader.getController();
+            controller.setModel(model);
             controller.setCoordinatorId(model.getCurrentCoordinatorId());
-            controller.setEvent(existing);
+            controller.setEvent(existing == null ? null : existing.copy());
 
             Stage stage = new Stage();
             stage.setTitle(isEdit ? "Edit Event" : "Add Event");
