@@ -110,7 +110,7 @@ public final class EventDAO implements EventRepository {
     }
 
     @Override
-    public Event addEvent(Event event) throws EventException {
+    public Event addEvent(Event event, long actorUserId) throws EventException {
         if (event == null) {
             throw new EventException("Event is required.", EventException.ErrorType.VALIDATION_ERROR);
         }
@@ -118,7 +118,12 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
+                ensureActiveCoordinator(con, actorUserId, "Only event coordinators can create or edit events.");
                 validateEventState(event);
+                event.setCreatedByUserId(actorUserId);
+                if (event.getCoordinatorId() == null || event.getCoordinatorId() <= 0) {
+                    event.setCoordinatorId(actorUserId);
+                }
                 long eventId = insertEvent(con, event);
                 event.setId(eventId);
                 saveTicketCategories(con, event);
@@ -139,7 +144,7 @@ public final class EventDAO implements EventRepository {
     }
 
     @Override
-    public Event updateEvent(Event event) throws EventException {
+    public Event updateEvent(Event event, long actorUserId) throws EventException {
         if (event == null || event.getId() == null || event.getId() <= 0) {
             throw new EventException("Valid event is required.", EventException.ErrorType.VALIDATION_ERROR);
         }
@@ -147,6 +152,9 @@ public final class EventDAO implements EventRepository {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
             try {
+                ensureEventExists(con, event.getId());
+                ensureActiveCoordinator(con, actorUserId, "Only event coordinators can create or edit events.");
+                ensureCoordinatorCanManageEvent(con, event.getId(), actorUserId, "You do not have permission to manage this event.");
                 validateEventState(event);
                 List<TicketTypeRefundImpact> refundImpacts = buildRefundImpacts(con, event);
 
@@ -193,20 +201,25 @@ public final class EventDAO implements EventRepository {
     }
 
     @Override
-    public void setEventDeleted(long eventId, long coordinatorId, boolean deleted) throws EventException {
+    public void setEventDeleted(long eventId, long actorUserId, boolean deleted) throws EventException {
         try (Connection con = database.getConnection()) {
             con.setAutoCommit(false);
-            try (PreparedStatement stmt = con.prepareStatement("""
+            try {
+                ensureEventExists(con, eventId);
+                ensureActorCanDeleteEvent(con, eventId, actorUserId);
+
+                try (PreparedStatement stmt = con.prepareStatement("""
                     UPDATE dbo.Events
                     SET is_deleted = ?,
                         updated_at = SYSDATETIME()
                     WHERE id = ?
                     """)) {
-                stmt.setBoolean(1, deleted);
-                stmt.setLong(2, eventId);
-                int rows = stmt.executeUpdate();
-                if (rows == 0) {
-                    throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
+                    stmt.setBoolean(1, deleted);
+                    stmt.setLong(2, eventId);
+                    int rows = stmt.executeUpdate();
+                    if (rows == 0) {
+                        throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
+                    }
                 }
                 if (deleted) {
                     refundAllTicketsForEvent(con, eventId);
@@ -405,6 +418,17 @@ public final class EventDAO implements EventRepository {
         if (event == null) {
             throw new EventException("Event is required.", EventException.ErrorType.VALIDATION_ERROR);
         }
+        validateRequiredText("Name", event.getName());
+        validateRequiredText("Location", event.getLocation());
+        validateRequiredText("Notes", event.getNotes());
+
+        if (event.getStartTime() == null) {
+            throw new EventException("Start date and time are required.", EventException.ErrorType.VALIDATION_ERROR);
+        }
+        if (event.getEndTime() != null && !event.getEndTime().isAfter(event.getStartTime())) {
+            throw new EventException("End date and time must be after the start date and time.",
+                    EventException.ErrorType.VALIDATION_ERROR);
+        }
         if (EventValidationRules.countActiveTicketTypes(event.getTicketTypes()) == 0) {
             throw new EventException("At least one active ticket type is required.",
                     EventException.ErrorType.VALIDATION_ERROR);
@@ -415,6 +439,16 @@ public final class EventDAO implements EventRepository {
         for (TicketCategory category : event.getTicketTypes()) {
             if (category == null || category.isDeleted()) {
                 continue;
+            }
+            String name = EventValidationRules.normalizeRequired(category.getName());
+            if (name.isEmpty()) {
+                throw new EventException("Ticket type name is required.", EventException.ErrorType.VALIDATION_ERROR);
+            }
+            if (name.length() > EventValidationRules.MAX_TEXT_LENGTH) {
+                throw new EventException("Ticket type name is too long.", EventException.ErrorType.VALIDATION_ERROR);
+            }
+            if (category.getPrice() == null || category.getPrice().compareTo(BigDecimal.ZERO) < 0) {
+                throw new EventException("Ticket price must be zero or higher.", EventException.ErrorType.VALIDATION_ERROR);
             }
             Integer seatCount = category.getSeatCount();
             if (seatCount == null || seatCount < EventValidationRules.MIN_SEAT_COUNT) {
@@ -612,6 +646,49 @@ public final class EventDAO implements EventRepository {
         }
     }
 
+    private void ensureEventExists(Connection con, long eventId) throws SQLException, EventException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Events
+                WHERE id = ?
+                """)) {
+            stmt.setLong(1, eventId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (!rs.next()) {
+                    throw new EventException("Event not found.", EventException.ErrorType.NOT_FOUND);
+                }
+            }
+        }
+    }
+
+    private void ensureActiveCoordinator(Connection con, long userId, String message) throws SQLException, EventException {
+        if (!isCoordinator(con, userId)) {
+            throw new EventException(message, EventException.ErrorType.VALIDATION_ERROR);
+        }
+    }
+
+    private void ensureCoordinatorCanManageEvent(Connection con,
+                                                 long eventId,
+                                                 long coordinatorId,
+                                                 String message) throws SQLException, EventException {
+        if (!canCoordinatorManageEvent(con, eventId, coordinatorId)) {
+            throw new EventException(message, EventException.ErrorType.VALIDATION_ERROR);
+        }
+    }
+
+    private void ensureActorCanDeleteEvent(Connection con,
+                                           long eventId,
+                                           long actorUserId) throws SQLException, EventException {
+        if (isActiveAdmin(con, actorUserId)) {
+            return;
+        }
+        if (isCoordinator(con, actorUserId) && canCoordinatorManageEvent(con, eventId, actorUserId)) {
+            return;
+        }
+        throw new EventException("You do not have permission to delete this event.",
+                EventException.ErrorType.VALIDATION_ERROR);
+    }
+
     private boolean isCoordinator(Connection con, long userId) throws SQLException {
         try (PreparedStatement stmt = con.prepareStatement("""
                 SELECT 1
@@ -621,6 +698,46 @@ public final class EventDAO implements EventRepository {
                   AND is_deleted = 0
                 """)) {
             stmt.setLong(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private boolean isActiveAdmin(Connection con, long userId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Users
+                WHERE id = ?
+                  AND role_id = 1
+                  AND is_deleted = 0
+                """)) {
+            stmt.setLong(1, userId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
+    private boolean canCoordinatorManageEvent(Connection con, long eventId, long coordinatorId) throws SQLException {
+        try (PreparedStatement stmt = con.prepareStatement("""
+                SELECT 1
+                FROM dbo.Events e
+                WHERE e.id = ?
+                  AND (
+                      EXISTS (
+                          SELECT 1
+                          FROM dbo.EventCoordinators ec
+                          WHERE ec.event_id = e.id
+                            AND ec.user_id = ?
+                            AND ec.removed_at IS NULL
+                      )
+                      OR e.created_by_user_id = ?
+                  )
+                """)) {
+            stmt.setLong(1, eventId);
+            stmt.setLong(2, coordinatorId);
+            stmt.setLong(3, coordinatorId);
             try (ResultSet rs = stmt.executeQuery()) {
                 return rs.next();
             }
@@ -682,6 +799,16 @@ public final class EventDAO implements EventRepository {
             } else {
                 stmt.setString(i + 1, String.valueOf(param));
             }
+        }
+    }
+
+    private void validateRequiredText(String fieldName, String value) throws EventException {
+        String normalized = EventValidationRules.normalizeRequired(value);
+        if (normalized.isEmpty()) {
+            throw new EventException(fieldName + " is required.", EventException.ErrorType.VALIDATION_ERROR);
+        }
+        if (normalized.length() > EventValidationRules.MAX_TEXT_LENGTH) {
+            throw new EventException(fieldName + " is too long.", EventException.ErrorType.VALIDATION_ERROR);
         }
     }
 

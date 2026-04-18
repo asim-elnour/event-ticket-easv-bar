@@ -1,11 +1,14 @@
 package dk.easv.eventTicketSystem.bll;
 
 import dk.easv.eventTicketSystem.be.Event;
+import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.be.TicketCategory;
+import dk.easv.eventTicketSystem.be.User;
 import dk.easv.eventTicketSystem.dal.repository.EventRepository;
 import dk.easv.eventTicketSystem.dal.repository.RepositoryProvider;
 import dk.easv.eventTicketSystem.exceptions.EventException;
 import dk.easv.eventTicketSystem.util.EventValidationRules;
+import dk.easv.eventTicketSystem.util.SessionManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -43,27 +46,46 @@ public class EventLogic {
     }
 
     public Event addEvent(Event event) throws EventException {
+        User coordinator = requireActiveCoordinator("Only event coordinators can create or edit events.");
         normalizeEvent(event);
         validateEvent(event);
-        return eventRepository.addEvent(event);
+        event.setCreatedByUserId(coordinator.getId());
+        event.setCoordinatorId(coordinator.getId());
+        return eventRepository.addEvent(event, coordinator.getId());
     }
 
     public void updateEvent(Event event) throws EventException {
+        User coordinator = requireActiveCoordinator("Only event coordinators can create or edit events.");
+        if (event == null || event.getId() == null || event.getId() <= 0) {
+            throw new EventException("Valid event is required.", EventException.ErrorType.VALIDATION_ERROR);
+        }
+
+        Event existing = eventRepository.getEventById(event.getId());
+        requireCoordinatorAccess(coordinator.getId(), event.getId(), "You do not have permission to manage this event.");
         normalizeEvent(event);
         validateEvent(event);
-        Event updated = eventRepository.updateEvent(event);
+        event.setCreatedByUserId(existing.getCreatedByUserId() == null ? coordinator.getId() : existing.getCreatedByUserId());
+        if (event.getCoordinatorId() == null || event.getCoordinatorId() <= 0) {
+            event.setCoordinatorId(existing.getCoordinatorId() == null ? coordinator.getId() : existing.getCoordinatorId());
+        }
+        Event updated = eventRepository.updateEvent(event, coordinator.getId());
         event.restoreFrom(updated);
     }
 
-    public void deleteEvent(long eventId, long coordinatorId) throws EventException {
-        setEventDeleted(eventId, coordinatorId, true);
+    public void deleteEvent(long eventId) throws EventException {
+        setEventDeleted(eventId, true);
     }
 
-    public void setEventDeleted(long eventId, long coordinatorId, boolean deleted) throws EventException {
+    public void setEventDeleted(long eventId, boolean deleted) throws EventException {
         if (eventId <= 0) {
             throw new EventException("Valid event is required.", EventException.ErrorType.VALIDATION_ERROR);
         }
-        eventRepository.setEventDeleted(eventId, coordinatorId, deleted);
+
+        User actor = requireActiveAdminOrCoordinator("Only admins or event coordinators can delete events.");
+        if (actor.hasRole(Role.COORDINATOR)) {
+            requireCoordinatorAccess(actor.getId(), eventId, "You do not have permission to delete this event.");
+        }
+        eventRepository.setEventDeleted(eventId, actor.getId(), deleted);
     }
 
     private void normalizeEvent(Event event) {
@@ -73,7 +95,7 @@ public class EventLogic {
         event.setName(EventValidationRules.normalizeRequired(event.getName()));
         event.setLocation(EventValidationRules.normalizeRequired(event.getLocation()));
         event.setLocationGuidance(EventValidationRules.normalizeOptional(event.getLocationGuidance()));
-        event.setNotes(EventValidationRules.normalizeOptional(event.getNotes()));
+        event.setNotes(EventValidationRules.normalizeRequired(event.getNotes()));
     }
 
     private void validateEvent(Event event) throws EventException {
@@ -83,6 +105,7 @@ public class EventLogic {
 
         validateRequiredText("Name", event.getName());
         validateRequiredText("Location", event.getLocation());
+        validateRequiredText("Notes", event.getNotes());
 
         LocalDateTime start = event.getStartTime();
         if (start == null) {
@@ -144,5 +167,38 @@ public class EventLogic {
         if (value.length() > EventValidationRules.MAX_TEXT_LENGTH) {
             throw new EventException(fieldName + " is too long.", EventException.ErrorType.VALIDATION_ERROR);
         }
+    }
+
+    private User requireActiveCoordinator(String message) throws EventException {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null
+                || currentUser.getId() == null
+                || currentUser.getId() <= 0
+                || currentUser.isDeleted()
+                || !currentUser.hasRole(Role.COORDINATOR)) {
+            throw new EventException(message, EventException.ErrorType.VALIDATION_ERROR);
+        }
+        return currentUser;
+    }
+
+    private User requireActiveAdminOrCoordinator(String message) throws EventException {
+        User currentUser = SessionManager.getCurrentUser();
+        if (currentUser == null
+                || currentUser.getId() == null
+                || currentUser.getId() <= 0
+                || currentUser.isDeleted()
+                || (!currentUser.hasRole(Role.ADMIN) && !currentUser.hasRole(Role.COORDINATOR))) {
+            throw new EventException(message, EventException.ErrorType.VALIDATION_ERROR);
+        }
+        return currentUser;
+    }
+
+    private void requireCoordinatorAccess(long coordinatorId, long eventId, String message) throws EventException {
+        for (Event event : eventRepository.getEventsForCoordinator(coordinatorId)) {
+            if (event != null && event.getId() != null && event.getId() == eventId) {
+                return;
+            }
+        }
+        throw new EventException(message, EventException.ErrorType.VALIDATION_ERROR);
     }
 }

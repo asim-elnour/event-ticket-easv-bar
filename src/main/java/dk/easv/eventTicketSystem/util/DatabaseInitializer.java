@@ -80,12 +80,12 @@ public class DatabaseInitializer {
                     CREATE TABLE dbo.Events (
                         id BIGINT IDENTITY(1,1) NOT NULL CONSTRAINT PK_Events PRIMARY KEY,
                         name NVARCHAR(255) NOT NULL,
-                        location NVARCHAR(255) NULL,
+                        location NVARCHAR(255) NOT NULL,
                         location_guidance NVARCHAR(MAX) NULL,
-                        notes NVARCHAR(MAX) NULL,
-                        start_time DATETIME2 NULL,
+                        notes NVARCHAR(MAX) NOT NULL,
+                        start_time DATETIME2 NOT NULL,
                         end_time DATETIME2 NULL,
-                        created_by_user_id BIGINT NULL CONSTRAINT FK_Events_Users REFERENCES dbo.Users(id),
+                        created_by_user_id BIGINT NOT NULL CONSTRAINT FK_Events_Users REFERENCES dbo.Users(id),
                         created_at DATETIME2 NOT NULL CONSTRAINT DF_Events_CreatedAt DEFAULT SYSDATETIME(),
                         updated_at DATETIME2 NOT NULL CONSTRAINT DF_Events_UpdatedAt DEFAULT SYSDATETIME(),
                         is_deleted BIT NOT NULL CONSTRAINT DF_Events_IsDeleted DEFAULT 0

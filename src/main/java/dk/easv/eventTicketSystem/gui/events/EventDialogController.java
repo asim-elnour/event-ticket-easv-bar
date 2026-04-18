@@ -101,6 +101,8 @@ public class EventDialogController {
     @FXML
     private Label errLocation;
     @FXML
+    private Label errNotes;
+    @FXML
     private Label errStartDate;
     @FXML
     private Label errStartTime;
@@ -326,7 +328,7 @@ public class EventDialogController {
         event.setName(EventValidationRules.normalizeRequired(txtName.getText()));
         event.setLocation(EventValidationRules.normalizeRequired(txtLocation.getText()));
         event.setLocationGuidance(EventValidationRules.normalizeOptional(txtGuidance.getText()));
-        event.setNotes(EventValidationRules.normalizeOptional(txtNotes.getText()));
+        event.setNotes(EventValidationRules.normalizeRequired(txtNotes.getText()));
         event.setStartTime(start);
         event.setEndTime(end);
         event.setUpdatedAt(LocalDateTime.now());
@@ -383,6 +385,7 @@ public class EventDialogController {
     private void setupLiveValidation() {
         txtName.textProperty().addListener((obs, oldValue, newValue) -> validateName());
         txtLocation.textProperty().addListener((obs, oldValue, newValue) -> validateLocation());
+        txtNotes.textProperty().addListener((obs, oldValue, newValue) -> validateNotes());
         dpStartDate.valueProperty().addListener((obs, oldValue, newValue) -> {
             validateStartDate();
             validateDateRange();
@@ -410,6 +413,7 @@ public class EventDialogController {
         boolean ok = true;
         ok = validateName() && ok;
         ok = validateLocation() && ok;
+        ok = validateNotes() && ok;
         ok = validateStartDate() && ok;
         ok = validateStartTime() && ok;
         ok = validateEndDate() && ok;
@@ -444,6 +448,16 @@ public class EventDialogController {
             return false;
         }
         hideValidationMessage(errLocation);
+        return true;
+    }
+
+    private boolean validateNotes() {
+        String value = EventValidationRules.normalizeRequired(txtNotes.getText());
+        if (value.isEmpty()) {
+            showValidationMessage(errNotes, "Notes are required.");
+            return false;
+        }
+        hideValidationMessage(errNotes);
         return true;
     }
 
@@ -725,6 +739,7 @@ public class EventDialogController {
     private void clearValidationMessages() {
         hideValidationMessage(errName);
         hideValidationMessage(errLocation);
+        hideValidationMessage(errNotes);
         hideValidationMessage(errStartDate);
         hideValidationMessage(errStartTime);
         hideValidationMessage(errEndDate);
@@ -899,7 +914,14 @@ public class EventDialogController {
                     detail = "Something unexpected happened while processing this request.";
                 }
             }
-        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized")) {
+        } else if (containsAny(normalized,
+                "permission",
+                "denied",
+                "forbidden",
+                "not authorized",
+                "unauthorized",
+                "only event coordinators",
+                "only admins or event coordinators")) {
             type = "Permission";
             detail = "You do not have permission to perform this action.";
         } else if (root instanceof SQLException) {
@@ -911,7 +933,15 @@ public class EventDialogController {
         }
 
         boolean preferTechnical = throwable instanceof EventException
-                || containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "not found");
+                || containsAny(normalized,
+                "permission",
+                "denied",
+                "forbidden",
+                "not authorized",
+                "unauthorized",
+                "only event coordinators",
+                "only admins or event coordinators",
+                "not found");
         return new ErrorDialogDetails(type, chooseDialogDetail(detail, technicalMessage, preferTechnical));
     }
 

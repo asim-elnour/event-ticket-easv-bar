@@ -128,6 +128,7 @@ public class EventsController implements ModelAware {
         eventsTable.setItems(model.eventsView());
         model.eventsView().comparatorProperty().bind(eventsTable.comparatorProperty());
         updateShowDeletedButtonText();
+        updateActionState(eventsTable.getSelectionModel().getSelectedItem());
 
         if (!modelListenersBound) {
             model.currentCoordinatorIdProperty().addListener((obs, oldValue, newValue) -> {
@@ -175,6 +176,10 @@ public class EventsController implements ModelAware {
 
     @FXML
     private void onAddEvent() {
+        if (!canCreateOrEditEvents()) {
+            DialogUtils.showWarning("Event Permissions", null, "Only event coordinators can create or edit events.");
+            return;
+        }
         Optional<Event> result = showEventDialog(null);
         result.ifPresent(event -> {
             statusBanner.showSaved();
@@ -185,6 +190,10 @@ public class EventsController implements ModelAware {
 
     @FXML
     private void onEditEvent() {
+        if (!canCreateOrEditEvents()) {
+            DialogUtils.showWarning("Event Permissions", null, "Only event coordinators can create or edit events.");
+            return;
+        }
         Event selected = eventsTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             DialogUtils.showWarning("Edit Event", null, "Please select an event to edit.");
@@ -202,6 +211,10 @@ public class EventsController implements ModelAware {
 
     @FXML
     private void onDeleteEvent() {
+        if (!canDeleteEvents()) {
+            DialogUtils.showWarning("Event Permissions", null, "Only admins or event coordinators can delete events.");
+            return;
+        }
         Event selected = eventsTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
             DialogUtils.showWarning("Delete Event", null, "Please select an event to delete.");
@@ -218,7 +231,7 @@ public class EventsController implements ModelAware {
         Task<Void> task = new Task<>() {
             @Override
             protected Void call() throws Exception {
-                model.setEventDeleted(selected, model.getCurrentCoordinatorId(), shouldDelete);
+                model.setEventDeleted(selected, shouldDelete);
                 return null;
             }
         };
@@ -366,6 +379,12 @@ public class EventsController implements ModelAware {
     }
 
     private void updateActionState(Event selected) {
+        boolean canCreateOrEdit = canCreateOrEditEvents();
+        boolean canDelete = canDeleteEvents();
+
+        if (addButton != null) {
+            addButton.setDisable(!canCreateOrEdit);
+        }
         if (selected == null) {
             editButton.setDisable(true);
             deleteButton.setDisable(true);
@@ -374,9 +393,17 @@ public class EventsController implements ModelAware {
         }
 
         boolean isDeleted = selected.isDeleted();
-        editButton.setDisable(isDeleted);
-        deleteButton.setDisable(false);
+        editButton.setDisable(!canCreateOrEdit || isDeleted);
+        deleteButton.setDisable(!canDelete);
         deleteButton.setText(isDeleted ? "Restore Event" : "Delete Event");
+    }
+
+    private boolean canCreateOrEditEvents() {
+        return model != null && model.isCoordinator();
+    }
+
+    private boolean canDeleteEvents() {
+        return model != null && (model.isCoordinator() || model.isAdmin());
     }
 
     private Optional<Event> showEventDialog(Event existing) {
@@ -465,7 +492,14 @@ public class EventsController implements ModelAware {
                     detail = "Something unexpected happened while processing this request.";
                 }
             }
-        } else if (containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized")) {
+        } else if (containsAny(normalized,
+                "permission",
+                "denied",
+                "forbidden",
+                "not authorized",
+                "unauthorized",
+                "only event coordinators",
+                "only admins or event coordinators")) {
             type = "Permission";
             detail = "You do not have permission to perform this action.";
         } else if (root instanceof SQLException) {
@@ -477,7 +511,15 @@ public class EventsController implements ModelAware {
         }
 
         boolean preferTechnical = throwable instanceof EventException
-                || containsAny(normalized, "permission", "denied", "forbidden", "not authorized", "unauthorized", "not found");
+                || containsAny(normalized,
+                "permission",
+                "denied",
+                "forbidden",
+                "not authorized",
+                "unauthorized",
+                "only event coordinators",
+                "only admins or event coordinators",
+                "not found");
         return new ErrorDialogDetails(type, chooseDialogDetail(detail, technicalMessage, preferTechnical));
     }
 

@@ -426,12 +426,12 @@ public class AppModel {
         eventModel.updateEvent(event);
     }
 
-    public void deleteEvent(Event event, long coordinatorId) throws EventException {
-        eventModel.deleteEvent(event, coordinatorId);
+    public void deleteEvent(Event event) throws EventException {
+        eventModel.deleteEvent(event);
     }
 
-    public void setEventDeleted(Event event, long coordinatorId, boolean deleted) throws EventException {
-        eventModel.setEventDeleted(event, coordinatorId, deleted);
+    public void setEventDeleted(Event event, boolean deleted) throws EventException {
+        eventModel.setEventDeleted(event, deleted);
     }
 
     public void loadTicketsForEvent(long eventId) throws TicketException {

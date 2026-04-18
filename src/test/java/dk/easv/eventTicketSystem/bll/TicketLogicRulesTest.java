@@ -355,17 +355,17 @@ class TicketLogicRulesTest {
         }
 
         @Override
-        public Event addEvent(Event event) {
+        public Event addEvent(Event event, long actorUserId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public Event updateEvent(Event event) {
+        public Event updateEvent(Event event, long actorUserId) {
             throw new UnsupportedOperationException();
         }
 
         @Override
-        public void setEventDeleted(long eventId, long coordinatorId, boolean deleted) {
+        public void setEventDeleted(long eventId, long actorUserId, boolean deleted) {
             throw new UnsupportedOperationException();
         }
 

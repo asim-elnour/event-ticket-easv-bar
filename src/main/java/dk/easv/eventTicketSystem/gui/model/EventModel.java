@@ -80,11 +80,11 @@ public class EventModel {
         eventLogic.updateEvent(event);
     }
 
-    public void deleteEvent(Event event, long coordinatorId) throws EventException {
-        setEventDeleted(event, coordinatorId, true);
+    public void deleteEvent(Event event) throws EventException {
+        setEventDeleted(event, true);
     }
 
-    public void setEventDeleted(Event event, long coordinatorId, boolean deleted) throws EventException {
-        eventLogic.setEventDeleted(event.getId(), coordinatorId, deleted);
+    public void setEventDeleted(Event event, boolean deleted) throws EventException {
+        eventLogic.setEventDeleted(event.getId(), deleted);
     }
 }

@@ -16,11 +16,11 @@ public interface EventRepository {
     List<Event> searchEventsForCoordinator(long coordinatorId, String columnKey, String query, boolean includeDeleted)
             throws EventException;
 
-    Event addEvent(Event event) throws EventException;
+    Event addEvent(Event event, long actorUserId) throws EventException;
 
-    Event updateEvent(Event event) throws EventException;
+    Event updateEvent(Event event, long actorUserId) throws EventException;
 
-    void setEventDeleted(long eventId, long coordinatorId, boolean deleted) throws EventException;
+    void setEventDeleted(long eventId, long actorUserId, boolean deleted) throws EventException;
 
     Event getEventById(long eventId) throws EventException;
 

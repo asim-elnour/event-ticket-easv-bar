@@ -49,22 +49,23 @@
 
                                 <Label text="Notes:" GridPane.rowIndex="5" GridPane.columnIndex="0" GridPane.valignment="TOP"/>
                                 <TextArea fx:id="txtNotes" promptText="Enter event notes" prefRowCount="3" maxWidth="Infinity" GridPane.rowIndex="5" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errNotes" visible="false" managed="true" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
 
-                                <Label text="Start date:" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
-                                <DatePicker fx:id="dpStartDate" promptText="Select start date" maxWidth="Infinity" GridPane.rowIndex="6" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                                <Label styleClass="error-label" fx:id="errStartDate" visible="false" managed="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+                                <Label text="Start date:" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+                                <DatePicker fx:id="dpStartDate" promptText="Select start date" maxWidth="Infinity" GridPane.rowIndex="7" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errStartDate" visible="false" managed="true" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
 
-                                <Label text="Start time:" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtStartTime" promptText="Enter start time, e.g. 19:30" maxWidth="Infinity" GridPane.rowIndex="8" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                                <Label styleClass="error-label" fx:id="errStartTime" visible="false" managed="true" GridPane.rowIndex="9" GridPane.columnIndex="1"/>
+                                <Label text="Start time:" GridPane.rowIndex="9" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtStartTime" promptText="Enter start time, e.g. 19:30" maxWidth="Infinity" GridPane.rowIndex="9" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errStartTime" visible="false" managed="true" GridPane.rowIndex="10" GridPane.columnIndex="1"/>
 
-                                <Label text="End date:" GridPane.rowIndex="10" GridPane.columnIndex="0"/>
-                                <DatePicker fx:id="dpEndDate" promptText="Select end date" maxWidth="Infinity" GridPane.rowIndex="10" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                                <Label styleClass="error-label" fx:id="errEndDate" visible="false" managed="true" GridPane.rowIndex="11" GridPane.columnIndex="1"/>
+                                <Label text="End date:" GridPane.rowIndex="11" GridPane.columnIndex="0"/>
+                                <DatePicker fx:id="dpEndDate" promptText="Select end date" maxWidth="Infinity" GridPane.rowIndex="11" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errEndDate" visible="false" managed="true" GridPane.rowIndex="12" GridPane.columnIndex="1"/>
 
-                                <Label text="End time:" GridPane.rowIndex="12" GridPane.columnIndex="0"/>
-                                <TextField fx:id="txtEndTime" promptText="Enter end time, e.g. 22:00" maxWidth="Infinity" GridPane.rowIndex="12" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
-                                <Label styleClass="error-label" fx:id="errEndTime" visible="false" managed="true" GridPane.rowIndex="13" GridPane.columnIndex="1"/>
+                                <Label text="End time:" GridPane.rowIndex="13" GridPane.columnIndex="0"/>
+                                <TextField fx:id="txtEndTime" promptText="Enter end time, e.g. 22:00" maxWidth="Infinity" GridPane.rowIndex="13" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS"/>
+                                <Label styleClass="error-label" fx:id="errEndTime" visible="false" managed="true" GridPane.rowIndex="14" GridPane.columnIndex="1"/>
                             </GridPane>
 
                             <VBox styleClass="dialog-section-card" spacing="12" maxWidth="Infinity">
