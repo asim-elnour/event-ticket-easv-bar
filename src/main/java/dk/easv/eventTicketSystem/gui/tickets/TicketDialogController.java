@@ -6,17 +6,24 @@ import dk.easv.eventTicketSystem.be.Ticket;
 import dk.easv.eventTicketSystem.be.TicketCategory;
 import dk.easv.eventTicketSystem.bll.CustomerLogic;
 import dk.easv.eventTicketSystem.exceptions.CustomerException;
+import dk.easv.eventTicketSystem.gui.model.AppModel;
+import dk.easv.eventTicketSystem.util.DialogUtils;
 import dk.easv.eventTicketSystem.util.CustomerValidationRules;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
+import javafx.scene.Cursor;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.math.BigDecimal;
@@ -24,6 +31,16 @@ import java.math.RoundingMode;
 
 public class TicketDialogController {
 
+    @FXML
+    private BorderPane dialogPane;
+    @FXML
+    private ScrollPane dialogScrollPane;
+    @FXML
+    private VBox loadingOverlay;
+    @FXML
+    private Button btnCancel;
+    @FXML
+    private Button btnSave;
     @FXML
     private TextField txtCustomerName;
     @FXML
@@ -57,9 +74,11 @@ public class TicketDialogController {
     private final ObservableList<Customer> customerDirectory = FXCollections.observableArrayList();
     private final FilteredList<Customer> filteredCustomers = new FilteredList<>(customerDirectory, customer -> true);
 
+    private AppModel model;
     private Event event;
     private TicketDraft draft;
     private boolean saved;
+    private boolean saving;
     private boolean customerDirectoryLoading;
     private boolean customerDirectoryLoaded;
     private String customerDirectoryErrorMessage = "";
@@ -105,6 +124,12 @@ public class TicketDialogController {
         filteredCustomers.setPredicate(customer -> false);
         updateExistingCustomersPlaceholder();
         updatePrice();
+        updateSavingState(false);
+        installCloseGuard();
+    }
+
+    public void setModel(AppModel model) {
+        this.model = model;
     }
 
     public void setEvent(Event event) {
@@ -124,13 +149,23 @@ public class TicketDialogController {
 
     @FXML
     private void onCancel() {
+        if (saving) {
+            return;
+        }
         saved = false;
         close();
     }
 
     @FXML
     private void onSave() {
+        if (saving) {
+            return;
+        }
         if (!validateAll()) {
+            return;
+        }
+        if (model == null || event == null || event.getId() == null || event.getId() <= 0) {
+            DialogUtils.showError("Add Ticket", null, "Ticket dialog is missing the selected event.");
             return;
         }
 
@@ -141,8 +176,7 @@ public class TicketDialogController {
                 selectedType == null ? null : selectedType.getId(),
                 txtCode.getText().trim()
         );
-        saved = true;
-        close();
+        persistDraft();
     }
 
     private void close() {
@@ -342,6 +376,91 @@ public class TicketDialogController {
     private String normalizeSearchQuery() {
         String query = txtExistingCustomerSearch == null ? "" : txtExistingCustomerSearch.getText();
         return query == null ? "" : query.trim();
+    }
+
+    private void persistDraft() {
+        updateSavingState(true);
+
+        Task<Ticket> task = new Task<>() {
+            @Override
+            protected Ticket call() throws Exception {
+                return model.addTicket(
+                        event,
+                        draft.ticketCategoryId(),
+                        draft.customerName(),
+                        draft.customerEmail(),
+                        draft.code()
+                );
+            }
+        };
+
+        task.setOnSucceeded(workerStateEvent -> {
+            saved = true;
+            updateSavingState(false);
+            close();
+        });
+
+        task.setOnFailed(workerStateEvent -> {
+            updateSavingState(false);
+            Throwable throwable = task.getException();
+            DialogUtils.showError(
+                    "Add Ticket",
+                    null,
+                    throwable == null ? "Unable to add ticket." : throwable.getMessage()
+            );
+        });
+
+        Thread thread = new Thread(task, "add-ticket-task");
+        thread.setDaemon(true);
+        thread.start();
+    }
+
+    private void updateSavingState(boolean saving) {
+        this.saving = saving;
+        if (dialogPane != null) {
+            dialogPane.setDisable(saving);
+        }
+        if (loadingOverlay != null) {
+            loadingOverlay.setVisible(saving);
+            loadingOverlay.setManaged(saving);
+        }
+        if (btnSave != null) {
+            btnSave.setDisable(saving);
+        }
+        if (btnCancel != null) {
+            btnCancel.setDisable(saving);
+        }
+        if (txtCustomerName != null && txtCustomerName.getScene() != null) {
+            txtCustomerName.getScene().setCursor(saving ? Cursor.WAIT : Cursor.DEFAULT);
+        } else if (dialogScrollPane != null) {
+            dialogScrollPane.setCursor(saving ? Cursor.WAIT : Cursor.DEFAULT);
+        }
+    }
+
+    private void installCloseGuard() {
+        txtCustomerName.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene == null) {
+                return;
+            }
+
+            if (newScene.getWindow() instanceof Stage stage) {
+                stage.setOnCloseRequest(event -> {
+                    if (saving) {
+                        event.consume();
+                    }
+                });
+            }
+
+            newScene.windowProperty().addListener((windowObs, oldWindow, newWindow) -> {
+                if (newWindow instanceof Stage stage) {
+                    stage.setOnCloseRequest(event -> {
+                        if (saving) {
+                            event.consume();
+                        }
+                    });
+                }
+            });
+        });
     }
 
     public record TicketDraft(String customerName,

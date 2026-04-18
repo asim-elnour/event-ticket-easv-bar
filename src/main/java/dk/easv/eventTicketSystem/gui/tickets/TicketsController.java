@@ -199,43 +199,18 @@ public class TicketsController implements ModelAware {
             return;
         }
 
-        Optional<TicketDialogController.TicketDraft> result = showTicketDialog(selectedEvent);
-        result.ifPresent(draft -> {
-            statusBanner.showSaving();
-
-            Task<Ticket> task = new Task<>() {
-                @Override
-                protected Ticket call() throws Exception {
-                    return model.addTicket(
-                            selectedEvent,
-                            draft.ticketCategoryId(),
-                            draft.customerName(),
-                            draft.customerEmail(),
-                            draft.code()
-                    );
-                }
-            };
-
-            task.setOnSucceeded(workerStateEvent -> {
-                statusBanner.showSaved();
-                requestReload(true);
-            });
-
-            task.setOnFailed(workerStateEvent -> {
-                statusBanner.showFailed();
-                DialogUtils.showError("Add Ticket", null,
-                        task.getException() == null ? "Unable to add ticket." : task.getException().getMessage());
-            });
-
-            new Thread(task, "add-ticket-task").start();
-        });
+        if (showTicketDialog(selectedEvent)) {
+            statusBanner.showSaved();
+            requestReload(true);
+        }
     }
 
-    private Optional<TicketDialogController.TicketDraft> showTicketDialog(Event selectedEvent) {
+    private boolean showTicketDialog(Event selectedEvent) {
         FXMLLoader loader = new FXMLLoader(getClass().getResource(ViewType.TICKET_DIALOG.getFxmlPath()));
         try {
             Parent root = loader.load();
             TicketDialogController controller = loader.getController();
+            controller.setModel(model);
             controller.setEvent(selectedEvent);
 
             Stage stage = new Stage();
@@ -248,13 +223,11 @@ public class TicketsController implements ModelAware {
             DialogUtils.configureHalfScreenDialogStage(stage);
             stage.showAndWait();
 
-            if (controller.isSaved()) {
-                return Optional.ofNullable(controller.getDraft());
-            }
+            return controller.isSaved();
         } catch (IOException e) {
             DialogUtils.showError("Ticket Dialog", null, "Unable to open ticket dialog.");
         }
-        return Optional.empty();
+        return false;
     }
 
     @FXML

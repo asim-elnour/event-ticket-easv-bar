@@ -1244,6 +1244,22 @@
     -fx-background-color: rgba(168, 85, 247, 0.15);
 }
 
+.dialog-loading-overlay {
+    -fx-alignment: CENTER;
+    -fx-padding: 24;
+    -fx-background-color: rgba(15, 5, 26, 0.72);
+}
+
+.dialog-loading-overlay .progress-indicator {
+    -fx-progress-color: -fx-accent-primary;
+}
+
+.dialog-loading-message {
+    -fx-text-fill: -fx-text-primary;
+    -fx-font-size: 13px;
+    -fx-font-weight: 600;
+}
+
 /* --- 15. FOCUS COLORS --- */
 .root:focused,
 .button:focused,
