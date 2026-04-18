@@ -225,7 +225,7 @@
               managed="false">
             <Label text="Ticket" styleClass="details-title" maxWidth="Infinity"/>
             <ScrollPane fx:id="ticketScroll"
-                        fitToWidth="true"
+                        fitToWidth="false"
                         hbarPolicy="AS_NEEDED"
                         vbarPolicy="AS_NEEDED"
                         pannable="false"

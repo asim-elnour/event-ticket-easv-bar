@@ -39,7 +39,7 @@ public class TicketPrintService {
     private static final Color LABEL_COLOR = new Color(206, 188, 242);
     private static final Color VALUE_COLOR = Color.WHITE;
     private static final Color MUTED_COLOR = new Color(188, 173, 219);
-    private static final Color CODE_PANEL = new Color(250, 248, 252);
+    private static final Color CODE_PANEL = Color.WHITE;
     private static final Color SECTION_BACKGROUND = new Color(31, 19, 46);
     private static final Color SECTION_BORDER = new Color(79, 56, 116);
     private static final Color DARK_TEXT = new Color(41, 31, 57);
@@ -211,14 +211,14 @@ public class TicketPrintService {
             strokeRect(cs, contentLeft, topSectionY, contentWidth, topSectionHeight, SECTION_BORDER, 1f);
 
             float detailY = topSectionY + topSectionHeight - 24f;
-            detailY = writeDetailRow(cs, "Event:", eventName, contentLeft + 18f, detailY, detailsWidth, true, 2);
-            detailY = writeDetailRow(cs, "Location:", eventLocation, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Event:", eventName, contentLeft + 18f, detailY, detailsWidth, true);
+            detailY = writeDetailRow(cs, "Location:", eventLocation, contentLeft + 18f, detailY, detailsWidth, true);
             detailY = writeDetailRow(cs, "Start:", eventStart, contentLeft + 18f, detailY, detailsWidth, false);
             detailY = writeDetailRow(cs, "End:", eventEnd, contentLeft + 18f, detailY, detailsWidth, false);
-            detailY = writeDetailRow(cs, "Customer:", customerName, contentLeft + 18f, detailY, detailsWidth, true, 2);
-            detailY = writeDetailRow(cs, "Email:", customerEmail, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            detailY = writeDetailRow(cs, "Customer:", customerName, contentLeft + 18f, detailY, detailsWidth, true);
+            detailY = writeDetailRow(cs, "Email:", customerEmail, contentLeft + 18f, detailY, detailsWidth, true);
             detailY = writeDetailRow(cs, "Issued:", issuedAt, contentLeft + 18f, detailY, detailsWidth, false);
-            writeDetailRow(cs, lifecycleLabel, lifecycleValue, contentLeft + 18f, detailY, detailsWidth, true, 2);
+            writeDetailRow(cs, lifecycleLabel, lifecycleValue, contentLeft + 18f, detailY, detailsWidth, true);
 
             fillRect(cs, qrBoxX, qrBoxY, QR_BOX_SIZE, QR_BOX_SIZE, CODE_PANEL);
             strokeRect(cs, qrBoxX, qrBoxY, QR_BOX_SIZE, QR_BOX_SIZE, LIGHT_BORDER, 1f);

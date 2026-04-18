@@ -1457,8 +1457,8 @@
 }
 
 .details-ticket-data {
-    -fx-min-width: 0;
-    -fx-pref-width: 0;
+    -fx-min-width: 400;
+    -fx-pref-width: 400;
     -fx-max-width: Infinity;
 }
 
