@@ -4,14 +4,10 @@ import dk.easv.eventTicketSystem.be.Role;
 import dk.easv.eventTicketSystem.dal.ConnectionManager;
 import dk.easv.eventTicketSystem.util.security.PasswordHasher;
 
-import java.math.BigDecimal;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
 
 public class DatabaseInitializer {
 
@@ -22,7 +18,6 @@ public class DatabaseInitializer {
     }
 
     public void initializeAllTables() throws SQLException {
-        dropAllTables();
         createRolesTable();
         seedRoles();
         createUsersTable();
@@ -34,24 +29,7 @@ public class DatabaseInitializer {
         createCustomersTable();
         createTicketsTable();
         createIndexes();
-        seedDefaultUsers();
-        seedDemoData();
-    }
-
-    private void dropAllTables() throws SQLException {
-        execute("IF OBJECT_ID(N'dbo.TicketUpdates', N'U') IS NOT NULL DROP TABLE dbo.TicketUpdates");
-        execute("IF OBJECT_ID(N'dbo.Tickets', N'U') IS NOT NULL DROP TABLE dbo.Tickets");
-        execute("IF OBJECT_ID(N'dbo.Customers', N'U') IS NOT NULL DROP TABLE dbo.Customers");
-        execute("IF OBJECT_ID(N'dbo.TicketCategories', N'U') IS NOT NULL DROP TABLE dbo.TicketCategories");
-        execute("IF OBJECT_ID(N'dbo.EventToppings', N'U') IS NOT NULL DROP TABLE dbo.EventToppings");
-        execute("IF OBJECT_ID(N'dbo.EventUpdates', N'U') IS NOT NULL DROP TABLE dbo.EventUpdates");
-        execute("IF OBJECT_ID(N'dbo.EventCoordinators', N'U') IS NOT NULL DROP TABLE dbo.EventCoordinators");
-        execute("IF OBJECT_ID(N'dbo.Events', N'U') IS NOT NULL DROP TABLE dbo.Events");
-        execute("IF OBJECT_ID(N'dbo.UserLogins', N'U') IS NOT NULL DROP TABLE dbo.UserLogins");
-        execute("IF OBJECT_ID(N'dbo.UserUpdates', N'U') IS NOT NULL DROP TABLE dbo.UserUpdates");
-        execute("IF OBJECT_ID(N'dbo.UserRoles', N'U') IS NOT NULL DROP TABLE dbo.UserRoles");
-        execute("IF OBJECT_ID(N'dbo.Users', N'U') IS NOT NULL DROP TABLE dbo.Users");
-        execute("IF OBJECT_ID(N'dbo.Roles', N'U') IS NOT NULL DROP TABLE dbo.Roles");
+        ensureDefaultAdminUser();
     }
 
     private void createRolesTable() throws SQLException {
@@ -333,41 +311,26 @@ public class DatabaseInitializer {
                 """);
     }
 
-    private void seedDefaultUsers() throws SQLException {
-        seedDefaultUser(
-                "admin",
-                "Sofie",
-                "Admin",
-                "admin@easv.local",
-                "11111111",
-                "admin1234",
-                Role.ADMIN
-        );
-        seedDefaultUser(
-                "coordinator",
-                "Mikkel",
-                "Coordinator",
-                "coordinator@easv.local",
-                "22222222",
-                "coord1234",
-                Role.COORDINATOR
-        );
-    }
-
-    private void seedDefaultUser(String username,
-                                 String firstName,
-                                 String lastName,
-                                 String email,
-                                 String phone,
-                                 String rawPassword,
-                                 Role role) throws SQLException {
+    private void ensureDefaultAdminUser() throws SQLException {
         String sql = """
-                IF NOT EXISTS (
+                IF EXISTS (
                     SELECT 1
                     FROM dbo.Users
                     WHERE LOWER(username) = LOWER(?)
-                       OR LOWER(email) = LOWER(?)
                 )
+                BEGIN
+                    UPDATE dbo.Users
+                    SET first_name = ?,
+                        last_name = ?,
+                        email = ?,
+                        phone = ?,
+                        password = ?,
+                        role_id = ?,
+                        is_deleted = 0,
+                        is_locked = 0
+                    WHERE LOWER(username) = LOWER(?)
+                END
+                ELSE
                 BEGIN
                     INSERT INTO dbo.Users
                         (username, first_name, last_name, email, phone, password, role_id, is_deleted, is_locked)
@@ -378,160 +341,28 @@ public class DatabaseInitializer {
 
         try (Connection con = conMan.getConnection();
              PreparedStatement stmt = con.prepareStatement(sql)) {
+            String username = "admin";
+            String firstName = "System";
+            String lastName = "Admin";
+            String email = "admin@easv.com";
+            String phone = "00000000";
+            String passwordHash = PasswordHasher.hash("12345678");
+
             stmt.setString(1, username);
-            stmt.setString(2, email);
-            stmt.setString(3, username);
-            stmt.setString(4, firstName);
-            stmt.setString(5, lastName);
-            stmt.setString(6, email);
-            stmt.setString(7, phone);
-            stmt.setString(8, PasswordHasher.hash(rawPassword));
-            stmt.setInt(9, role.getId());
-            stmt.executeUpdate();
-        }
-    }
-
-    private void seedDemoData() throws SQLException {
-        long adminId = findUserIdByUsername("admin");
-        long coordinatorId = findUserIdByUsername("coordinator");
-        long eventId = createDemoEvent(adminId);
-
-        assignDemoCoordinator(eventId, coordinatorId);
-
-        long standardCategoryId = createDemoTicketCategory(
-                eventId,
-                "Standard",
-                new BigDecimal("60.00"),
-                100
-        );
-        createDemoTicketCategory(
-                eventId,
-                "VIP",
-                new BigDecimal("120.00"),
-                20
-        );
-        long customerId = createDemoCustomer("Alice Student", "alice@example.com");
-        createDemoTicket(eventId, standardCategoryId, customerId);
-    }
-
-    private long findUserIdByUsername(String username) throws SQLException {
-        try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement("SELECT id FROM dbo.Users WHERE username = ?")) {
-            stmt.setString(1, username);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getLong(1);
-                }
-            }
-        }
-        throw new SQLException("Seed user not found: " + username);
-    }
-
-    private long createDemoEvent(long adminId) throws SQLException {
-        LocalDateTime start = LocalDateTime.now()
-                .plusDays(5)
-                .withHour(20)
-                .withMinute(0)
-                .withSecond(0)
-                .withNano(0);
-        LocalDateTime end = start.plusHours(5);
-
-        String sql = """
-                INSERT INTO dbo.Events
-                    (name, location, location_guidance, notes, start_time, end_time,
-                     created_by_user_id, is_deleted)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-                """;
-
-        try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, "EASV Friday Bar");
-            stmt.setString(2, "EASV Bar");
-            stmt.setString(3, "Main campus entrance, follow the bar signs.");
-            stmt.setString(4, "Bring student ID.");
-            stmt.setTimestamp(5, Timestamp.valueOf(start));
-            stmt.setTimestamp(6, Timestamp.valueOf(end));
-            stmt.setLong(7, adminId);
-            stmt.executeUpdate();
-
-            try (ResultSet keys = stmt.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getLong(1);
-                }
-            }
-        }
-
-        throw new SQLException("Failed to seed demo event.");
-    }
-
-    private void assignDemoCoordinator(long eventId, long coordinatorId) throws SQLException {
-        try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
-                     INSERT INTO dbo.EventCoordinators (event_id, user_id)
-                     VALUES (?, ?)
-                     """)) {
-            stmt.setLong(1, eventId);
-            stmt.setLong(2, coordinatorId);
-            stmt.executeUpdate();
-        }
-    }
-
-    private long createDemoTicketCategory(long eventId, String name, BigDecimal price, int seatCount)
-            throws SQLException {
-        try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
-                     INSERT INTO dbo.TicketCategories
-                         (event_id, name, price, seat_count, is_deleted)
-                     VALUES (?, ?, ?, ?, 0)
-                     """, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setLong(1, eventId);
-            stmt.setString(2, name);
-            stmt.setBigDecimal(3, price);
-            stmt.setInt(4, seatCount);
-            stmt.executeUpdate();
-
-            try (ResultSet keys = stmt.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getLong(1);
-                }
-            }
-        }
-
-        throw new SQLException("Failed to seed demo ticket category.");
-    }
-
-    private long createDemoCustomer(String name, String email) throws SQLException {
-        try (Connection con = conMan.getConnection();
-             PreparedStatement stmt = con.prepareStatement("""
-                     INSERT INTO dbo.Customers (name, email)
-                     VALUES (?, ?)
-                     """, Statement.RETURN_GENERATED_KEYS)) {
-            stmt.setString(1, name);
-            stmt.setString(2, email);
-            stmt.executeUpdate();
-
-            try (ResultSet keys = stmt.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getLong(1);
-                }
-            }
-        }
-
-        throw new SQLException("Failed to seed demo customer.");
-    }
-
-    private void createDemoTicket(long eventId, long ticketCategoryId, long customerId) throws SQLException {
-        try (Connection con = conMan.getConnection();
-            PreparedStatement stmt = con.prepareStatement("""
-                     INSERT INTO dbo.Tickets
-                         (event_id, ticket_category_id, customer_id, code, issued_at, redeemed, refunded_at)
-                     VALUES (?, ?, ?, ?, ?, 0, NULL)
-                     """)) {
-            stmt.setLong(1, eventId);
-            stmt.setLong(2, ticketCategoryId);
-            stmt.setLong(3, customerId);
-            stmt.setString(4, "DEMO-FRIDAY-BAR-001");
-            stmt.setTimestamp(5, Timestamp.valueOf(LocalDateTime.now().minusHours(6)));
+            stmt.setString(2, firstName);
+            stmt.setString(3, lastName);
+            stmt.setString(4, email);
+            stmt.setString(5, phone);
+            stmt.setString(6, passwordHash);
+            stmt.setInt(7, Role.ADMIN.getId());
+            stmt.setString(8, username);
+            stmt.setString(9, username);
+            stmt.setString(10, firstName);
+            stmt.setString(11, lastName);
+            stmt.setString(12, email);
+            stmt.setString(13, phone);
+            stmt.setString(14, passwordHash);
+            stmt.setInt(15, Role.ADMIN.getId());
             stmt.executeUpdate();
         }
     }

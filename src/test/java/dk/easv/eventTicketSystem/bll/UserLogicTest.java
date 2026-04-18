@@ -17,10 +17,10 @@ class UserLogicTest {
     @Test
     void shouldAuthenticateSeededAdminByEmail() throws UserException {
         assumeSeededDatabaseAvailable();
-        User user = userLogic.authenticate("admin@easv.local", "admin1234");
+        User user = userLogic.authenticate("admin@easv.com", "12345678");
 
         assertEquals("admin", user.getUsername());
-        assertEquals("Sofie", user.getFirstName());
+        assertEquals("System", user.getFirstName());
         assertTrue(user.hasRole(Role.ADMIN));
     }
 
@@ -28,14 +28,14 @@ class UserLogicTest {
     void shouldRejectWrongPassword() {
         assumeSeededDatabaseAvailable();
         UserException exception = assertThrows(UserException.class,
-                () -> userLogic.authenticate("admin@easv.local", "wrong-password"));
+                () -> userLogic.authenticate("admin@easv.com", "wrong-password"));
 
         assertEquals("Invalid username or password.", exception.getMessage());
     }
 
     private void assumeSeededDatabaseAvailable() {
         try {
-            userLogic.authenticate("admin@easv.local", "admin1234");
+            userLogic.authenticate("admin@easv.com", "12345678");
         } catch (UserException ex) {
             Assumptions.assumeFalse(
                     "Could not authenticate against the database.".equals(ex.getMessage()),
