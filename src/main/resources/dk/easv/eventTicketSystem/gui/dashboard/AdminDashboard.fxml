@@ -25,7 +25,8 @@
           GridPane.hgrow="ALWAYS"
           GridPane.vgrow="ALWAYS">
         <Label fx:id="navTitleLabel" styleClass="dashboard-nav-title"/>
-        <ScrollPane fitToWidth="false"
+        <ScrollPane fx:id="navScrollPane"
+                    fitToWidth="false"
                     fitToHeight="false"
                     hbarPolicy="AS_NEEDED"
                     vbarPolicy="AS_NEEDED"
@@ -33,7 +34,9 @@
                     styleClass="dashboard-nav-scroll"
                     VBox.vgrow="ALWAYS">
             <content>
-                <VBox styleClass="dashboard-nav"
+                <VBox fx:id="navButtonsBox"
+                      styleClass="dashboard-nav"
+                      fillWidth="true"
                       spacing="10"
                       minHeight="0"
                       maxWidth="Infinity">

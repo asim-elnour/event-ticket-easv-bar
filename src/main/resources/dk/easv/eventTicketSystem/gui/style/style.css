@@ -242,7 +242,7 @@
 }
 
 .dashboard-nav-title {
-    -fx-font-size: 12px;
+    -fx-font-size: 16px;
     -fx-font-weight: 700;
     -fx-text-fill: #ffffff;
     -fx-padding: 0 0 6 0;
@@ -286,9 +286,11 @@
 }
 
 .dashboard-nav-button {
-    -fx-min-width: 0;
+    -fx-min-width: -infinity;
     -fx-max-width: Infinity;
     -fx-alignment: CENTER_LEFT;
+    -fx-wrap-text: false;
+    -fx-text-overrun: clip;
     -fx-padding: 10 12;
     -fx-text-fill: #ffffff;
     -fx-background-color: transparent;

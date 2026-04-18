@@ -3,12 +3,15 @@ package dk.easv.eventTicketSystem.gui.dashboard;
 import dk.easv.eventTicketSystem.gui.ModelAware;
 import dk.easv.eventTicketSystem.gui.model.AppModel;
 import dk.easv.eventTicketSystem.gui.model.SearchScope;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.layout.VBox;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -17,6 +20,10 @@ public class DashboardWorkspaceController implements ModelAware {
 
     @FXML
     private Label navTitleLabel;
+    @FXML
+    private ScrollPane navScrollPane;
+    @FXML
+    private VBox navButtonsBox;
     @FXML
     private ToggleButton navUsersButton;
     @FXML
@@ -46,6 +53,7 @@ public class DashboardWorkspaceController implements ModelAware {
     @FXML
     public void initialize() {
         bindNavigationTexts();
+        configureNavigationSizing();
         registerNavigationTarget(navUsersButton, usersPanel);
         registerNavigationTarget(navEventsButton, eventsPanel);
         registerNavigationTarget(navEventCoordinatorsButton, eventCoordinatorsPanel);
@@ -60,6 +68,19 @@ public class DashboardWorkspaceController implements ModelAware {
             showSelectedPanel(newValue);
         });
         selectInitialPanel();
+    }
+
+    private void configureNavigationSizing() {
+        if (navScrollPane == null || navButtonsBox == null) {
+            return;
+        }
+        navButtonsBox.minWidthProperty().bind(Bindings.createDoubleBinding(
+                () -> {
+                    double viewportWidth = navScrollPane.getViewportBounds().getWidth();
+                    return viewportWidth <= 0 ? 0.0 : viewportWidth;
+                },
+                navScrollPane.viewportBoundsProperty()
+        ));
     }
 
     @Override
